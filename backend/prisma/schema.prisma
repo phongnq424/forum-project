@@ -1,0 +1,410 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+/**
+ * * ENUMS **
+ */
+enum USER_STATUS_TYPE {
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+
+enum GENDER_TYPE {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum REACTION_TYPE {
+  LOVE
+  HAHA
+  SAD
+  ANGRY
+}
+
+enum CONVERSATION_TYPE {
+  CHAT
+  GROUP
+}
+
+enum FILE_TYPE {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  OTHER
+}
+
+/**
+ * * MODELS **
+ */
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique @db.VarChar(255)
+  password_hash String   @db.VarChar(255)
+  username      String   @unique @db.VarChar(100)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now()) @updatedAt
+
+  Profile          Profile?
+  UserStatus       UserStatus[]
+  Post             Post[]
+  PostSaved        PostSaved[]
+  Image            Image[]
+  Comment          Comment[]
+  Reaction         Reaction[]
+  FollowerFollowed Follower[]         @relation("followed")
+  FollowerFollow   Follower[]         @relation("follower")
+  ConversationUser ConversationUser[]
+  MessageSent      Message[]          @relation("sender")
+  Attachment       Attachment[]       @relation(fields: [], references: [])
+  AlMessage        AlMessage[]
+  Notification     Notification[]
+  ReportCreated    Report[]           @relation("reporter")
+  InterestedTopic  InterestedTopic[]
+  Submission       Submission[]
+  Leaderboard      Leaderboard[]
+  ReportUser       ReportUser[]
+  ActivityLogs     ActivityLogs[]
+}
+
+model UserStatus {
+  id            String           @id @default(uuid())
+  status        USER_STATUS_TYPE
+  lastActive_at DateTime?
+  user_id       String
+  User          User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  id         String       @id @default(uuid())
+  user_id    String       @unique
+  fullname   String?      @db.VarChar(255)
+  bio        String?
+  avatar     String?
+  cover      String?
+  dob        DateTime?
+  gender     GENDER_TYPE?
+  location   String?
+  created_at DateTime     @default(now())
+  updated_at DateTime     @default(now()) @updatedAt
+
+  User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model InterestedTopic {
+  id       String @id @default(uuid())
+  user_id  String
+  topic_id String
+
+  User  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Topic Topic @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, topic_id])
+}
+
+model Category {
+  id          String  @id @default(uuid())
+  name        String  @db.VarChar(100)
+  description String?
+  Topic       Topic[]
+}
+
+model Topic {
+  id              String            @id @default(uuid())
+  name            String            @db.VarChar(100)
+  category_id     String
+  description     String?
+  Category        Category          @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  Post            Post[]
+  InterestedTopic InterestedTopic[]
+}
+
+model Post {
+  id         String   @id @default(uuid())
+  user_id    String
+  topic_id   String
+  content    String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  User       User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Topic      Topic        @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+  PostSaved  PostSaved[]
+  Image      Image[]
+  Comment    Comment[]
+  Reaction   Reaction[]
+  ReportPost ReportPost[]
+}
+
+model PostSaved {
+  id       String   @id @default(uuid())
+  user_id  String
+  post_id  String
+  saved_at DateTime @default(now())
+
+  User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Post Post @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, post_id])
+}
+
+model Image {
+  id      String @id @default(uuid())
+  post_id String
+  url     String @db.VarChar(255)
+
+  Post   Post    @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  User   User?   @relation(fields: [userId], references: [id])
+  userId String?
+}
+
+model Comment {
+  id               String   @id @default(uuid())
+  user_id          String
+  post_id          String
+  parentComment_id String?
+  comment_detail   String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now()) @updatedAt
+
+  User          User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Post          Post            @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  parentComment Comment?        @relation("CommentParentChild", fields: [parentComment_id], references: [id], onDelete: Cascade)
+  childComments Comment[]       @relation("CommentParentChild")
+  ReportComment ReportComment[]
+}
+
+model Reaction {
+  id         String        @id @default(uuid())
+  user_id    String
+  post_id    String
+  type       REACTION_TYPE
+  created_at DateTime      @default(now())
+  updated_at DateTime      @default(now()) @updatedAt
+
+  User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Post Post @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, post_id, type])
+}
+
+model Follower {
+  id          String @id @default(uuid())
+  follow_id   String
+  followed_id String
+
+  follower User @relation("followed", fields: [follow_id], references: [id], onDelete: Cascade)
+  followed User @relation("follower", fields: [followed_id], references: [id], onDelete: Cascade)
+
+  @@unique([follow_id, followed_id])
+}
+
+model Conversation {
+  id         String            @id @default(uuid())
+  type       CONVERSATION_TYPE
+  name       String?
+  avatar     String?
+  created_at DateTime          @default(now())
+  updated_at DateTime          @default(now()) @updatedAt
+
+  ConversationUser ConversationUser[]
+  Message          Message[]
+  Call             Call[]
+}
+
+model ConversationUser {
+  id              String    @id @default(uuid())
+  conversation_id String
+  user_id         String
+  role            String    @default("member")
+  joined_at       DateTime  @default(now())
+  left_at         DateTime?
+
+  Conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  User         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([conversation_id, user_id])
+}
+
+model Message {
+  id              String   @id @default(uuid())
+  conversation_id String
+  sender_id       String
+  content         String?
+  sent_at         DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
+  is_read         Boolean  @default(false)
+
+  Conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  Sender       User         @relation("sender", fields: [sender_id], references: [id], onDelete: Cascade)
+  Attachment   Attachment[]
+}
+
+model Attachment {
+  id          String     @id @default(uuid())
+  message_id  String
+  file_path   String?
+  file_type   FILE_TYPE?
+  uploaded_at DateTime   @default(now())
+
+  Message Message @relation(fields: [message_id], references: [id], onDelete: Cascade)
+  User    User?   @relation(fields: [userId], references: [id])
+  userId  String?
+}
+
+model AlMessage {
+  id      String   @id @default(uuid())
+  user_id String
+  content String
+  sent_at DateTime @default(now())
+
+  User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Call {
+  id              String    @id @default(uuid())
+  conversation_id String
+  started_at      DateTime?
+  ended_at        DateTime?
+  status          String    @default("active")
+
+  Conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+}
+
+model Language {
+  id         String       @id @default(uuid())
+  name       String       @db.VarChar(50)
+  code       String       @db.VarChar(20)
+  Submission Submission[]
+}
+
+model Challenge {
+  id          String   @id @default(uuid())
+  title       String   @db.VarChar(255)
+  description String?
+  created_at  DateTime @default(now())
+
+  Testcase    Testcase[]
+  Submission  Submission[]
+  Leaderboard Leaderboard[]
+}
+
+model Testcase {
+  id              String  @id @default(uuid())
+  challenge_id    String
+  input           String?
+  expected_output String?
+  score           Int?
+
+  Challenge Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+}
+
+model Submission {
+  id           String   @id @default(uuid())
+  challenge_id String
+  user_id      String
+  code         String
+  language_id  String
+  status       String?
+  score        Int?
+  submitted_at DateTime @default(now())
+
+  Challenge Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  User      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Language  Language  @relation(fields: [language_id], references: [id], onDelete: Cascade)
+}
+
+model Leaderboard {
+  id           String   @id @default(uuid())
+  challenge_id String
+  user_id      String
+  score        Int
+  rank         Int
+  updated_at   DateTime @default(now())
+
+  Challenge Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  User      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id      String  @id @default(uuid())
+  user_id String
+  title   String  @db.VarChar(255)
+  message String
+  is_read Boolean @default(false)
+
+  User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  reporter_id String
+  reason      String
+  created_at  DateTime @default(now())
+
+  Reporter      User           @relation("reporter", fields: [reporter_id], references: [id], onDelete: Cascade)
+  ReportUser    ReportUser?
+  ReportPost    ReportPost?
+  ReportComment ReportComment?
+  ReportReply   ReportReply[]
+}
+
+model ReportUser {
+  id               String @id
+  reported_user_id String
+
+  Report       Report @relation(fields: [id], references: [id], onDelete: Cascade)
+  ReportedUser User   @relation(fields: [reported_user_id], references: [id], onDelete: Cascade)
+}
+
+model ReportPost {
+  id               String @id
+  reported_post_id String
+
+  Report       Report @relation(fields: [id], references: [id], onDelete: Cascade)
+  ReportedPost Post   @relation(fields: [reported_post_id], references: [id], onDelete: Cascade)
+}
+
+model ReportComment {
+  id                  String @id
+  reported_comment_id String
+
+  Report          Report  @relation(fields: [id], references: [id], onDelete: Cascade)
+  ReportedComment Comment @relation(fields: [reported_comment_id], references: [id], onDelete: Cascade)
+}
+
+model ReportReply {
+  id         String   @id @default(uuid())
+  report_id  String
+  message    String
+  created_at DateTime @default(now())
+
+  Report Report @relation(fields: [report_id], references: [id], onDelete: Cascade)
+}
+
+model AlScenario {
+  id            String   @id @default(uuid())
+  title         String   @db.VarChar(255)
+  description   String?
+  system_prompt String
+  created_at    DateTime @default(now())
+}
+
+model ActivityLogs {
+  id          String   @id @default(uuid())
+  user_id     String
+  action      String   @db.VarChar(100)
+  target_type String?
+  target_id   String?
+  ip_address  String?
+  created_at  DateTime @default(now())
+
+  User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
