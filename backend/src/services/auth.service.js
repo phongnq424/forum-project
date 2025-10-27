@@ -1,74 +1,141 @@
-const { PrismaClient } = require("@prisma/client")
-const bcrypt = require("bcryptjs")
-const jwt = require("jsonwebtoken")
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { sendMail } = require('../config/mailer');
+const redisClient = require('../config/redis');
+//const googleClient = require('../config/googleClient');
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
+const SECRET_KEY = process.env.JWT_SECRET;
 
 const AuthService = {
     sendOtp: async (email) => {
-        const otp = Math.floor(100000 + Math.random() * 900000).toString()
-        console.log(`Generated OTP for ${email}: ${otp}`)
-        return otp
+        try {
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            await redisClient.setEx(`otp:${email}`, 300, otp);
+            await sendMail(email, "Mã OTP xác thực", `Mã OTP của bạn là: ${otp}`);
+            return otp;
+        } catch (error) {
+            throw new Error('Error sending OTP: ' + error.message);
+        }
     },
 
     resendOtp: async (email) => {
-        const otp = Math.floor(100000 + Math.random() * 900000).toString()
-        console.log(`Resent OTP for ${email}: ${otp}`)
-        return otp
+        try {
+            await redisClient.del(`otp:${email}`);
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            await redisClient.setEx(`otp:${email}`, 300, otp);
+            await sendMail(email, "Mã OTP xác thực", `Mã OTP mới của bạn là: ${otp}`);
+            return otp;
+        } catch (error) {
+            throw new Error('Error resending OTP: ' + error.message);
+        }
     },
 
     verifyOtp: async (email, otp) => {
-        if (!otp || otp.length !== 6) throw new Error("Invalid OTP")
-        return true
+        try {
+            const savedOtp = await redisClient.get(`otp:${email}`);
+            if (!savedOtp) throw new Error('OTP expired or not found');
+            if (savedOtp !== otp) throw new Error('Invalid OTP');
+
+            await redisClient.del(`otp:${email}`);
+            await redisClient.setEx(`verified:${email}`, 600, 'true');
+            return { message: 'Email verified successfully' };
+        } catch (error) {
+            throw new Error('Error verifying OTP: ' + error.message);
+        }
     },
 
     checkExistUser: async ({ email, username }) => {
-        const existingUser = await prisma.user.findFirst({
-            where: { OR: [{ email }, { username }] },
-        })
-        if (existingUser) throw new Error("User already exists")
-        return true
+        try {
+            const existingUser = await prisma.user.findFirst({
+                where: { OR: [{ email }, { username }] },
+            });
+            if (existingUser) throw new Error('User already exists');
+        } catch (error) {
+            throw new Error('Error checking existing user: ' + error.message);
+        }
     },
 
     register: async ({ email, password, username }) => {
-        if (!email || !password || !username) throw new Error("Missing fields")
+        try {
+            const verified = await redisClient.get(`verified:${email}`);
+            if (!verified) throw new Error('Please verify your email before registering');
 
-        const hashed = await bcrypt.hash(password, 10)
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const newUser = await prisma.user.create({
+                data: { email, username, password: hashedPassword },
+            });
 
-        const user = await prisma.user.create({
-            data: {
-                email,
-                password_hash: hashed,
-                username,
-            },
-        })
-
-        return { id: user.id, email: user.email, username: user.username }
+            await redisClient.del(`verified:${email}`);
+            return { message: 'Register successful', user: newUser };
+        } catch (error) {
+            throw new Error('Error registering user: ' + error.message);
+        }
     },
 
     login: async (username, password) => {
-        const user = await prisma.user.findUnique({ where: { username } })
-        if (!user) throw new Error("Invalid username or password")
+        try {
+            const user = await prisma.user.findFirst({
+                where: { OR: [{ username }, { email: username }] },
+            });
+            if (!user) throw new Error('Invalid username or password');
 
-        const valid = await bcrypt.compare(password, user.password_hash)
-        if (!valid) throw new Error("Invalid username or password")
+            const valid = await bcrypt.compare(password, user.password);
+            if (!valid) throw new Error('Invalid username or password');
 
-        const token = jwt.sign(
-            { id: user.id, username: user.username },
-            process.env.JWT_SECRET,
-            { expiresIn: "7d" }
-        )
+            const token = jwt.sign(
+                { userId: user.id, username: user.username },
+                SECRET_KEY,
+                { expiresIn: '7d' }
+            );
 
-        return { token, user }
+            return { message: 'Login successful', token, user };
+        } catch (error) {
+            throw new Error('Error logging in: ' + error.message);
+        }
     },
 
     logout: async (token) => {
-        return true // Client side sẽ xoá token
+        if (!token) throw new Error('Missing token');
+        try {
+            const decoded = jwt.verify(token, SECRET_KEY);
+            const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+            if (ttl > 0) await redisClient.setEx(`blacklist:${token}`, ttl, 'true');
+            return { message: 'Logout successful' };
+        } catch (error) {
+            throw new Error('Invalid or expired token');
+        }
     },
 
-    loginGoogle: async (idToken, role) => {
-        return { token: "fake-google-token", user: { role } }
-    },
-}
+    loginGoogle: async (idToken) => {
+        try {
+            //   const ticket = await googleClient.verifyIdToken({
+            //     idToken,
+            //     audience: process.env.GOOGLE_CLIENT_ID,
+            //   });
+            //   const payload = ticket.getPayload();
+            //   const { sub: googleId, email, name, picture: avatar } = payload;
 
-module.exports = { AuthService }
+            //   let user = await prisma.user.findUnique({ where: { email } });
+            //   if (!user) {
+            //     const hashedPassword = bcrypt.hashSync(googleId, 10);
+            //     user = await prisma.user.create({
+            //       data: { email, username: email, password: hashedPassword, avatar },
+            //     });
+            //   }
+
+            //   const token = jwt.sign(
+            //     { userId: user.id, username: user.username },
+            //     SECRET_KEY,
+            //     { expiresIn: '7d' }
+            //   );
+
+            //   return { message: 'Google login successful', token, user };
+        } catch (error) {
+            throw new Error('Error logging in with Google: ' + error.message);
+        }
+    },
+};
+
+module.exports = { AuthService };
