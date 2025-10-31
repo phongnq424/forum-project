@@ -1,28 +1,32 @@
 import { Star, Users, FileText, Globe, Code } from "lucide-react";
+import { BsPostcard } from "react-icons/bs";
+import { IoMdCode } from "react-icons/io";
+import { IoGlobeOutline } from "react-icons/io5";
+import { PiUserBold, PiUsersBold } from "react-icons/pi";
 
 const items = [
   {
     title: "Users",
     count: 2000123,
-    icon: <Users></Users>,
+    icon: <PiUsersBold></PiUsersBold>,
   },
 
   {
     title: "Challenges",
     count: 752453,
-    icon: <Code></Code>,
+    icon: <IoMdCode></IoMdCode>,
   },
 
   {
     title: "Posts",
     count: 1200923,
-    icon: <FileText></FileText>,
+    icon: <BsPostcard></BsPostcard>,
   },
 
   {
     title: "Daily Active User",
     count: 1000000,
-    icon: <Globe></Globe>,
+    icon: <IoGlobeOutline></IoGlobeOutline>,
   },
 ];
 

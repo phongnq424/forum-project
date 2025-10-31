@@ -1,16 +1,9 @@
-import { Heart, MessageCircle, Bookmark, Share2 } from "lucide-react";
 import logoReact from "../../assets/react.svg";
+import Button from "../elements/Button";
+import { FaRegBookmark, FaRegHeart } from "react-icons/fa";
+import { FiMessageCircle, FiShare2 } from "react-icons/fi";
 
-const PostCard = ({
-  title,
-  author,
-  image,
-  likes,
-  comments,
-  avatar,
-  top,
-  left,
-}) => {
+const PostCard = ({ title, author, image, likes, comments, avatar }) => {
   return (
     <div
       className={`group pointer-events-auto w-[350px] h-fit relative overflow-hidden rounded-2xl border border-transparent bg-transparent shadow-[0_0_20px_2px] p-6 shadow-[rgba(255,255,255,0.5)] transition-all duration-300 hover:shadow-proPurple hover:cursor-pointer hover:scale-105`}
@@ -41,25 +34,25 @@ const PostCard = ({
       {/* Actions */}
       <div className="flex items-center justify-between text-muted-foreground">
         <div className="basis-[60%] flex justify-between">
-          <button className="flex items-center gap-2 transition-colors hover:text-proPurple">
-            <Heart className="h-5 w-5" />
+          <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
+            <FaRegHeart className="h-5 w-5" />
             <span className="text-sm font-medium">{likes}</span>
-          </button>
+          </Button>
 
-          <button className="flex items-center gap-2 transition-colors hover:text-proPurple">
-            <MessageCircle className="h-5 w-5" />
+          <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
+            <FiMessageCircle className="h-5 w-5" />
             <span className="text-sm font-medium">{comments}</span>
-          </button>
+          </Button>
         </div>
 
         <div className="basis-[20%] flex justify-between">
-          <button className="flex items-center gap-2 transition-colors hover:text-proPurple">
-            <Bookmark className="h-5 w-5" />
-          </button>
+          <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
+            <FaRegBookmark className="h-5 w-5" />
+          </Button>
 
-          <button className="flex items-center gap-2 transition-colors hover:text-proPurple">
-            <Share2 className="h-5 w-5" />
-          </button>
+          <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
+            <FiShare2 className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </div>

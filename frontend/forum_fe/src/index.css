@@ -4,6 +4,10 @@
   font-family: "Poppins", sans-serif;
 }
 
+button {
+  cursor: pointer;
+}
+
 @theme {
   --color-primary: #1a1a1a;
   --color-black404040: #404040;
@@ -16,7 +20,7 @@
     rgba(95, 81, 165, 0.3) 15% 85%, rgba(174, 85, 173, 0.3) 95%;
   --linearGradient-2: to right, #ffffff, #c0c0c0;
   --color-yellow: #ffc016;
-  --color-Facebok: #1877f2;
+  --color-Facebook: #1877f2;
   --color-LinkedIn: #0a66c2;
   --color-Gmail: #ea4335;
   --gradient-Instagram: to right, #f58529, #dd2a7b, #8134af;

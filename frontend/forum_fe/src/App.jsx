@@ -6,12 +6,14 @@ import ContactPage from "./ui/pages/ContactPage";
 import ChatPage from "./ui/pages/ChatPage";
 import ChallengesPage from "./ui/pages/ChallengesPage";
 import Header from "./ui/components/Header";
+import SignInPage from "./ui/pages/SignInPage";
+import SignUpPage from "./ui/pages/SignUpPage";
 
 function Layout() {
   return (
     <>
-      <Header variant="primary"></Header>
-      <div className="pt-[70px]">
+      <div className="pt-[70px] box-border">
+        <Header variant="primary"></Header>
         <Outlet></Outlet>
       </div>
     </>
@@ -29,6 +31,8 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/challenges" element={<ChallengesPage />} />
+            <Route path="/sign-in" element={<SignInPage />} />
+            <Route path="/sign-up" element={<SignUpPage />} />
           </Route>
         </Routes>
       </div>
