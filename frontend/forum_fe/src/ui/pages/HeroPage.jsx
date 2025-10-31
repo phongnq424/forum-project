@@ -1,4 +1,6 @@
+import Footer from "../components/Footer";
 import Introduction from "../components/Introduction";
+import Stats from "../components/States";
 
 import TopPostIntroduction from "../components/TopPostIntroduction";
 
@@ -7,6 +9,8 @@ function HeroPage() {
     <>
       <Introduction></Introduction>
       <TopPostIntroduction></TopPostIntroduction>
+      <Stats></Stats>
+      <Footer></Footer>
     </>
   );
 }

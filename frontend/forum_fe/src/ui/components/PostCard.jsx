@@ -13,7 +13,7 @@ const PostCard = ({
 }) => {
   return (
     <div
-      className={`top-${top} left-${left} left-[100px] group relative overflow-hidden rounded-2xl border border-transparent shadow-[0_0_20px_2px] p-6 shadow-[rgba(255,255,255,0.5)] transition-all duration-300 hover:border-proPurple hover:shadow-proPurple w-[300px]`}
+      className={`group pointer-events-auto w-[350px] h-fit relative overflow-hidden rounded-2xl border border-transparent bg-transparent shadow-[0_0_20px_2px] p-6 shadow-[rgba(255,255,255,0.5)] transition-all duration-300 hover:shadow-proPurple hover:cursor-pointer hover:scale-105`}
     >
       {/* Author */}
       <div className="mb-4 flex flex-row items-center gap-3">
@@ -25,16 +25,16 @@ const PostCard = ({
           />
         </div>
         <div className="flex-1">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <h3 className="font-semibold text-foreground text-[20px]">{title}</h3>
         </div>
       </div>
 
       {/* Image */}
-      <div className="mb-4 overflow-hidden f-fit h-48 w-full">
+      <div className="mb-4 overflow-hidden f-fit h-48 w-full rounded-xl">
         <img
           src={image || logoReact}
           alt={title}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 rounded-xl"
+          className="h-full w-full object-cover"
         />
       </div>
 

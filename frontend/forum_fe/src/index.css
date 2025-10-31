@@ -14,4 +14,10 @@
   --color-proPink: #ff00cc;
   --linearGradient-1: to bottom, rgba(168, 162, 198, 0.3) 5%,
     rgba(95, 81, 165, 0.3) 15% 85%, rgba(174, 85, 173, 0.3) 95%;
+  --linearGradient-2: to right, #ffffff, #c0c0c0;
+  --color-yellow: #ffc016;
+  --color-Facebok: #1877f2;
+  --color-LinkedIn: #0a66c2;
+  --color-Gmail: #ea4335;
+  --gradient-Instagram: to right, #f58529, #dd2a7b, #8134af;
 }
