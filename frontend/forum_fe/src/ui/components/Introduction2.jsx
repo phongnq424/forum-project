@@ -4,7 +4,7 @@ import logo_forum from "../../assets/logo_forum.svg";
 function Introduction2() {
   return (
     <div
-      className="bg-cover bg-center w-full h-full flex flex-col justify-center items-center"
+      className="bg-cover bg-center w-full h-[730px] flex flex-col justify-center items-center"
       style={{ backgroundImage: `url(${hero})` }}
     >
       <img className="h-[100px]" src={logo_forum} alt="Logo Forum" />

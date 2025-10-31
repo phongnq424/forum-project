@@ -4,15 +4,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NavLink } from "react-router-dom";
 import { IoMdEye, IoMdEyeOff } from "react-icons/io";
-import { FaCheck } from "react-icons/fa";
 import { useState } from "react";
 
 function InputField({
   field,
-  display,
   type,
-  form,
+  display,
   className,
+  form,
   isShowPassword,
   setShowPassword,
 }) {
@@ -21,7 +20,7 @@ function InputField({
       <div className="relative">
         <input
           type={
-            type != "password" ? type : isShowPassword ? "text" : "password"
+            field != "password" ? type : !isShowPassword ? "password" : "text"
           }
           placeholder=""
           {...form.register(field)}
@@ -57,12 +56,17 @@ function InputField({
 function SignUpForm() {
   const providers = ["facebook", "google"];
   const [isShowPassword, setShowPassword] = useState(false);
-  const [isRememberMe, setRememberMe] = useState(false);
 
-  const formSchema = z.object({
-    email: z.string().email("Email is invalid"),
-    password: z.string().min(6, "Password must has at least 6 characters"),
-  });
+  const formSchema = z
+    .object({
+      email: z.string().email("Email is invalid!"),
+      password: z.string().min(6, "Password must has at least 6 characters!"),
+      fullName: z.string().min(1, "Full Name mustn't be empty!"),
+    })
+    .refine((data) => data.password2 === data.password, {
+      message: "Passwords do not match",
+      path: ["password2"],
+    });
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -79,74 +83,68 @@ function SignUpForm() {
   return (
     <div className="w-full max-w-2xl mx-auto my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
       <h1 className="text-[30px] font-bold text-white text-center">
-        Welcome back!
+        Create a new account!
       </h1>
 
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-10 my-6 w-full"
+        className="space-y-12 my-6 w-full"
       >
-        <InputField
-          field="email"
-          type="email"
-          display="Email"
-          form={form}
-          isShowPassword={isShowPassword}
-          setShowPassword={setShowPassword}
-        />
-        <InputField
-          field="password"
-          type="password"
-          display="Password"
-          form={form}
-          isShowPassword={isShowPassword}
-          setShowPassword={setShowPassword}
-        />
+        <div className="space-y-10">
+          <InputField
+            field="fullName"
+            type="text"
+            display="Full Name"
+            form={form}
+            isShowPassword={isShowPassword}
+            setShowPassword={setShowPassword}
+          />
+          <InputField
+            field="email"
+            type="email"
+            display="Email"
+            form={form}
+            isShowPassword={isShowPassword}
+            setShowPassword={setShowPassword}
+          />
 
-        <div className="space-y-5">
-          {/* Remember me & Forgot password */}
-          <div className="flex justify-between items-center text-[14px]">
-            <label className="flex items-center gap-2 group hover:cursor-pointer">
-              <input
-                type="checkbox"
-                name="isRememberMe"
-                className="hidden peer"
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
-              <span
-                className="w-5 h-5 border-2 border-proPurple rounded-md text-white
-                     peer-checked:bg-proPurple 
-                     flex-shrink-0 flex justify-center items-center"
-              >
-                {isRememberMe && (
-                  <FaCheck className="w-[80%] h-[80%] text-white text-[14px]"></FaCheck>
-                )}
-              </span>
-              Remember me
-            </label>
-            <NavLink
-              to="/forgot-password"
-              className="hover:underline hover:text-proPurple"
-            >
-              Forgot password?
-            </NavLink>
+          <div className="flex justify-between">
+            <InputField
+              className="basis-[49%]"
+              field="password"
+              type="password"
+              display="Password"
+              form={form}
+              isShowPassword={isShowPassword}
+              setShowPassword={setShowPassword}
+            />
+
+            <InputField
+              className="basis-[49%]"
+              field="password2"
+              type="password"
+              display="Retype Password"
+              form={form}
+              isShowPassword={isShowPassword}
+              setShowPassword={setShowPassword}
+            />
           </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            className="w-full py-3 text-[14px] bg-proPurple text-white font-semibold rounded-lg hover:opacity-70 transition"
-          >
-            SIGN IN
-          </button>
         </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          className="w-full py-3 text-[14px] bg-proPurple text-white font-semibold rounded-lg hover:opacity-70 transition"
+        >
+          SIGN UP
+        </button>
       </form>
 
       <div className="mb-4 flex justify-between items-center w-full">
         <div className="basis-[30%] h-[3px] bg-white/20"></div>
 
         <div className="flex justify-center text-[14px] basis-[30%]">
-          or Sign in with
+          or Sign up with
         </div>
 
         <div className="basis-[30%] h-[3px] bg-white/20"></div>
@@ -166,13 +164,13 @@ function SignUpForm() {
 
       <div className="mt-6 text-center flex gap-3 items-center">
         <p className="text-[14px] text-muted-foreground">
-          Don't have an account yet?
+          Have got an account yet?
         </p>
         <NavLink
-          to="/sign-up"
+          to="/sign-in"
           className="text-[14px] text-proPurple font-medium hover:underline"
         >
-          Sign up now
+          Sign in now
         </NavLink>
       </div>
     </div>
