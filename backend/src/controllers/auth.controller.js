@@ -47,6 +47,19 @@ const AuthController = {
 
     register: async (req, res) => {
         try {
+            const { email, otp } = req.body
+
+            // 1. Nếu chưa có OTP thì gửi
+            if (!otp) {
+                const otp = await AuthService.resendOtp(req.body.email)
+                console.log("OTP resent:", otp)
+                return res.status(201).json({ message: "OTP sent, please verify" })
+            }
+
+            // 2. Nếu có OTP thì verify
+            await AuthService.verifyOtp(email, otp)
+
+            // 3. Sau khi verify thành công, tạo user
             const user = await AuthService.register(req.body)
             return res.status(201).json({ message: "Registered successfully", user })
         } catch (error) {
