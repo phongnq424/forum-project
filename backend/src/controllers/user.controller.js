@@ -13,6 +13,7 @@ const UserController = {
     getMe: async (req, res) => {
         try {
             if (!req.user || !req.user.id)
+
                 return res.status(401).json({ error: 'Unauthorized' })
 
             const user = await UserService.findById(req.user.id)
