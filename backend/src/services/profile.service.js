@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { CloudinaryService } = require('./cloudinary.service')
 const prisma = new PrismaClient();
 
 const ProfileService = {
@@ -28,12 +29,34 @@ const ProfileService = {
         })
     },
 
-    updateProfile: async (userId, data) => {
+    updateProfile: async (userId, data, files = {}) => {
         const existing = await prisma.profile.findUnique({ where: { user_id: userId } })
 
         if (data.dob && typeof data.dob === 'string') {
             data.dob = new Date(data.dob)
         }
+
+        if (files.avatar) {
+            const uploadedAvatar = await CloudinaryService.update(
+                files.avatar,
+                'avatar',
+                existing?.avatarPublicId
+            );
+            data.avatar = uploadedAvatar.url;
+            data.avatarPublicId = uploadedAvatar.public_id;
+        }
+
+        if (files.cover) {
+            const uploadedCover = await CloudinaryService.update(
+                files.cover,
+                'cover',
+                existing?.coverPublicId
+            );
+            data.cover = uploadedCover.url;
+            data.coverPublicId = uploadedCover.public_id;
+        }
+
+
 
         if (!existing)
             return await prisma.profile.create({ data: { ...data, user_id: userId } })
