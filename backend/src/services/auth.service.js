@@ -80,17 +80,16 @@ const AuthService = {
                 where: { OR: [{ username }, { email: username }] },
             });
             if (!user) throw new Error('Invalid username or password');
-
-            const valid = await bcrypt.compare(password, user.password);
+            const valid = await bcrypt.compare(password, user.password_hash);
             if (!valid) throw new Error('Invalid username or password');
 
             const token = jwt.sign(
-                { userId: user.id, username: user.username },
+                { id: user.id, role: user.role },
                 SECRET_KEY,
                 { expiresIn: '7d' }
             );
 
-            return { message: 'Login successful', token, user };
+            return { message: 'Login successful', token };
         } catch (error) {
             throw new Error('Error logging in: ' + error.message);
         }
