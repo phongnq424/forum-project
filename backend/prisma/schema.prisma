@@ -62,7 +62,6 @@ model User {
   UserStatus       UserStatus[]
   Post             Post[]
   PostSaved        PostSaved[]
-  Image            Image[]
   Comment          Comment[]
   Reaction         Reaction[]
   FollowerFollowed Follower[]         @relation("followed")
@@ -90,17 +89,19 @@ model UserStatus {
 }
 
 model Profile {
-  id         String       @id @default(uuid())
-  user_id    String       @unique
-  fullname   String?      @db.VarChar(255)
-  bio        String?
-  avatar     String?
-  cover      String?
-  dob        DateTime?
-  gender     GENDER_TYPE?
-  location   String?
-  created_at DateTime     @default(now())
-  updated_at DateTime     @default(now()) @updatedAt
+  id             String       @id @default(uuid())
+  user_id        String       @unique
+  fullname       String?      @db.VarChar(255)
+  bio            String?
+  avatar         String?
+  avatarPublicId String?      @db.VarChar(255)
+  cover          String?
+  coverPublicId  String?      @db.VarChar(255)
+  dob            DateTime?
+  gender         GENDER_TYPE?
+  location       String?
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @default(now()) @updatedAt
 
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
@@ -167,9 +168,7 @@ model Image {
   post_id String
   url     String @db.VarChar(255)
 
-  Post   Post    @relation(fields: [post_id], references: [id], onDelete: Cascade)
-  User   User?   @relation(fields: [userId], references: [id])
-  userId String?
+  Post Post @relation(fields: [post_id], references: [id], onDelete: Cascade)
 }
 
 model Comment {

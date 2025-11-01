@@ -6,6 +6,6 @@ router.post('/', CategoryController.createMany)
 router.get('/', CategoryController.list)
 router.get('/:id', CategoryController.getById)
 router.put('/:id', CategoryController.update)
-router.delete('/many', CategoryController.deleteMany)
+router.delete('/', CategoryController.deleteMany)
 
 module.exports = router
