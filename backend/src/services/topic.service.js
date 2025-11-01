@@ -2,8 +2,11 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
 const TopicService = {
-    create: async (data) => {
-        return await prisma.topic.create({ data })
+    createMany: async (topics) => {
+        return await prisma.topic.createMany({
+            data: topics,
+            skipDuplicates: true
+        })
     },
 
     list: async (query) => {
@@ -51,8 +54,10 @@ const TopicService = {
         return await prisma.topic.update({ where: { id }, data })
     },
 
-    delete: async (id) => {
-        return await prisma.topic.delete({ where: { id } })
+    delete: async (ids) => {
+        return await prisma.topic.deleteMany({
+            where: { id: { in: ids } }
+        })
     }
 }
 
