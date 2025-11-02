@@ -10,11 +10,11 @@ const ProfileService = {
                 User: {
                     select: {
                         InterestedTopic: {
-                            include: {
+                            select: {
+                                id: true,
+                                topic_id: true,
                                 Topic: {
-                                    select: {
-                                        name: true
-                                    }
+                                    select: { name: true }
                                 }
                             }
                         },
@@ -79,11 +79,11 @@ const ProfileService = {
 
                         select: {
                             InterestedTopic: {
-                                include: {
+                                select: {
+                                    id: true,
+                                    topic_id: true,
                                     Topic: {
-                                        select: {
-                                            name: true
-                                        }
+                                        select: { name: true }
                                     }
                                 }
                             },
