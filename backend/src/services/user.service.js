@@ -32,7 +32,7 @@ const UserService = {
     },
 
     update: async function (id, data) {
-        var allowed = ['username', 'email', 'role']
+        var allowed = ['username', 'email']
         var updateData = {}
         for (var key in data) {
             if (allowed.includes(key)) updateData[key] = data[key]
