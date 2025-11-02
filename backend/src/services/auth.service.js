@@ -12,7 +12,7 @@ const AuthService = {
     sendOtp: async (email) => {
         try {
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            await redisClient.setEx(`otp:${email}`, 300, otp);
+            await redisClient.set(`otp:${email}`, otp, 'EX', 300);
             await sendMail(email, "Mã OTP xác thực", `Mã OTP của bạn là: ${otp}`);
             return otp;
         } catch (error) {
@@ -24,7 +24,7 @@ const AuthService = {
         try {
             await redisClient.del(`otp:${email}`);
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            await redisClient.setEx(`otp:${email}`, 300, otp);
+            await redisClient.set(`otp:${email}`, otp, 'EX', 300);
             await sendMail(email, "Mã OTP xác thực", `Mã OTP mới của bạn là: ${otp}`);
             return otp;
         } catch (error) {
