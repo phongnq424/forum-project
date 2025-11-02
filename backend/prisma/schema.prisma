@@ -138,6 +138,7 @@ model Post {
   id         String   @id @default(uuid())
   user_id    String
   topic_id   String
+  title      String
   content    String
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
@@ -228,7 +229,7 @@ model Follower {
 
 model Conversation {
   id         String            @id @default(uuid())
-  type       CONVERSATION_TYPE
+  type       CONVERSATION_TYPE @default(CHAT)
   name       String?
   avatar     String?
   created_at DateTime          @default(now())

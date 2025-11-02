@@ -1,4 +1,5 @@
 const cloudinary = require('../config/cloudinary');
+const fs = require('fs').promises;
 
 const CloudinaryService = {
     upload: async (filePath, type) => {
@@ -19,6 +20,12 @@ const CloudinaryService = {
         } catch (err) {
             console.error('❌ Upload failed:', err);
             throw err;
+        } finally {
+            try {
+                await fs.unlink(filePath)
+            } catch (e) {
+                // ignore
+            }
         }
     },
 
