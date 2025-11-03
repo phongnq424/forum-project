@@ -39,7 +39,7 @@ const AuthService = {
             if (savedOtp !== otp) throw new Error('Invalid OTP');
 
             await redisClient.del(`otp:${email}`);
-            await redisClient.setEx(`verified:${email}`, 600, 'true');
+            await redisClient.set(`verified:${email}`, 'true', 'EX', 600);
             return { message: 'Email verified successfully' };
         } catch (error) {
             throw new Error('Error verifying OTP: ' + error.message);
@@ -56,6 +56,29 @@ const AuthService = {
             throw new Error('Error checking existing user: ' + error.message);
         }
     },
+    cacheTempUser: async ({ email, username, password, role }) => {
+        await redisClient.set(`tempUser:${email}`, JSON.stringify({ email, username, password, role }), 'EX', 600);
+    },
+
+    createUserFromCache: async (email) => {
+        const data = await redisClient.get(`tempUser:${email}`)
+        if (!data) throw new Error("User data expired or not found")
+
+        const { username, password, role } = JSON.parse(data)
+
+        const user = await prisma.user.create({
+            data: {
+                email,
+                username,
+                password_hash: await bcrypt.hash(password, 10),
+                role: role || 'USER'
+            }
+        })
+
+
+        await redisClient.del(`tempUser:${email}`)
+        return user
+    },
 
     register: async ({ email, password, username }) => {
         try {
@@ -64,9 +87,8 @@ const AuthService = {
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const newUser = await prisma.user.create({
-                data: { email, username, password: hashedPassword },
+                data: { email, username, password_hash: hashedPassword },
             });
-
             await redisClient.del(`verified:${email}`);
             return { message: 'Register successful', user: newUser };
         } catch (error) {
@@ -100,7 +122,8 @@ const AuthService = {
         try {
             const decoded = jwt.verify(token, SECRET_KEY);
             const ttl = decoded.exp - Math.floor(Date.now() / 1000);
-            if (ttl > 0) await redisClient.setEx(`blacklist:${token}`, ttl, 'true');
+            if (ttl > 0) await redisClient.set(`blacklist:${token}`, 'true', 'EX', 3600);
+
             return { message: 'Logout successful' };
         } catch (error) {
             throw new Error('Invalid or expired token');
