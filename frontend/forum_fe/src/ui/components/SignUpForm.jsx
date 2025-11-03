@@ -5,11 +5,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { NavLink, useNavigate } from "react-router-dom";
 import InputField from "./InputField";
 import { useRegister } from "../../api/hooks/AuthenticationHook";
+import toastHelper from "../../helper/ToastHelper";
 
 function SignUpForm() {
   const providers = ["facebook", "google"];
   const navigate = useNavigate();
-  const { mutate, isLoading, data, error } = useRegister();
+  const { mutate, isLoading, data, error } = useRegister(
+    function (res) {
+      navigate("verify-otp", {
+        state: {
+          email: form.getValues("email"),
+        },
+      });
+    },
+
+    function (error) {
+      toastHelper.error(error.message);
+    }
+  );
 
   const formSchema = z
     .object({

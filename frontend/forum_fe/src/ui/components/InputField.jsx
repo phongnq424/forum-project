@@ -14,7 +14,6 @@ function InputField({
     authInp: (
       <div className="relative">
         <input
-          disabled={isDisable}
           type={
             type != "password" ? type : isShowPassword ? "text" : "password"
           }
@@ -50,6 +49,7 @@ function InputField({
           }
           placeholder=""
           {...propForValueWorking}
+          readOnly={isDisable}
           className="peer w-full px-4 pb-1 pt-6 text-[20px] rounded-2xl focus:outline-none bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear"
         />
 
