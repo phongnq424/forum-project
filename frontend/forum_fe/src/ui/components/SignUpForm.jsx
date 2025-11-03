@@ -2,23 +2,24 @@ import SocialButton from "./SocialButton";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { NavLink } from "react-router-dom";
-import { IoMdEye, IoMdEyeOff } from "react-icons/io";
-import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import InputField from "./InputField";
+import { useRegister } from "../../api/hooks/AuthenticationHook";
 
 function SignUpForm() {
   const providers = ["facebook", "google"];
-  const [isShowPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+  const { mutate, isLoading, data, error } = useRegister();
 
   const formSchema = z
     .object({
       email: z.string().email("Email is invalid!"),
       password: z.string().min(6, "Password must has at least 6 characters!"),
-      fullName: z.string().min(1, "Full Name mustn't be empty!"),
+      username: z.string().min(1, "Full Name mustn't be empty!"),
+      password2: z.string().min(6, "Please confirm your password!"),
     })
-    .refine((data) => data.password2 === data.password, {
-      message: "Passwords do not match",
+    .refine((data) => data.password === data.password2, {
+      message: "Passwords do not match!",
       path: ["password2"],
     });
 
@@ -27,11 +28,13 @@ function SignUpForm() {
     defaultValues: {
       email: "",
       password: "",
+      username: "",
+      password2: "",
     },
   });
 
   function onSubmit(data) {
-    console.log(data);
+    mutate(data);
   }
 
   return (
@@ -61,14 +64,14 @@ function SignUpForm() {
 
           <div className="relative">
             <InputField
-              type="fullName"
-              display="Full Name"
+              type="username"
+              display="Username"
               variant="authInp"
-              propForValueWorking={form.register("fullName")}
+              propForValueWorking={form.register("username")}
             />
-            {form.formState.errors["fullName"] && (
+            {form.formState.errors["username"] && (
               <p className="text-red-500 text-[12px] mt-1 absolute">
-                {form.formState.errors["fullName"].message}
+                {form.formState.errors["username"].message}
               </p>
             )}
           </div>

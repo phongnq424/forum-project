@@ -3,14 +3,14 @@ import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NavLink } from "react-router-dom";
-import { IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { FaCheck } from "react-icons/fa";
 import { useState } from "react";
 import InputField from "./InputField";
+import { toast, ToastContainer } from "react-toastify";
+import toastHelper from "../../helper/ToastHelper";
 
 function SignUpForm() {
   const providers = ["facebook", "google"];
-  const [isShowPassword, setShowPassword] = useState(false);
   const [isRememberMe, setRememberMe] = useState(false);
 
   const formSchema = z.object({
@@ -28,6 +28,7 @@ function SignUpForm() {
 
   function onSubmit(data) {
     console.log(data);
+    toastHelper.error("Haha");
   }
 
   return (

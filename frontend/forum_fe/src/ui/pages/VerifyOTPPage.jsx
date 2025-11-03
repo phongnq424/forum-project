@@ -1,14 +1,14 @@
-import { Outlet } from "react-router-dom";
 import Footer from "../components/Footer";
 import Introduction2 from "../components/Introduction2";
 import SignUpForm from "../components/SignUpForm";
+import VerifyOTPForm from "../components/VerifyOTPForm";
 
-function SignUpPage() {
+function VerifyOTPPage() {
   return (
     <>
       <div className="flex justify-between">
         <div className="basis-[50%] px-20">
-          <SignUpForm></SignUpForm>
+          <VerifyOTPForm></VerifyOTPForm>
         </div>
 
         <div className="basis-[55%]">
@@ -16,9 +16,8 @@ function SignUpPage() {
         </div>
       </div>
       <Footer></Footer>
-      <Outlet />
     </>
   );
 }
 
-export default SignUpPage;
+export default VerifyOTPPage;
