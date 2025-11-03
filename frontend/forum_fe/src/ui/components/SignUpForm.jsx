@@ -5,53 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { NavLink } from "react-router-dom";
 import { IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { useState } from "react";
-
-function InputField({
-  field,
-  type,
-  display,
-  className,
-  form,
-  isShowPassword,
-  setShowPassword,
-}) {
-  return (
-    <div className={`relative ${className}`}>
-      <div className="relative">
-        <input
-          type={
-            field != "password" ? type : !isShowPassword ? "password" : "text"
-          }
-          placeholder=""
-          {...form.register(field)}
-          className="peer w-full px-4 pb-1 pt-5 text-[14px] rounded-2xl focus:outline-none bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear"
-        />
-
-        <label
-          className="absolute left-4 top-1 text-proPurple text-[10px] transition-all duration-200 pointer-events-none
-               peer-placeholder-shown:top-3 peer-placeholder-shown:text-[14px] peer-placeholder-shown:text-gray-400
-               peer-focus:top-1 peer-focus:text-[10px] peer-focus:text-proPurple"
-        >
-          {display}
-        </label>
-        {field === "password" && (
-          <button
-            type="button"
-            onClick={() => setShowPassword((prev) => setShowPassword(!prev))}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white"
-          >
-            {!isShowPassword ? <IoMdEye size={20} /> : <IoMdEyeOff size={20} />}
-          </button>
-        )}
-      </div>
-      {form.formState.errors[field] && (
-        <p className="text-red-500 text-[12px] mt-1 absolute">
-          {form.formState.errors[field].message}
-        </p>
-      )}
-    </div>
-  );
-}
+import InputField from "./InputField";
 
 function SignUpForm() {
   const providers = ["facebook", "google"];
@@ -91,43 +45,62 @@ function SignUpForm() {
         className="space-y-12 my-6 w-full"
       >
         <div className="space-y-10">
-          <InputField
-            field="fullName"
-            type="text"
-            display="Full Name"
-            form={form}
-            isShowPassword={isShowPassword}
-            setShowPassword={setShowPassword}
-          />
-          <InputField
-            field="email"
-            type="email"
-            display="Email"
-            form={form}
-            isShowPassword={isShowPassword}
-            setShowPassword={setShowPassword}
-          />
+          <div className="relative">
+            <InputField
+              type="email"
+              display="Email"
+              variant="authInp"
+              propForValueWorking={form.register("email")}
+            />
+            {form.formState.errors["email"] && (
+              <p className="text-red-500 text-[12px] mt-1 absolute">
+                {form.formState.errors["email"].message}
+              </p>
+            )}
+          </div>
+
+          <div className="relative">
+            <InputField
+              type="fullName"
+              display="Full Name"
+              variant="authInp"
+              propForValueWorking={form.register("fullName")}
+            />
+            {form.formState.errors["fullName"] && (
+              <p className="text-red-500 text-[12px] mt-1 absolute">
+                {form.formState.errors["fullName"].message}
+              </p>
+            )}
+          </div>
 
           <div className="flex justify-between">
-            <InputField
-              className="basis-[49%]"
-              field="password"
-              type="password"
-              display="Password"
-              form={form}
-              isShowPassword={isShowPassword}
-              setShowPassword={setShowPassword}
-            />
+            <div className="relative basis-[49%] [$:>*]:w-full">
+              <InputField
+                type="password"
+                display="Password"
+                variant="authInp"
+                propForValueWorking={form.register("password")}
+              />
+              {form.formState.errors["password"] && (
+                <p className="text-red-500 text-[12px] mt-1 absolute">
+                  {form.formState.errors["password"].message}
+                </p>
+              )}
+            </div>
 
-            <InputField
-              className="basis-[49%]"
-              field="password2"
-              type="password"
-              display="Retype Password"
-              form={form}
-              isShowPassword={isShowPassword}
-              setShowPassword={setShowPassword}
-            />
+            <div className="relative basis-[49%] [$:>*]:w-full">
+              <InputField
+                type="password"
+                display="Password"
+                variant="authInp"
+                propForValueWorking={form.register("password2")}
+              />
+              {form.formState.errors["password2"] && (
+                <p className="text-red-500 text-[12px] mt-1 absolute">
+                  {form.formState.errors["password2"].message}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
