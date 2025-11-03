@@ -18,6 +18,7 @@ export function useVerifyOTP(handleOnSuccess, handleOnError) {
   return useMutation({
     mutationFn: function (data) {
       const request = {
+        email: data.email,
         otp: data.otp,
       };
 
