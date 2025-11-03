@@ -33,3 +33,17 @@ export function useVerifyOTP(handleOnSuccess, handleOnError) {
     },
   });
 }
+
+export function useLogin(handleOnSuccess, handleOnError) {
+  return useMutation({
+    mutationFn: function (data) {
+      authService.login(data);
+    },
+    onSuccess: function (response) {
+      handleOnSuccess(response);
+    },
+    onError: function (error) {
+      handleOnError(error);
+    },
+  });
+}

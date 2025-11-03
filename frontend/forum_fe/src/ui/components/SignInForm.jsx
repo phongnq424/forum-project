@@ -6,12 +6,21 @@ import { NavLink } from "react-router-dom";
 import { FaCheck } from "react-icons/fa";
 import { useState } from "react";
 import InputField from "./InputField";
-import { toast, ToastContainer } from "react-toastify";
 import toastHelper from "../../helper/ToastHelper";
+import { useLogin } from "../../api/hooks/AuthenticationHook";
 
 function SignUpForm() {
   const providers = ["facebook", "google"];
   const [isRememberMe, setRememberMe] = useState(false);
+  const login = useLogin(
+    function (response) {
+      toastHelper.success("Login successfully!");
+      console.log(response);
+    },
+    function (error) {
+      toastHelper.error(error.message);
+    }
+  );
 
   const formSchema = z.object({
     email: z.string().email("Email is invalid"),
@@ -27,8 +36,7 @@ function SignUpForm() {
   });
 
   function onSubmit(data) {
-    console.log(data);
-    toastHelper.error("Haha");
+    login.mutate(data);
   }
 
   return (
