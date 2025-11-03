@@ -1,23 +1,35 @@
 import { useMutation } from "@tanstack/react-query";
 import authService from "../services/authService";
-import toastHelper from "../../helper/ToastHelper.jsx";
-import { useNavigate } from "react-router-dom";
 
-export function useRegister() {
-  const navigate = useNavigate();
-
+export function useRegister(handleOnSuccess, handleOnError) {
   return useMutation({
     mutationFn: (data) => authService.register(data),
     onSuccess: function (data) {
-      navigate("/register/verify-otp", {
-        state: {
-          email: data.email,
-        },
-      });
+      handleOnSuccess(data);
     },
 
     onError: function (error) {
-      toastHelper.error(error.message || "Register is unsuccessful!");
+      handleOnError(error);
+    },
+  });
+}
+
+export function useVerifyOTP(handleOnSuccess, handleOnError) {
+  return useMutation({
+    mutationFn: function (data) {
+      const request = {
+        otp: data.otp,
+      };
+
+      return authService.verifyOTP(request);
+    },
+
+    onSuccess: function (response) {
+      handleOnSuccess(response);
+    },
+
+    onError: function (error) {
+      handleOnError(error);
     },
   });
 }

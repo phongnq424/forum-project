@@ -1,11 +1,21 @@
-import SocialButton from "./SocialButton";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { NavLink } from "react-router-dom";
 import InputField from "./InputField";
+import { useVerifyOTP } from "../../api/hooks/AuthenticationHook";
+import toastHelper from "../../helper/ToastHelper";
+import { useNavigate } from "react-router-dom";
 
 function VerifyOTPForm({ email }) {
+  const verifyOTP = useVerifyOTP(
+    function (response) {
+      useNavigate()("/login");
+    },
+    function (error) {
+      toastHelper.error(error.message);
+    }
+  );
+
   const formSchema = z.object({
     otp: z.string().min(1, "OTP is not empty!"),
     email: z.string().email("Email is invalid!"),
@@ -20,7 +30,7 @@ function VerifyOTPForm({ email }) {
   });
 
   function onSubmit(data) {
-    console.log(data);
+    verifyOTP.mutate(data);
   }
 
   return (
