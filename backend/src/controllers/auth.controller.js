@@ -29,8 +29,12 @@ const AuthController = {
 
     verifyOtp: async (req, res) => {
         try {
-            await AuthService.verifyOtp(req.body.email, req.body.otp)
-            return res.status(200).json({ message: "Verify OTP successfully" })
+            const { email, otp } = req.body
+
+            await AuthService.verifyOtp(email, otp)
+            const user = await AuthService.createUserFromCache(email)
+
+            return res.status(201).json({ message: "Registration completed", user })
         } catch (error) {
             return res.status(500).json({ error: error.message })
         }
@@ -47,8 +51,16 @@ const AuthController = {
 
     register: async (req, res) => {
         try {
-            const user = await AuthService.register(req.body)
-            return res.status(201).json({ message: "Registered successfully", user })
+            const { email, username, password, role } = req.body
+            if (!email || !username || !password)
+                return res.status(400).json({ error: "Missing required fields" })
+            await AuthService.checkExistUser({ email, username })
+            await AuthService.cacheTempUser({ email, username, password, role })
+            const otp = await AuthService.sendOtp(email)
+            console.log("OTP sent for registration:", otp)
+
+
+            return res.status(200).json({ message: "OTP sent. Please verify to complete registration." })
         } catch (error) {
             return res.status(400).json({ error: error.message })
         }

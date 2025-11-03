@@ -16,6 +16,11 @@ enum USER_STATUS_TYPE {
   BANNED
 }
 
+enum ROLE {
+  USER
+  ADMIN
+}
+
 enum GENDER_TYPE {
   MALE
   FEMALE
@@ -51,12 +56,12 @@ model User {
   username      String   @unique @db.VarChar(100)
   created_at    DateTime @default(now())
   updated_at    DateTime @default(now()) @updatedAt
+  role          ROLE     @default(USER)
 
   Profile          Profile?
   UserStatus       UserStatus[]
   Post             Post[]
   PostSaved        PostSaved[]
-  Image            Image[]
   Comment          Comment[]
   Reaction         Reaction[]
   FollowerFollowed Follower[]         @relation("followed")
@@ -72,6 +77,7 @@ model User {
   Leaderboard      Leaderboard[]
   ReportUser       ReportUser[]
   ActivityLogs     ActivityLogs[]
+  Comment_Rate     Comment_Rate[]
 }
 
 model UserStatus {
@@ -83,17 +89,19 @@ model UserStatus {
 }
 
 model Profile {
-  id         String       @id @default(uuid())
-  user_id    String       @unique
-  fullname   String?      @db.VarChar(255)
-  bio        String?
-  avatar     String?
-  cover      String?
-  dob        DateTime?
-  gender     GENDER_TYPE?
-  location   String?
-  created_at DateTime     @default(now())
-  updated_at DateTime     @default(now()) @updatedAt
+  id             String       @id @default(uuid())
+  user_id        String       @unique
+  fullname       String?      @db.VarChar(255)
+  bio            String?
+  avatar         String?
+  avatarPublicId String?      @db.VarChar(255)
+  cover          String?
+  coverPublicId  String?      @db.VarChar(255)
+  dob            DateTime?
+  gender         GENDER_TYPE?
+  location       String?
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @default(now()) @updatedAt
 
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
@@ -130,6 +138,7 @@ model Post {
   id         String   @id @default(uuid())
   user_id    String
   topic_id   String
+  title      String
   content    String
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
@@ -160,9 +169,7 @@ model Image {
   post_id String
   url     String @db.VarChar(255)
 
-  Post   Post    @relation(fields: [post_id], references: [id], onDelete: Cascade)
-  User   User?   @relation(fields: [userId], references: [id])
-  userId String?
+  Post Post @relation(fields: [post_id], references: [id], onDelete: Cascade)
 }
 
 model Comment {
@@ -179,6 +186,20 @@ model Comment {
   parentComment Comment?        @relation("CommentParentChild", fields: [parentComment_id], references: [id], onDelete: Cascade)
   childComments Comment[]       @relation("CommentParentChild")
   ReportComment ReportComment[]
+  Comment_Rate  Comment_Rate[]
+}
+
+model Comment_Rate {
+  id         String   @id @default(uuid())
+  user_id    String
+  comment_id String
+  rating     Int      @default(0)
+  created_at DateTime @default(now())
+
+  User    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Comment Comment @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, comment_id])
 }
 
 model Reaction {
@@ -208,7 +229,7 @@ model Follower {
 
 model Conversation {
   id         String            @id @default(uuid())
-  type       CONVERSATION_TYPE
+  type       CONVERSATION_TYPE @default(CHAT)
   name       String?
   avatar     String?
   created_at DateTime          @default(now())
@@ -242,9 +263,10 @@ model Message {
   updated_at      DateTime @default(now()) @updatedAt
   is_read         Boolean  @default(false)
 
-  Conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
-  Sender       User         @relation("sender", fields: [sender_id], references: [id], onDelete: Cascade)
-  Attachment   Attachment[]
+  Conversation  Conversation    @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  Sender        User            @relation("sender", fields: [sender_id], references: [id], onDelete: Cascade)
+  Attachment    Attachment[]
+  ReportMessage ReportMessage[]
 }
 
 model Attachment {
@@ -349,11 +371,12 @@ model Report {
   reason      String
   created_at  DateTime @default(now())
 
-  Reporter      User           @relation("reporter", fields: [reporter_id], references: [id], onDelete: Cascade)
+  Reporter      User            @relation("reporter", fields: [reporter_id], references: [id], onDelete: Cascade)
   ReportUser    ReportUser?
   ReportPost    ReportPost?
   ReportComment ReportComment?
   ReportReply   ReportReply[]
+  ReportMessage ReportMessage[]
 }
 
 model ReportUser {
@@ -378,6 +401,14 @@ model ReportComment {
 
   Report          Report  @relation(fields: [id], references: [id], onDelete: Cascade)
   ReportedComment Comment @relation(fields: [reported_comment_id], references: [id], onDelete: Cascade)
+}
+
+model ReportMessage {
+  id                  String @id
+  reported_message_id String
+
+  Report          Report  @relation(fields: [id], references: [id], onDelete: Cascade)
+  ReportedMessage Message @relation(fields: [reported_message_id], references: [id], onDelete: Cascade)
 }
 
 model ReportReply {
