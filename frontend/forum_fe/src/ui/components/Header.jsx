@@ -12,7 +12,10 @@ function Header({ variant = "transparent", className = "" }) {
 
   const location = useLocation();
   const pathname = location.pathname;
-  const isShow = pathname != "/sign-in" && pathname != "/sign-up";
+  const isShow =
+    pathname != "/sign-in" &&
+    pathname != "/sign-up" &&
+    pathname != "/sign-up/verify-otp";
 
   const style = `${variants[variant]} z-100 px-(--primary-padding) flex flex-row items-stretch justify-between border-b-4 border-black404040 fixed top-0 left-0 right-0 ${className}`;
 
