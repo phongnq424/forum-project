@@ -9,7 +9,7 @@ import InputField from "./InputField";
 import toastHelper from "../../helper/ToastHelper";
 import { useLogin } from "../../api/hooks/AuthenticationHook";
 
-function SignUpForm() {
+function SignInForm() {
   const providers = ["facebook", "google"];
   const [isRememberMe, setRememberMe] = useState(false);
   const login = useLogin(
@@ -155,4 +155,4 @@ function SignUpForm() {
   );
 }
 
-export default SignUpForm;
+export default SignInForm;

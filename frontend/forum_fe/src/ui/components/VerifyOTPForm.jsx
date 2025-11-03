@@ -7,9 +7,12 @@ import toastHelper from "../../helper/ToastHelper";
 import { useNavigate } from "react-router-dom";
 
 function VerifyOTPForm({ email }) {
+  const navigate = useNavigate();
+
   const verifyOTP = useVerifyOTP(
     function (response) {
-      useNavigate()("/login");
+      navigate("/sign-in");
+      toastHelper.success("Account was created successfully");
     },
     function (error) {
       toastHelper.error(error.message);
