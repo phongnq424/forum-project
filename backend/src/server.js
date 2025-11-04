@@ -1,18 +1,18 @@
-const express = require("express")
-const cors = require("cors")
-const dotenv = require("dotenv")
-const routes = require("./routes/index.js")
+const dotenv = require("dotenv");
+dotenv.config({ quiet: true });
 
-dotenv.config({ quiet: true })
-const app = express()
+const express = require("express");
+const cors = require("cors");
+const routes = require("./routes/index.js");
 
-app.use(cors())
-app.use(express.json())
+const app = express();
 
-app.use("/api", routes)
+app.use(cors());
+app.use(express.json());
 
-const port = process.env.PORT || 3000
+app.use("/api", routes);
+
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
-    console.log(`✅ Server running at http://localhost:${port}`)
-})
-
+  console.log(`✅ Server running at http://localhost:${port}`);
+});
