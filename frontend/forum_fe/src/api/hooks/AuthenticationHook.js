@@ -38,7 +38,21 @@ export function useVerifyOTP(handleOnSuccess, handleOnError) {
 export function useLogin(handleOnSuccess, handleOnError) {
   return useMutation({
     mutationFn: function (data) {
-      authService.login(data);
+      return authService.login(data);
+    },
+    onSuccess: function (response) {
+      handleOnSuccess(response);
+    },
+    onError: function (error) {
+      handleOnError(error);
+    },
+  });
+}
+
+export function useResendOTP(handleOnSuccess, handleOnError) {
+  return useMutation({
+    mutationFn: function (data) {
+      return authService.resendOTP(data);
     },
     onSuccess: function (response) {
       handleOnSuccess(response);

@@ -2,20 +2,26 @@ import SocialButton from "./SocialButton";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { FaCheck } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
 import InputField from "./InputField";
 import toastHelper from "../../helper/ToastHelper";
 import { useLogin } from "../../api/hooks/AuthenticationHook";
+import AppContext from "../Context/AppContext";
 
 function SignInForm() {
   const providers = ["facebook", "google"];
   const [isRememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate();
+  const appContext = useContext(AppContext);
+
   const login = useLogin(
     function (response) {
-      toastHelper.success("Login successfully!");
-      console.log(response);
+      toastHelper.success(response.message);
+      localStorage.setItem("token", response.token);
+      appContext.setIsLogged(true);
+      navigate("/");
     },
     function (error) {
       toastHelper.error(error.message);
@@ -23,14 +29,14 @@ function SignInForm() {
   );
 
   const formSchema = z.object({
-    email: z.string().email("Email is invalid"),
+    username: z.string().min(1, "Username must not be empty!"),
     password: z.string().min(6, "Password must has at least 6 characters"),
   });
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
@@ -51,15 +57,15 @@ function SignInForm() {
       >
         <div className="relative">
           <InputField
-            fieldDataName="email"
-            type="email"
-            display="Email"
+            fieldDataName="username"
+            type="text"
+            display="Username"
             variant="authInp"
-            propForValueWorking={form.register("email")}
+            propForValueWorking={form.register("username")}
           />
-          {form.formState.errors["email"] && (
+          {form.formState.errors["username"] && (
             <p className="text-red-500 text-[12px] mt-1 absolute">
-              {form.formState.errors["email"].message}
+              {form.formState.errors["username"].message}
             </p>
           )}
         </div>

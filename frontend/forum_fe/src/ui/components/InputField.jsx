@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IoMdEye } from "react-icons/io";
+import { IoMdEye, IoMdEyeOff } from "react-icons/io";
 
 function InputField({
   display,
@@ -35,7 +35,7 @@ function InputField({
             onClick={() => setShowPassword((prev) => setShowPassword(!prev))}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-white"
           >
-            {!isShowPassword ? <IoMdEye size={20} /> : <IoMdEye size={20} />}
+            {!isShowPassword ? <IoMdEye size={20} /> : <IoMdEyeOff size={20} />}
           </button>
         )}
       </div>
