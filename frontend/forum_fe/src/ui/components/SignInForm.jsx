@@ -45,6 +45,13 @@ function SignInForm() {
     login.mutate(data);
   }
 
+  useEffect(
+    function () {
+      appContext.setIsLoading(login.isPending);
+    },
+    [login.isPending]
+  );
+
   return (
     <div className="w-full max-w-2xl mx-auto my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
       <h1 className="text-[30px] font-bold text-white text-center">

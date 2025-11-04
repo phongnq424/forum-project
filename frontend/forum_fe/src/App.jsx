@@ -13,18 +13,32 @@ function App() {
     (localStorage.getItem("token") || "") != ""
   );
   const [currentUser, setCurrentUser] = useState();
+  const [isLoading, setIsLoading] = useState(false);
 
   const getMe = useGetMe(isLogged);
 
   useEffect(
     function () {
-      setCurrentUser(getMe.data);
+      setIsLoading(getMe.isLoading);
+      if (getMe.isSuccess) {
+        setCurrentUser(getMe.data);
+      } else if (getMe.isError) {
+        console.log(getMe.error?.message);
+      }
     },
-    [getMe.data]
+    [getMe.isLoading]
   );
+
   return (
     <AppContext.Provider
-      value={{ isLogged, setIsLogged, currentUser, setCurrentUser }}
+      value={{
+        isLogged,
+        setIsLogged,
+        currentUser,
+        setCurrentUser,
+        isLoading,
+        setIsLoading,
+      }}
     >
       <div className="bg-primary">
         <ToastContainer />
