@@ -2,7 +2,7 @@ import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import InputField from "./InputField";
-import { useVerifyOTP } from "../../api/hooks/AuthenticationHook";
+import { useResendOTP, useVerifyOTP } from "../../api/hooks/AuthenticationHook";
 import toastHelper from "../../helper/ToastHelper";
 import { useNavigate } from "react-router-dom";
 
@@ -12,7 +12,16 @@ function VerifyOTPForm({ email }) {
   const verifyOTP = useVerifyOTP(
     function (response) {
       navigate("/sign-in");
-      toastHelper.success("Account was created successfully");
+      toastHelper.success(response.message);
+    },
+    function (error) {
+      toastHelper.error(error.message);
+    }
+  );
+
+  const resendOTP = useResendOTP(
+    function (response) {
+      toastHelper.success(response.message);
     },
     function (error) {
       toastHelper.error(error.message);
@@ -20,7 +29,7 @@ function VerifyOTPForm({ email }) {
   );
 
   const formSchema = z.object({
-    otp: z.string().min(1, "OTP is not empty!"),
+    otp: z.string().min(1, "OTP must not be empty!"),
     email: z.string().email("Email is invalid!"),
   });
 
@@ -34,6 +43,19 @@ function VerifyOTPForm({ email }) {
 
   function onSubmit(data) {
     verifyOTP.mutate(data);
+  }
+
+  function onClickResendOTP() {
+    const currEmail = form.getValues("email");
+    if (!currEmail) {
+      form.setError("email", {
+        type: "email",
+        message: "Email is invalid!",
+      });
+      return;
+    }
+
+    resendOTP.mutate({ email: currEmail });
   }
 
   return (
@@ -83,7 +105,10 @@ function VerifyOTPForm({ email }) {
 
         <h2 className="text-[20px] flex justify-center">
           Don't see any OTP?
-          <button className="ml-2 font-semibold bg-transparent p-0 m-0 border-none text-proPurple cursor-pointer hover:underline">
+          <button
+            onClick={onClickResendOTP}
+            className="ml-2 font-semibold bg-transparent p-0 m-0 border-none text-proPurple cursor-pointer hover:underline"
+          >
             Resend OTP
           </button>
         </h2>

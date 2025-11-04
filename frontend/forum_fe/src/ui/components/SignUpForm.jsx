@@ -12,6 +12,7 @@ function SignUpForm() {
   const navigate = useNavigate();
   const { mutate, isLoading, data, error } = useRegister(
     function (res) {
+      toastHelper.info(res.message);
       navigate("verify-otp", {
         state: {
           email: form.getValues("email"),
@@ -28,7 +29,7 @@ function SignUpForm() {
     .object({
       email: z.string().email("Email is invalid!"),
       password: z.string().min(6, "Password must has at least 6 characters!"),
-      username: z.string().min(1, "Full Name mustn't be empty!"),
+      username: z.string().min(1, "Full Name must not be empty!"),
       password2: z.string().min(6, "Please confirm your password!"),
     })
     .refine((data) => data.password === data.password2, {

@@ -36,20 +36,35 @@ const authService = {
       throw new Error(
         error.data?.error ||
           error.data?.message ||
-          "Verify OTP is unsuccessful!"
+          "Verification OTP is unsuccessful!"
       );
     }
   },
 
-  login: function (data) {
+  login: async function (data) {
     try {
       const request = {
         username: data.username,
         password: data.password,
       };
+      const response = await axiosClient.post("/auth/login", request);
+      return response;
     } catch (err) {
       console.log(err.status || "4xx 5xx");
-      throw new Error(err.data?.error || "Login is unsuccessful");
+      throw new Error(err.data?.error || "Login process is unsuccessful");
+    }
+  },
+
+  resendOTP: async function (data) {
+    try {
+      const request = {
+        email: data.email,
+      };
+      const response = await axiosClient.post("/auth/resend-otp", request);
+      return response;
+    } catch (err) {
+      console.log(err.status || "4xx 5xx");
+      throw new Error(err.data?.error || "Resend OTP process is unsuccessful!");
     }
   },
 };
