@@ -14,22 +14,13 @@ function App() {
   );
   const [currentUser, setCurrentUser] = useState();
 
-  const getMe = useGetMe(
-    // function (response) {
-    //   setCurrentUser(response);
-    //   console.log(response);
-    // },
-    // function (error) {
-    //   console.error(error);
-    // },
-    isLogged
-  );
+  const getMe = useGetMe(isLogged);
 
   useEffect(
     function () {
       setCurrentUser(getMe.data);
     },
-    [getMe.data, getMe.isSuccess]
+    [getMe.data]
   );
   return (
     <AppContext.Provider
