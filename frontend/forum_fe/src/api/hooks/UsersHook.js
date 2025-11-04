@@ -1,20 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import userService from "../services/userService";
 
-export function useGetMe(handleOnSuccess, handleOnError, isEnable = true) {
+export function useGetMe(isEnable = true) {
   return useQuery({
-    queryKey: ["me", isEnable],
+    queryKey: ["me"],
 
     queryFn: () => {
       return userService.getMe();
-    },
-
-    onSuccess: function (response) {
-      handleOnSuccess?.(response);
-    },
-
-    onError: function (error) {
-      handleOnError?.(error);
     },
     enabled: isEnable,
   });

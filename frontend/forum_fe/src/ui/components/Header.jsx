@@ -44,7 +44,7 @@ function Header({ variant = "transparent", className = "" }) {
         <img
           src={appContext.currentUser?.avatar}
           alt={appContext.currentUser?.username || "avatar"}
-          className="h-[90%] self-center aspect-square rounded-full bg-white"
+          className="h-[60px] w-[60px] self-center rounded-full bg-white object-cover"
         ></img>
       )}
     </div>
