@@ -6,7 +6,7 @@ const authService = {
       const res = await axiosClient.post("/auth/register", data);
       return res;
     } catch (error) {
-      console.log(error.status || "4xx 5xx");
+      console.error(error.status || "4xx 5xx");
       throw new Error(
         error.data?.error || error.data?.message || "Register is unsuccessful!"
       );
@@ -18,7 +18,7 @@ const authService = {
       const res = await axiosClient.post("/auth/verify-otp", data);
       return res;
     } catch (error) {
-      console.log(error.status || "4xx 5xx");
+      console.error(error.status || "4xx 5xx");
       throw new Error(
         error.data?.error ||
           error.data?.message ||
@@ -32,7 +32,7 @@ const authService = {
       const res = await axiosClient.post("/auth/verify-otp", data);
       return res;
     } catch (error) {
-      console.log(error.status || "4xx 5xx");
+      console.error(error.status || "4xx 5xx");
       throw new Error(
         error.data?.error ||
           error.data?.message ||
@@ -49,9 +49,9 @@ const authService = {
       };
       const response = await axiosClient.post("/auth/login", request);
       return response;
-    } catch (err) {
-      console.log(err.status || "4xx 5xx");
-      throw new Error(err.data?.error || "Login process is unsuccessful");
+    } catch (error) {
+      console.error(error.status || "4xx 5xx");
+      throw new Error(error.data?.error || "Login process is unsuccessful");
     }
   },
 
@@ -62,9 +62,11 @@ const authService = {
       };
       const response = await axiosClient.post("/auth/resend-otp", request);
       return response;
-    } catch (err) {
-      console.log(err.status || "4xx 5xx");
-      throw new Error(err.data?.error || "Resend OTP process is unsuccessful!");
+    } catch (error) {
+      console.error(error.status || "4xx 5xx");
+      throw new Error(
+        error.data?.error || "Resend OTP process is unsuccessful!"
+      );
     }
   },
 };

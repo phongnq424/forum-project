@@ -1,8 +1,8 @@
-import { Star, Users, FileText, Globe, Code } from "lucide-react";
 import { BsPostcard } from "react-icons/bs";
 import { IoMdCode } from "react-icons/io";
 import { IoGlobeOutline } from "react-icons/io5";
-import { PiUserBold, PiUsersBold } from "react-icons/pi";
+import { PiUsersBold } from "react-icons/pi";
+import { FaRegStar } from "react-icons/fa";
 
 const items = [
   {
@@ -51,7 +51,7 @@ const Stats = () => {
       <div className="text-center">
         <div className="mb-4 flex justify-center gap-1">
           {[...Array(5)].map((_, i) => (
-            <Star key={i} className="h-[50px] w-[50px] text-yellow" />
+            <FaRegStar key={i} className="h-[50px] w-[50px] text-yellow" />
           ))}
         </div>
         <div className="mb-2 text-[70px] font-bold text-foreground">4.5</div>

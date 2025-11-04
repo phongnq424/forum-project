@@ -24,7 +24,6 @@ axiosClient.interceptors.response.use(
     const responseURL = error.request?.responseURL;
     const loginUrl =
       import.meta.env.BARE_URL || "http://localhost:3000/api" + "/auth/login";
-    console.log(loginUrl + " " + responseURL);
     if (statusCode === 401 && responseURL != loginUrl) {
       console.log("Let log in!");
     }

@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import userService from "../services/userService";
+import profileService from "../services/ProfileService";
 
 export function useGetMe(isEnable = true) {
   return useQuery({
     queryKey: ["me"],
 
     queryFn: () => {
-      return userService.getMe();
+      return profileService.getMe();
     },
     enabled: isEnable,
   });

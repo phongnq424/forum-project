@@ -1,12 +1,10 @@
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import "./App.css";
-import QueryProvider from "./providers/QueryProvider";
 import PageRouters from "./RouterForPage/PageRouters";
 import { ToastContainer } from "react-toastify";
 import AppContext from "./ui/Context/AppContext";
 import { useEffect, useState } from "react";
-import { useGetMe } from "./api/hooks/UsersHook";
-import { get } from "react-hook-form";
+import { useGetMe } from "./api/hooks/ProfileHook";
 
 function App() {
   const [isLogged, setIsLogged] = useState(
@@ -23,7 +21,7 @@ function App() {
       if (getMe.isSuccess) {
         setCurrentUser(getMe.data);
       } else if (getMe.isError) {
-        console.log(getMe.error?.message);
+        console.log(getMe.error.message);
       }
     },
     [getMe.isLoading]
