@@ -1,4 +1,3 @@
-import { Code2, Facebook, Linkedin, Mail, Instagram } from "lucide-react";
 import logo_forum from "../../assets/logo_forum.svg";
 import { FiFacebook, FiInstagram, FiLinkedin } from "react-icons/fi";
 import { BiLogoGmail } from "react-icons/bi";
