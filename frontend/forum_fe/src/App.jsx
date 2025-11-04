@@ -1,35 +1,37 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import "./App.css";
+import QueryProvider from "./providers/QueryProvider";
+import PageRouters from "./RouterForPage/PageRouters";
+import { ToastContainer } from "react-toastify";
+import AppContext from "./ui/Context/AppContext";
+import { useEffect, useState } from "react";
+import { useGetMe } from "./api/hooks/UsersHook";
+import { get } from "react-hook-form";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [isLogged, setIsLogged] = useState(
+    (localStorage.getItem("token") || "") != ""
+  );
+  const [currentUser, setCurrentUser] = useState();
 
+  const getMe = useGetMe(isLogged);
+
+  useEffect(
+    function () {
+      setCurrentUser(getMe.data);
+    },
+    [getMe.data]
+  );
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <AppContext.Provider
+      value={{ isLogged, setIsLogged, currentUser, setCurrentUser }}
+    >
+      <div className="bg-primary">
+        <ToastContainer />
+        <PageRouters />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </AppContext.Provider>
+  );
 }
 
-export default App
+export default App;
