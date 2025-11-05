@@ -2,14 +2,20 @@ import { useLocation } from "react-router-dom";
 import Footer from "../components/Footer";
 import Introduction2 from "../components/Introduction2";
 import VerifyOTPForm from "../components/VerifyOTPForm";
+import { createContext, useState } from "react";
+import LoadingScreen from "./LoadingScreen";
+
+export const VerifyOTPContext = createContext();
 
 function VerifyOTPPage() {
   const location = useLocation();
-  const email = location.state.email || "";
+  const [isLoading, setIsLoading] = useState();
+  const email = location.state?.email || "";
   console.log(email);
 
   return (
-    <>
+    <VerifyOTPContext.Provider value={{ isLoading, setIsLoading }}>
+      {isLoading && <LoadingScreen />}
       <div className="flex justify-between">
         <div className="basis-[50%] px-20">
           <VerifyOTPForm email={email}></VerifyOTPForm>
@@ -20,7 +26,7 @@ function VerifyOTPPage() {
         </div>
       </div>
       <Footer></Footer>
-    </>
+    </VerifyOTPContext.Provider>
   );
 }
 

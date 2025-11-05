@@ -12,6 +12,7 @@ button {
   --color-primary: #1a1a1a;
   --color-black404040: #404040;
   --primary-padding: 6.25rem;
+  --font-Poppins: "Poppins", sans-serif;
   --gradient-for-text-WINDFLOW: to right, var(--color-proPurple) 0%,
     var(--color-proPink) 100%;
   --color-proPurple: #7f6ae4;
