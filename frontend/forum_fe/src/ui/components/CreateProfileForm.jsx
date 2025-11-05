@@ -1,34 +1,20 @@
-import SocialButton from "./SocialButton";
 import * as z from "zod";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import InputField from "./InputField";
-import { useRegister } from "../../api/hooks/AuthenticationHook";
-import toastHelper from "../../helper/ToastHelper";
 import { useContext, useEffect } from "react";
 import AppContext from "../Context/AppContext";
 import CustomDateInput from "./CustomDateInput/CustomDateInput";
 import CustomDropDown from "./CustomDropDown/CustomDropDown";
+import ImagePicker from "./ImagePicker";
+import { useUpdateMe } from "../../api/hooks/ProfileHook";
+import toastHelper from "../../helper/ToastHelper";
 
 function CreateProfileForm() {
-  const providers = ["facebook", "google"];
   const navigate = useNavigate();
+  const updateMe = useUpdateMe();
   const appContext = useContext(AppContext);
-  const register = useRegister(
-    function (res) {
-      toastHelper.info(res.message);
-      navigate("verify-otp", {
-        state: {
-          email: form.getValues("email"),
-        },
-      });
-    },
-
-    function (error) {
-      toastHelper.error(error.message);
-    }
-  );
 
   const formSchema = z.object({
     fullName: z.string().min(1, "Fullname must not be empty!"),
@@ -39,109 +25,170 @@ function CreateProfileForm() {
       }),
     gender: z.string(),
     bio: z.string(),
+    avatar: z
+      .instanceof(File)
+      .optional()
+      .refine((file) => !file || file.type.startsWith("image/"), {
+        message: "Avatar must be an image file",
+      }),
+
+    cover: z
+      .instanceof(File)
+      .optional()
+      .refine((file) => !file || file.type.startsWith("image/"), {
+        message: "Cover must be an image file",
+      }),
   });
 
   const genders = ["Male", "Female", "Other"];
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      dob: new Date().getFullYear(),
+      dob: new Date(),
       gender: genders[0],
       bio: "",
     },
   });
 
   function onSubmit(data) {
-    register.mutate(data);
+    updateMe.mutate(data);
   }
 
   useEffect(
     function () {
-      appContext.setIsLoading(register.isPending);
+      appContext.setIsLoading(updateMe.isPending);
     },
-    [register.isPending]
+    [updateMe.isPending]
+  );
+
+  useEffect(
+    function () {
+      if (updateMe.isSuccess) {
+        navigate("/");
+        toastHelper.success("Create your profile is successful!");
+      }
+
+      if (updateMe.isError) {
+        toastHelper.error(updateMe.error.message);
+      }
+    },
+    [updateMe.isSuccess, updateMe.isError]
   );
 
   return (
-    <div className="w-full max-w-2xl mx-auto my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
-      <h1 className="text-[30px] font-bold text-white text-center">
-        Complete Your Profile!
-      </h1>
-
+    <div className="w-full my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-12 my-6 w-full"
+        className="space-y-12 my-4 w-full"
       >
-        <div className="space-y-10">
-          <div className="relative">
-            <InputField
-              type="fullName"
-              display="Full Name"
-              variant="createProfile"
-              propForValueWorking={form.register("fullName")}
-            />
-            {form.formState.errors["fullName"] && (
-              <p className="text-red-500 text-[12px] mt-1 absolute">
-                {form.formState.errors["fullName"].message}
-              </p>
-            )}
+        <div className="flex justify-between">
+          <div className="space-y-5 basis-[40%]">
+            <h1 className="text-[30px] font-bold text-white text-center">
+              Complete Your Profile!
+            </h1>
+
+            <div className="space-y-10">
+              <div className="relative">
+                <InputField
+                  type="fullName"
+                  display="Full Name"
+                  variant="createProfile"
+                  propForValueWorking={form.register("fullName")}
+                />
+                {form.formState.errors["fullName"] && (
+                  <p className="text-red-500 text-[12px] mt-1 absolute">
+                    {form.formState.errors["fullName"].message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-5">
+                <div className="flex justify-between gap-10">
+                  {" "}
+                  {/*Date of birth */}
+                  <Controller
+                    control={form.control}
+                    name="dob"
+                    render={({ field }) => (
+                      <CustomDateInput
+                        display="Date of Birth"
+                        selected={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        variant="createProfile"
+                      ></CustomDateInput>
+                    )}
+                  />
+                  <Controller
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <CustomDropDown
+                        display="Gender"
+                        variant="createProfile"
+                        options={genders}
+                        selected={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        indexValueSelected={0}
+                      ></CustomDropDown>
+                    )}
+                  />
+                </div>
+
+                <div className="relative">
+                  <InputField
+                    type="bio"
+                    display="Bio"
+                    variant="createProfileBio"
+                    propForValueWorking={form.register("bio")}
+                  />
+                </div>
+              </div>
+              {/* Submit */}
+              <button
+                type="submit"
+                className="w-full py-3 text-[14px] bg-proPurple text-white font-semibold rounded-lg hover:opacity-70 transition"
+              >
+                NEXT
+              </button>
+            </div>
           </div>
 
-          <div className="flex justify-between"></div>
-          {/* Cho nay them GT, NS */}
-          <div className="relative">
-            <InputField
-              type="bio"
-              display="Bio"
-              variant="createProfileBio"
-              propForValueWorking={form.register("bio")}
-            />
+          <div className="relative basis-[50%] h-fit space-y-5">
+            <h1 className="text-[30px] font-bold text-white text-center">
+              Choose your avatar or cover!
+            </h1>
+
+            <div className="w-full aspect-[16/9]">
+              <Controller
+                control={form.control}
+                name="cover"
+                render={({ field }) => (
+                  <ImagePicker
+                    variant="cover"
+                    onChange={field.onChange}
+                  ></ImagePicker>
+                )}
+              ></Controller>
+            </div>
+
+            <div className="absolute top-80 left-[35%] w-[170px] aspect-square">
+              <Controller
+                control={form.control}
+                name="avatar"
+                render={({ field }) => (
+                  <ImagePicker
+                    variant="avatar"
+                    onChange={field.onChange}
+                  ></ImagePicker>
+                )}
+              ></Controller>
+            </div>
           </div>
         </div>
-
-        {/* Submit */}
-        <button
-          type="submit"
-          className="w-full py-3 text-[14px] bg-proPurple text-white font-semibold rounded-lg hover:opacity-70 transition"
-        >
-          SIGN UP
-        </button>
       </form>
-
-      <div className="mb-4 flex justify-between items-center w-full">
-        <div className="basis-[30%] h-[3px] bg-white/20"></div>
-
-        <div className="flex justify-center text-[14px] basis-[30%]">
-          or Sign up with
-        </div>
-
-        <div className="basis-[30%] h-[3px] bg-white/20"></div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4 mb-4">
-        {providers.map((item) => (
-          <SocialButton
-            key={item}
-            provider={item}
-            iconSize="20px"
-            onClick={() => handleSocialLogin(item)}
-            className="px-5 py-2.5 text-[14px] min-w-[200px] rounded-xl"
-          ></SocialButton>
-        ))}
-      </div>
-
-      <div className="mt-6 text-center flex gap-3 items-center">
-        <p className="text-[14px] text-muted-foreground">
-          Have got an account yet?
-        </p>
-        <NavLink
-          to="/sign-in"
-          className="text-[14px] text-proPurple font-medium hover:underline"
-        >
-          Sign in now
-        </NavLink>
-      </div>
     </div>
   );
 }

@@ -80,13 +80,13 @@ function InputField({
           }
           placeholder=""
           {...propForValueWorking}
-          className="peer w-full px-4 pb-1 pt-5 text-[14px] rounded-2xl focus:outline-none bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear"
+          className="peer w-full px-4 pb-1 pt-6 text-[20px] rounded-2xl focus:outline-none bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear"
         />
 
         <label
-          className="absolute left-4 top-1 text-white/60 text-[10px] transition-all duration-200 pointer-events-none
-                    peer-placeholder-shown:top-3 peer-placeholder-shown:text-[14px] peer-placeholder-shown:text-white/70
-                    peer-focus:top-1 peer-focus:text-[10px] peer-focus:text-proPurple"
+          className="absolute left-4 top-1 text-white/60 text-[14px] transition-all duration-200 pointer-events-none
+                    peer-placeholder-shown:top-4 peer-placeholder-shown:text-[20px] peer-placeholder-shown:text-white/70
+                    peer-focus:top-1 peer-focus:text-[14px] peer-focus:text-proPurple"
         >
           {display}
         </label>
@@ -110,7 +110,7 @@ function InputField({
           }
           placeholder=""
           {...propForValueWorking}
-          className="peer w-full h-25 px-4 pb-2 pt-2 text-[14px] resize-none rounded-2xl focus:outline-none bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear overflow-y-auto"
+          className="peer w-full h-35 px-4 pb-2 pt-2 text-[20px] resize-none rounded-2xl focus:outline-none bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear overflow-y-auto"
         />
         <label className="ml-2 mb-2 text-white/70 text-[14px] transition-all duration-200 pointer-events-none peer-focus:text-proPurple">
           {display}

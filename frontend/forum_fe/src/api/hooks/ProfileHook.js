@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import profileService from "../services/ProfileService";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import profileService from "../services/profileService";
 
 export function useGetMe(isEnable = true) {
   return useQuery({
@@ -9,5 +9,11 @@ export function useGetMe(isEnable = true) {
       return profileService.getMe();
     },
     enabled: isEnable,
+  });
+}
+
+export function useUpdateMe(isEnable = true) {
+  return useMutation({
+    mutationFn: (data) => profileService.updateMe(data),
   });
 }

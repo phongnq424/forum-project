@@ -1,10 +1,19 @@
-import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Outlet,
+  Route,
+  Routes,
+  useNavigate,
+} from "react-router-dom";
 import "./App.css";
 import PageRouters from "./RouterForPage/PageRouters";
 import { ToastContainer } from "react-toastify";
 import AppContext from "./ui/Context/AppContext";
 import { useEffect, useState } from "react";
 import { useGetMe } from "./api/hooks/ProfileHook";
+import { get } from "react-hook-form";
+import { set } from "zod";
+import General from "./General/General";
 
 function App() {
   const [isLogged, setIsLogged] = useState(
@@ -18,13 +27,31 @@ function App() {
   useEffect(
     function () {
       setIsLoading(getMe.isLoading);
-      if (getMe.isSuccess) {
-        setCurrentUser(getMe.data);
-      } else if (getMe.isError) {
-        console.log(getMe.error.message);
-      }
     },
     [getMe.isLoading]
+  );
+
+  useEffect(
+    function () {
+      if (getMe.isSuccess) {
+        setCurrentUser(getMe.data);
+      }
+    },
+    [getMe.isSuccess]
+  );
+
+  const nav = useNavigate();
+
+  useEffect(
+    function () {
+      if (getMe.isError) {
+        if (getMe.error.status == 404) {
+          setCurrentUser(null);
+          nav("/create-profile");
+        }
+      }
+    },
+    [getMe.isError]
   );
 
   return (
