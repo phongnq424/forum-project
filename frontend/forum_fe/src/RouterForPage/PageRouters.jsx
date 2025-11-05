@@ -8,8 +8,13 @@ import ChallengesPage from "../ui/pages/ChallengesPage";
 import SignInPage from "../ui/pages/SignInPage";
 import SignUpPage from "../ui/pages/SignUpPage";
 import VerifyOTPPage from "../ui/pages/VerifyOTPPage";
+import LoadingScreen from "../ui/pages/LoadingScreen";
+import { useContext } from "react";
+import AppContext from "../ui/Context/AppContext";
+import CreateProfilePage from "../ui/pages/CreateProfilePage";
 
 function Layout() {
+  const appContext = useContext(AppContext);
   return (
     <>
       <div className="pt-[70px] box-border">
@@ -32,6 +37,7 @@ function PageRouters() {
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
         <Route path="/sign-up/verify-otp" element={<VerifyOTPPage />} />
+        <Route path="/create-profile" element={<CreateProfilePage />} />
       </Route>
     </Routes>
   );

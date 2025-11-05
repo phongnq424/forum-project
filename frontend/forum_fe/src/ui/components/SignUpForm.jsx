@@ -6,11 +6,14 @@ import { NavLink, useNavigate } from "react-router-dom";
 import InputField from "./InputField";
 import { useRegister } from "../../api/hooks/AuthenticationHook";
 import toastHelper from "../../helper/ToastHelper";
+import { useContext, useEffect } from "react";
+import { SignUpPageContext } from "../pages/SignUpPage";
 
 function SignUpForm() {
   const providers = ["facebook", "google"];
   const navigate = useNavigate();
-  const { mutate, isLoading, data, error } = useRegister(
+  const signUpContext = useContext(SignUpPageContext);
+  const register = useRegister(
     function (res) {
       toastHelper.info(res.message);
       navigate("verify-otp", {
@@ -48,8 +51,15 @@ function SignUpForm() {
   });
 
   function onSubmit(data) {
-    mutate(data);
+    register.mutate(data);
   }
+
+  useEffect(
+    function () {
+      signUpContext.setIsLoading(register.isPending);
+    },
+    [register.isPending]
+  );
 
   return (
     <div className="w-full max-w-2xl mx-auto my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
