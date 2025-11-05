@@ -13,9 +13,18 @@ function App() {
   );
   const [currentUser, setCurrentUser] = useState();
   const [isLoading, setIsLoading] = useState(false);
-  const [isCallAgain, setIsCallAgain] = useState(false);
+  const [flagGetCurrentUserAgain, getCurrentUserAgain] = useState(true);
 
-  const getMe = useGetMe(isLogged);
+  const getMe = useGetMe(false);
+
+  useEffect(
+    function () {
+      if (isLogged) {
+        getMe.refetch();
+      }
+    },
+    [isLogged, flagGetCurrentUserAgain]
+  );
 
   useEffect(
     function () {
@@ -47,13 +56,6 @@ function App() {
     [getMe.isError]
   );
 
-  useEffect(() => {
-    if (isCallAgain) {
-      getMe.refetch();
-      setIsCallAgain(false);
-    }
-  }, [isCallAgain]);
-
   return (
     <AppContext.Provider
       value={{
@@ -61,7 +63,7 @@ function App() {
         setIsLogged,
         currentUser,
         setCurrentUser,
-        setIsCallAgain,
+        getCurrentUserAgain,
       }}
     >
       {isLoading && <LoadingScreen />}
