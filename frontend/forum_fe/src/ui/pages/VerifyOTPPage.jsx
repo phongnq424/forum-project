@@ -5,7 +5,7 @@ import VerifyOTPForm from "../components/VerifyOTPForm";
 
 function VerifyOTPPage() {
   const location = useLocation();
-  const email = location.state.email || "";
+  const email = location.state?.email || "";
   console.log(email);
 
   return (

@@ -6,17 +6,18 @@ import CreateProfileForm from "../components/CreateProfileForm";
 function CreateProfilePage() {
   return (
     <>
-      <div className="flex justify-between">
-        <div className="basis-[50%] px-20">
-          <CreateProfileForm></CreateProfileForm>
-        </div>
+      {/* <div className="flex justify-between w-full">
+        
 
         <div className="basis-[55%]">
           <Introduction2></Introduction2>
         </div>
+      </div> */}
+
+      <div className="w-[90%] px-20 m-auto">
+        <CreateProfileForm></CreateProfileForm>
       </div>
       <Footer></Footer>
-      <Outlet />
     </>
   );
 }

@@ -1,3 +1,4 @@
+import General from "../../General/General";
 import axiosClient from "../AxiosClient";
 
 const authService = {
@@ -6,10 +7,7 @@ const authService = {
       const res = await axiosClient.post("/auth/register", data);
       return res;
     } catch (error) {
-      console.error(error.status || "4xx 5xx");
-      throw new Error(
-        error.data?.error || error.data?.message || "Register is unsuccessful!"
-      );
+      throw General.createError(error);
     }
   },
 
@@ -18,12 +16,7 @@ const authService = {
       const res = await axiosClient.post("/auth/verify-otp", data);
       return res;
     } catch (error) {
-      console.error(error.status || "4xx 5xx");
-      throw new Error(
-        error.data?.error ||
-          error.data?.message ||
-          "Verify OTP is unsuccessful!"
-      );
+      throw General.createError(error);
     }
   },
 
@@ -32,12 +25,7 @@ const authService = {
       const res = await axiosClient.post("/auth/verify-otp", data);
       return res;
     } catch (error) {
-      console.error(error.status || "4xx 5xx");
-      throw new Error(
-        error.data?.error ||
-          error.data?.message ||
-          "Verification OTP is unsuccessful!"
-      );
+      throw General.createError(error);
     }
   },
 
@@ -50,8 +38,7 @@ const authService = {
       const response = await axiosClient.post("/auth/login", request);
       return response;
     } catch (error) {
-      console.error(error.status || "4xx 5xx");
-      throw new Error(error.data?.error || "Login process is unsuccessful");
+      throw General.createError(error);
     }
   },
 
@@ -63,10 +50,7 @@ const authService = {
       const response = await axiosClient.post("/auth/resend-otp", request);
       return response;
     } catch (error) {
-      console.error(error.status || "4xx 5xx");
-      throw new Error(
-        error.data?.error || "Resend OTP process is unsuccessful!"
-      );
+      throw General.createError(error);
     }
   },
 };

@@ -11,6 +11,7 @@ export default function CustomDateInput({
   onChange,
   onBlur,
   propForValueWorking,
+  variant,
 }) {
   const [selectedDate, setSelectedDate] = useState(selected);
   const datepickerRef = useRef(null);
@@ -19,32 +20,40 @@ export default function CustomDateInput({
   const maxYear = currentYear; // năm hiện tại
   const maxDate = new Date();
 
+  const variants = {
+    createProfile: (
+      <>
+        <input
+          type="text"
+          placeholder=""
+          value={selectedDate ? selectedDate.toLocaleDateString() : ""}
+          readOnly
+          onClick={() => datepickerRef.current.setOpen(true)} // click mở popup
+          {...propForValueWorking}
+          className="peer w-full px-4 pb-1 pt-6 text-[20px] rounded-2xl focus:outline-none bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear cursor-pointer"
+        />
+
+        <label
+          className="absolute left-4 top-1 text-white/60 text-[14px] transition-all duration-200 pointer-events-none
+                    peer-placeholder-shown:top-3 peer-placeholder-shown:text-[20px] peer-placeholder-shown:text-white/70
+                    peer-focus:top-1 peer-focus:text-[14px] peer-focus:text-proPurple"
+        >
+          {display}
+        </label>
+
+        {/* Icon lịch */}
+        <FaCalendarAlt
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none peer-focus:text-proPurple"
+          size={24}
+        />
+      </>
+    ),
+  };
+
   return (
     <div className="relative w-full group">
       {/* Ô input hiện tại */}
-      <input
-        type="text"
-        placeholder=""
-        value={selectedDate ? selectedDate.toLocaleDateString() : ""}
-        readOnly
-        onClick={() => datepickerRef.current.setOpen(true)} // click mở popup
-        {...propForValueWorking}
-        className="peer w-full px-4 pb-1 pt-5 text-[14px] rounded-2xl focus:outline-none bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear cursor-pointer"
-      />
-
-      <label
-        className="absolute left-4 top-1 text-white/60 text-[10px] transition-all duration-200 pointer-events-none
-                    peer-placeholder-shown:top-3 peer-placeholder-shown:text-[14px] peer-placeholder-shown:text-white/70
-                    peer-focus:top-1 peer-focus:text-[10px] peer-focus:text-proPurple"
-      >
-        {display}
-      </label>
-
-      {/* Icon lịch */}
-      <FaCalendarAlt
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none peer-focus:text-proPurple"
-        size={24}
-      />
+      {variants[variant]}
 
       <DatePicker
         ref={datepickerRef}

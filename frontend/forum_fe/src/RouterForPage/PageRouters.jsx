@@ -18,7 +18,7 @@ function Layout() {
   return (
     <>
       <div className="pt-[70px] box-border">
-        {/* {appContext.isLoading && <LoadingScreen />} */}
+        {appContext.isLoading && <LoadingScreen />}
         <Header variant="primary"></Header>
         <Outlet></Outlet>
       </div>
@@ -30,7 +30,7 @@ function PageRouters() {
   return (
     <Routes>
       <Route element={<Layout></Layout>}>
-        <Route path="/" element={<CreateProfilePage />}></Route>
+        <Route path="/" element={<HeroPage />}></Route>
         <Route path="/discuss" element={<DiscussPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/chat" element={<ChatPage />} />
@@ -38,7 +38,7 @@ function PageRouters() {
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
         <Route path="/sign-up/verify-otp" element={<VerifyOTPPage />} />
-        <Route path="/create-profile" element={<VerifyOTPPage />} />
+        <Route path="/create-profile" element={<CreateProfilePage />} />
       </Route>
     </Routes>
   );
