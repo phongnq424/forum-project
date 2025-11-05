@@ -7,12 +7,12 @@ import InputField from "./InputField";
 import { useRegister } from "../../api/hooks/AuthenticationHook";
 import toastHelper from "../../helper/ToastHelper";
 import { useContext, useEffect } from "react";
-import AppContext from "../Context/AppContext";
+import { SignUpPageContext } from "../pages/SignUpPage";
 
 function SignUpForm() {
   const providers = ["facebook", "google"];
   const navigate = useNavigate();
-  const appContext = useContext(AppContext);
+  const signUpContext = useContext(SignUpPageContext);
   const register = useRegister(
     function (res) {
       toastHelper.info(res.message);
@@ -56,7 +56,7 @@ function SignUpForm() {
 
   useEffect(
     function () {
-      appContext.setIsLoading(register.isPending);
+      signUpContext.setIsLoading(register.isPending);
     },
     [register.isPending]
   );

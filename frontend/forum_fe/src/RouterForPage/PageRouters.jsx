@@ -18,7 +18,6 @@ function Layout() {
   return (
     <>
       <div className="pt-[70px] box-border">
-        {appContext.isLoading && <LoadingScreen />}
         <Header variant="primary"></Header>
         <Outlet></Outlet>
       </div>

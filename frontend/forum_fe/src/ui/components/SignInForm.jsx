@@ -9,12 +9,14 @@ import InputField from "./InputField";
 import toastHelper from "../../helper/ToastHelper";
 import { useLogin } from "../../api/hooks/AuthenticationHook";
 import AppContext from "../Context/AppContext";
+import { SignInContext } from "../pages/SignInPage";
 
 function SignInForm() {
   const providers = ["facebook", "google"];
   const [isRememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const appContext = useContext(AppContext);
+  const signInContext = useContext(SignInContext);
 
   const login = useLogin(
     function (response) {
@@ -47,7 +49,7 @@ function SignInForm() {
 
   useEffect(
     function () {
-      appContext.setIsLoading(login.isPending);
+      signInContext.setIsLoading(login.isPending);
     },
     [login.isPending]
   );

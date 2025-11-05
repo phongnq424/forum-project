@@ -10,10 +10,12 @@ import CustomDropDown from "./CustomDropDown/CustomDropDown";
 import ImagePicker from "./ImagePicker";
 import { useUpdateMe } from "../../api/hooks/ProfileHook";
 import toastHelper from "../../helper/ToastHelper";
+import { CreateProfileContext } from "../pages/CreateProfilePage";
 
 function CreateProfileForm() {
   const navigate = useNavigate();
   const updateMe = useUpdateMe();
+  const createProfileContext = useContext(CreateProfileContext);
   const appContext = useContext(AppContext);
 
   const formSchema = z.object({
@@ -58,7 +60,7 @@ function CreateProfileForm() {
 
   useEffect(
     function () {
-      appContext.setIsLoading(updateMe.isPending);
+      createProfileContext.setIsLoading(updateMe.isPending);
     },
     [updateMe.isPending]
   );
@@ -66,6 +68,8 @@ function CreateProfileForm() {
   useEffect(
     function () {
       if (updateMe.isSuccess) {
+        appContext.setIsCallAgain(true);
+        appContext.setIsCallAgain(false);
         navigate("/");
         toastHelper.success("Create your profile is successful!");
       }

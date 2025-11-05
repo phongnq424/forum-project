@@ -6,11 +6,11 @@ import { useResendOTP, useVerifyOTP } from "../../api/hooks/AuthenticationHook";
 import toastHelper from "../../helper/ToastHelper";
 import { useNavigate } from "react-router-dom";
 import { useContext, useEffect } from "react";
-import AppContext from "../Context/AppContext";
+import { VerifyOTPContext } from "../pages/VerifyOTPPage";
 
 function VerifyOTPForm({ email }) {
   const navigate = useNavigate();
-  const appContext = useContext(AppContext);
+  const verifyOTPContext = useContext(VerifyOTPContext);
 
   const verifyOTP = useVerifyOTP(
     function (response) {
@@ -63,7 +63,7 @@ function VerifyOTPForm({ email }) {
 
   useEffect(
     function () {
-      appContext.setIsLoading(verifyOTP.isPending);
+      verifyOTPContext.setIsLoading(verifyOTP.isPending);
     },
     [verifyOTP.isPending]
   );
