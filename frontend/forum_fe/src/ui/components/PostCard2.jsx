@@ -14,10 +14,14 @@ const PostCard2 = ({
   date,
   isLiked = true,
   isSaved = false,
+  onClick,
 }) => {
   const variants = {
     discuss: (
-      <div className="text-white bg-white/10 hover:cursor-pointer flex items-start gap-4 p-6 rounded-xl transition-all duration-300 group hover:bg-white/20">
+      <div
+        className="text-white bg-white/10 hover:cursor-pointer flex items-start gap-4 p-6 rounded-xl transition-all duration-300 group hover:bg-white/20"
+        onClick={onClick}
+      >
         {/* Left Section */}
         <div className="flex-1 space-y-3">
           {/* Author Info */}

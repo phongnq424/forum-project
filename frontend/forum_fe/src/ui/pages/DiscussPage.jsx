@@ -8,6 +8,8 @@ import { AddPostDialog } from "../dialogs/AddPostDialog";
 import { useCreatePost, useGetPosts } from "../../api/hooks/postHook";
 import toastHelper from "../../helper/ToastHelper";
 import General from "../../General/General";
+import { useGetCategories } from "../../api/hooks/categoriesHook";
+import { id } from "zod/v4/locales";
 
 const testPosts = [];
 
@@ -16,6 +18,8 @@ function DiscussPage() {
   const [isDialogClosing, setIsDialogClosing] = useState(true);
   const createPost = useCreatePost();
   const getPosts = useGetPosts();
+  const getCategories = useGetCategories();
+
   useEffect(
     function () {
       if (getPosts.isSuccess) {
@@ -35,8 +39,6 @@ function DiscussPage() {
             comments: -1,
             thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
           });
-
-          console.warn(ps);
         }
 
         setPosts(ps);
@@ -60,10 +62,17 @@ function DiscussPage() {
   );
   return (
     <div className="px-(--primary-padding) pt-5 w-full h-full relative">
-      {getPosts.isLoading && <LoadingScreen />}
+      {(getPosts.isLoading || getCategories.isLoading) && <LoadingScreen />}
       <SearchBar />
       <div className="flex justify-between pt-5">
-        <CategoryBar />
+        {getCategories.data?.data?.length >= 1 && (
+          <CategoryBar
+            categories={[
+              { id: "0", name: "For you" },
+              ...getCategories.data.data,
+            ]}
+          />
+        )}
         <button
           onClick={() => setIsDialogClosing(false)}
           className="text-white text-[18px] bg-green px-6 py-2 flex items-center justify-center rounded-md font-medium transition-colors hover:opacity-70 duration-200 ease-linear"
@@ -84,7 +93,14 @@ function DiscussPage() {
       {posts?.length > 0 && (
         <div className="pt-5 space-y-2.5">
           {posts.map((item) => (
-            <PostCard2 variant="discuss" key={item.id} {...item}></PostCard2>
+            <PostCard2
+              variant="discuss"
+              key={item.id}
+              {...item}
+              onClick={(e) => {
+                console.log(item.id);
+              }}
+            ></PostCard2>
           ))}
         </div>
       )}
