@@ -52,4 +52,13 @@ axiosError {
 
 }
 
+axiosResponse {
+  data: {...},        // dữ liệu trả về từ server (body)
+  status: 200,        // mã HTTP
+  statusText: "OK",
+  headers: {...},     // header trả về
+  config: {...},      // cấu hình request
+  request: {...},     // request object
+}
+
 */

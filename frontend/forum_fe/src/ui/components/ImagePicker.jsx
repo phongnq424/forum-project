@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useImperativeHandle, useRef, useState } from "react";
+import { FaImage } from "react-icons/fa6";
 
-export default function ImagePicker({ onChange, variant }) {
+export default function ImagePicker({ onChange, variant, outRef }) {
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(null);
 
@@ -20,6 +21,8 @@ export default function ImagePicker({ onChange, variant }) {
         className="object-cover w-full h-full rounded-4xl bg-white/40"
       />
     ),
+
+    post: <FaImage className="text-white w-full h-full" />,
   };
 
   const handleFileChange = (e) => {

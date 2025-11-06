@@ -17,7 +17,7 @@ function Layout() {
   const appContext = useContext(AppContext);
   return (
     <>
-      <div className="pt-[70px] box-border">
+      <div className="pt-[70px] box-border w-screen">
         <Header variant="primary"></Header>
         <Outlet></Outlet>
       </div>

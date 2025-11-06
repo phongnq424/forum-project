@@ -6,7 +6,7 @@ export default function CustomDropDown({
   onChange,
   onBlur,
   indexValueSelected,
-  disPlayField = null,
+  displayField = null,
   variant,
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +31,7 @@ export default function CustomDropDown({
           <input
             type="text"
             placeholder=""
-            value={disPlayField == null ? selected : selected[disPlayField]}
+            value={displayField == null ? selected : selected[displayField]}
             readOnly
             onClick={() => setIsOpen(!isOpen)}
             className="peer w-full px-4 pb-1 pt-6 text-[20px] rounded-2xl focus:outline-none bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear cursor-pointer"
@@ -47,7 +47,7 @@ export default function CustomDropDown({
         </div>
 
         {isOpen && (
-          <div className="absolute mt-1 w-full bg-primary b rounded-2xl max-h-60 overflow-y-auto z-10">
+          <div className="absolute mt-1 text-white w-full bg-primary b rounded-2xl max-h-60 overflow-y-auto z-10">
             {options.map((option, idx) => (
               <div
                 key={idx}
@@ -62,7 +62,45 @@ export default function CustomDropDown({
                     : "hover:bg-white/10"
                 }`}
               >
-                {disPlayField == null ? option : option[disPlayField]}
+                {displayField == null ? option : option[displayField]}
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    ),
+
+    addPost: (
+      <>
+        <div className="relative w-full">
+          {/* Ô input hiện tại */}
+          <input
+            type="text"
+            placeholder=""
+            value={displayField == null ? selected : selected[displayField]}
+            readOnly
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-2 text-white w-full h-fit bg-primary rounded-xl placeholder:text-muted-foreground text-lg resize-none focus:outline-none"
+          ></input>
+        </div>
+
+        {isOpen && (
+          <div className="absolute mt-1 w-full bg-primary b text-white rounded-2xl max-h-60 overflow-y-auto z-10">
+            {options.map((option, idx) => (
+              <div
+                key={idx}
+                onClick={() => {
+                  setSelected(option);
+                  onChange?.(option);
+                  setIsOpen(false);
+                }}
+                className={`px-4 py-2 cursor-pointer text-lg ${
+                  option === selected
+                    ? "bg-proPurple font-semibold hover:bg-proPurple/50"
+                    : "hover:bg-white/10"
+                }`}
+              >
+                {displayField == null ? option : option[displayField]}
               </div>
             ))}
           </div>
