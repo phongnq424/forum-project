@@ -1,6 +1,7 @@
 import { FaRegBookmark, FaRegHeart } from "react-icons/fa";
 import { FiMessageCircle, FiShare2 } from "react-icons/fi";
 import Button from "../elements/Button";
+import General from "../../General/General";
 
 const PostCard2 = ({
   variant = "",
@@ -15,6 +16,10 @@ const PostCard2 = ({
   isLiked = true,
   isSaved = false,
   onClick,
+  onReactionClick,
+  onCommentClick,
+  onSaveClick,
+  onShareClick,
 }) => {
   const variants = {
     discuss: (
@@ -55,12 +60,23 @@ const PostCard2 = ({
           {/* Engagement */}
           <div className="flex items-center justify-between w-2/5 text-white/70">
             <div className="flex justify-between basis-[75%]">
-              <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
+              <Button
+                className="flex items-center gap-2 transition-colors hover:text-proPurple"
+                isStopPropagation={true}
+                onClick={() => {
+                  onReactionClick?.(General.reactionType.LOVE);
+                }}
+                is
+              >
                 <FaRegHeart className="h-5 w-5" />
                 <span className="text-sm font-medium">{likes}</span>
               </Button>
 
-              <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
+              <Button
+                className="flex items-center gap-2 transition-colors hover:text-proPurple"
+                isStopPropagation={true}
+                onClick={() => onCommentClick?.()}
+              >
                 <FiMessageCircle className="h-5 w-5" />
                 <span className="text-sm font-medium">{comments}</span>
               </Button>
@@ -68,11 +84,19 @@ const PostCard2 = ({
               <div></div>
             </div>
             <div className="flex justify-between basis-[20%]">
-              <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
+              <Button
+                className="flex items-center gap-2 transition-colors hover:text-proPurple"
+                isStopPropagation={true}
+                onClick={() => onSaveClick?.()}
+              >
                 <FaRegBookmark className="h-5 w-5" />
               </Button>
 
-              <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
+              <Button
+                className="flex items-center gap-2 transition-colors hover:text-proPurple"
+                isStopPropagation={true}
+                onClick={() => onShareClick?.()}
+              >
                 <FiShare2 className="h-5 w-5" />
               </Button>
             </div>

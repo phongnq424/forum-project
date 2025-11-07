@@ -19,7 +19,7 @@ const postService = {
         }
       }
 
-      console.log(request);
+      console.warn(data);
       const response = await axiosClient.post("/posts", request, {
         headers: {
           "Content-Type": "multipart/form-data",
