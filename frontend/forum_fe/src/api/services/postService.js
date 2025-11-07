@@ -35,6 +35,50 @@ const postService = {
   getPosts: async function () {
     try {
       const response = await axiosClient.get("/posts");
+      const ps = [];
+      for (let i = 0; i < response.data.length; i++) {
+        const curr = response.data[i];
+
+        ps.push({
+          id: curr.id,
+          author: curr.User.username,
+          authorImg: curr.User.Profile.avatar,
+          date: new Date(curr.created_at).toLocaleDateString(),
+          title: curr.title,
+          description: curr.content,
+          likes: -1,
+          comments: -1,
+          images: curr.Image || [],
+          thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
+          isLiked: false,
+          isSaved: false,
+          topic: curr.Topic,
+        });
+      }
+      return { data: ps, pagination: response.pagination };
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
+  async getPostById(postId) {
+    try {
+      const result = await axiosClient.get(`/posts/${postId}`);
+      const response = {
+        id: result.id,
+        author: result.User.username,
+        authorImg: result.User.Profile.avatar,
+        date: new Date(result.created_at).toLocaleDateString(),
+        title: result.title,
+        description: result.content,
+        likes: -1,
+        comments: -1,
+        images: result.Image || [],
+        thumbnail: result.Image.length > 0 ? result.Image[0].url : null,
+        isLiked: false,
+        isSaved: false,
+        topic: result.Topic,
+      };
       return response;
     } catch (error) {
       throw General.createError(error);

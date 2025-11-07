@@ -9,6 +9,7 @@ import { useCreatePost, useGetPosts } from "../../api/hooks/postHook";
 import toastHelper from "../../helper/ToastHelper";
 import { useGetCategories } from "../../api/hooks/categoriesHook";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
+import { useNavigate } from "react-router-dom";
 
 const testPosts = [];
 
@@ -19,35 +20,37 @@ function DiscussPage() {
   const getPosts = useGetPosts();
   const getCategories = useGetCategories();
   const toggleReaction = useToggleReaction();
+  const navigate = useNavigate();
 
   useEffect(
     function () {
       if (getPosts.isSuccess) {
         const responsePosts = getPosts.data.data;
-        const ps = [];
-        for (let i = 0; i < responsePosts.length; i++) {
-          const curr = responsePosts[i];
-
-          ps.push({
-            id: curr.id,
-            author: curr.User.username,
-            authorImg: curr.User.Profile.avatar,
-            date: new Date(curr.created_at).toLocaleDateString(),
-            title: curr.title,
-            description: curr.content,
-            likes: -1,
-            comments: -1,
-            thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
-          });
-        }
-
-        setPosts(ps);
+        console.log(responsePosts);
+        setPosts(responsePosts);
       }
       if (getPosts.isError) {
       }
     },
     [getPosts.isSuccess, getPosts.isError]
   );
+
+  const handleSelectPost = function (post) {
+    navigate(`/post-detail?postId=${post.id}`, { state: { post } });
+  };
+
+  useEffect(
+    function () {
+      if (toggleReaction.isSuccess) {
+        toastHelper.success("Thêm bày tỏ: " + !toggleReaction.data.removed);
+      }
+      if (toggleReaction.isError) {
+        console.log(error);
+      }
+    },
+    [toggleReaction.isError, toggleReaction.isSuccess]
+  );
+
   // Response for Create Post
   useEffect(
     function () {
@@ -98,7 +101,7 @@ function DiscussPage() {
               key={item.id}
               {...item}
               onClick={(e) => {
-                console.log(item.id);
+                handleSelectPost(item);
               }}
               onReactionClick={(typeReaction) => {
                 toggleReaction.mutate({ postId: item.id, typeReaction });
