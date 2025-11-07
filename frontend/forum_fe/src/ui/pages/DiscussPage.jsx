@@ -7,9 +7,8 @@ import LoadingScreen from "./LoadingScreen";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
 import { useCreatePost, useGetPosts } from "../../api/hooks/postHook";
 import toastHelper from "../../helper/ToastHelper";
-import General from "../../General/General";
 import { useGetCategories } from "../../api/hooks/categoriesHook";
-import { id } from "zod/v4/locales";
+import { useToggleReaction } from "../../api/hooks/reactionHook";
 
 const testPosts = [];
 
@@ -19,6 +18,7 @@ function DiscussPage() {
   const createPost = useCreatePost();
   const getPosts = useGetPosts();
   const getCategories = useGetCategories();
+  const toggleReaction = useToggleReaction();
 
   useEffect(
     function () {
@@ -99,6 +99,9 @@ function DiscussPage() {
               {...item}
               onClick={(e) => {
                 console.log(item.id);
+              }}
+              onReactionClick={(typeReaction) => {
+                toggleReaction.mutate({ postId: item.id, typeReaction });
               }}
             ></PostCard2>
           ))}

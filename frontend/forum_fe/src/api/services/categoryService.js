@@ -4,7 +4,6 @@ import axiosClient from "../AxiosClient";
 const categoryService = {
   getCategories: async function () {
     try {
-      console.warn("Here");
       const response = await axiosClient.get("/categories");
       return response;
     } catch (error) {

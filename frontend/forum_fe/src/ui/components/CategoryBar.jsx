@@ -23,7 +23,9 @@ const CategoryBar = ({ onChanged, categories }) => {
             key={category.id}
             onClick={() => setSelectedItem(category)}
             className={`text-white h-9 px-3 flex items-center justify-center whitespace-nowrap rounded-md font-medium transition-colors duration-100 ${
-              selectedItem === category ? "bg-proPurple" : " bg-transparent"
+              selectedItem.id === category.id
+                ? "bg-proPurple"
+                : " bg-transparent"
             }`}
           >
             {category.name}

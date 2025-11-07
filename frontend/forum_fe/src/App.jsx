@@ -66,7 +66,7 @@ function App() {
         getCurrentUserAgain,
       }}
     >
-      {/* {isLoading && <LoadingScreen />} */}
+      {isLoading && <LoadingScreen />}
       <div className="bg-primary min-h-screen overflow-y-hidden">
         <ToastContainer />
         <PageRouters />
