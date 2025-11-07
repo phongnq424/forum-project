@@ -26,4 +26,5 @@ button {
   --color-Gmail: #ea4335;
   --gradient-Instagram: to right, #f58529, #dd2a7b, #8134af;
   --color-green: #02b128;
+  --view-h: calc(100vh - 70px);
 }

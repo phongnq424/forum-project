@@ -5,21 +5,27 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useGetPostById } from "../../api/hooks/postHook";
-import { FaArrowLeft } from "react-icons/fa";
 import { MdMoreHoriz } from "react-icons/md";
-import Button from "../elements/Button";
 import { FaRegBookmark, FaRegHeart } from "react-icons/fa";
 import { FiMessageCircle, FiShare2 } from "react-icons/fi";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
 import toastHelper from "../../helper/ToastHelper";
 import General from "../../General/General";
+import {
+  useAddComment,
+  useGetCommentsOfPost,
+} from "../../api/hooks/commentHook";
+import LoadingScreen from "./LoadingScreen";
+import AppContext from "../Context/AppContext";
+import { IoMdSend } from "react-icons/io";
+import { da } from "zod/v4/locales";
 
-const button_ghost = "hover:bg-accent hover:text-accent-foreground";
-const button_base =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
-const button_icon = "h-10 w-10";
+// const button_ghost = "hover:bg-accent hover:text-accent-foreground";
+// const button_base =
+//   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
+// const button_icon = "h-10 w-10";
 
 const DetailPostPage = () => {
   const [getParams, setParams] = useSearchParams();
@@ -28,6 +34,11 @@ const DetailPostPage = () => {
   const [currentPost, setCurrentPost] = useState(location?.state?.post);
   const getPostById = useGetPostById(currentPost.id);
   const toggleReaction = useToggleReaction(null, null);
+  const getCommentsOfPost = useGetCommentsOfPost(currentPost.id);
+  const appContext = useContext(AppContext);
+  const [replyTo, setReplyTo] = useState(null);
+  const addComment = useAddComment();
+  const [content, setContent] = useState("");
 
   useEffect(
     function () {
@@ -39,6 +50,23 @@ const DetailPostPage = () => {
       }
     },
     [toggleReaction.isSuccess, toggleReaction.isError]
+  );
+
+  // Handle after comment
+  useEffect(
+    function () {
+      if (addComment.isSuccess) {
+        setContent("");
+        const response = addComment.data;
+        if (response.parentComment_id) {
+        } else {
+        }
+        getCommentsOfPost.refetch();
+      }
+      if (addComment.isError) {
+      }
+    },
+    [addComment.isError, addComment.isSuccess]
   );
 
   const onReactionClick = function (type) {
@@ -63,18 +91,18 @@ const DetailPostPage = () => {
   if (!currentPost) return <></>;
 
   return (
-    <main className="min-h-screen w-full px-(--primary-padding)">
-      <div className="flex flex-col lg:flex-row w-full">
+    <main className="h-(--view-h) w-full overflow-hidden px-(--primary-padding)">
+      <div className="flex flex-col lg:flex-row justify-between w-full h-(--view-h) overflow-hidden">
         {/* Left side - Large image viewer */}
-        <div className="lg:w-[45%] bg-black flex flex-col items-start justify-start h-screen overflow-y-auto">
+        <div className="lg:w-[43%] bg-primary flex flex-col items-start justify-start h-(--view-h) overflow-y-auto">
           {/* <button
-            className={`${button_base} ${button_ghost} ${button_icon} gap-2  group text-white hover:[&>*]:text-proPurple hover:text-proPurple ml-10`}
-          >
-            <FaArrowLeft className="h-full w-full group-hover" />
-            Back
-          </button> */}
+              className={`${button_base} ${button_ghost} ${button_icon} gap-2  group text-white hover:[&>*]:text-proPurple hover:text-proPurple ml-10`}
+            >
+              <FaArrowLeft className="h-full w-full group-hover" />
+              Back
+            </button> */}
 
-          <div className="self-stretch flex flex-col justify-start">
+          <div className="self-stretch flex flex-col justify-start space-y-5">
             {currentPost.images &&
               currentPost.images.length >= 1 &&
               currentPost.images.map((item) => (
@@ -89,12 +117,14 @@ const DetailPostPage = () => {
         </div>
 
         {/* Right side - Post details and comments */}
-        <div className="lg:w-[55%] bg-card overflow-y-auto">
-          <div className="p-4">
+        <div className="relative flex flex-col lg:w-[53%] overflow-y-auto h-(--view-h) bg-white/5">
+          {(getCommentsOfPost.isLoading || addComment.isPending) && (
+            <LoadingScreen />
+          )}
+          <div className="p-4 flex flex-col">
             {/* Author and title */}
             <div className="flex flex-col space-y-4 pb-4">
               {/* Author */}
-
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-15 w-15 rounded-full bg-secondary overflow-hidden shrink-0">
@@ -118,17 +148,13 @@ const DetailPostPage = () => {
                 </div>
 
                 <button
-                  className={`${button_base} ${button_ghost} ${button_icon} h-8 w-8 rounded-full hover:bg-secondary`}
+                  className={`h-8 w-8 flex justify-between items-center rounded-full hover:bg-white/10 p-1 `}
                 >
-                  <MdMoreHoriz className="h-5 w-5" />
+                  <MdMoreHoriz className="text-xl w-full h-full text-white" />
                 </button>
               </div>
-
               {/* Content */}
-              <div
-                className="flex flex-col gap-1.5
-              "
-              >
+              <div className="flex flex-col gap-1.5">
                 {/* Post title */}
                 <p className="text-2xl font-bold leading-relaxed text-white">
                   {currentPost.title}
@@ -152,25 +178,25 @@ const DetailPostPage = () => {
             <div className="flex items-center justify-around mb-3 text-white">
               <div className="flex justify-between basis-[75%]">
                 <button
-                  className="flex items-center gap-2 transition-colors hover:text-proPurple text-2xl"
+                  className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
                   onClick={() => {
                     onReactionClick?.(General.reactionType.LOVE);
                   }}
                 >
                   <FaRegHeart className="h-fit w-fit" />
-                  <span className="text-2xl font-medium">
+                  <span className="text-xl font-medium">
                     {currentPost.likes || -1}
                   </span>
                 </button>
 
                 <button
-                  className="flex items-center gap-2 transition-colors hover:text-proPurple text-2xl"
+                  className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
                   onClick={() => {
                     onCommentClick?.(General.reactionType.LOVE);
                   }}
                 >
                   <FiMessageCircle className="h-fit w-fit" />
-                  <span className="text-2xl font-medium">
+                  <span className="text-xl font-medium">
                     {currentPost.comments || -1}
                   </span>
                 </button>
@@ -179,7 +205,7 @@ const DetailPostPage = () => {
               </div>
               <div className="flex justify-between basis-[20%]">
                 <button
-                  className="flex items-center gap-2 transition-colors hover:text-proPurple text-2xl"
+                  className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
                   onClick={() => {
                     onSaveClick?.(General.reactionType.LOVE);
                   }}
@@ -188,7 +214,7 @@ const DetailPostPage = () => {
                 </button>
 
                 <button
-                  className="flex items-center gap-2 transition-colors hover:text-proPurple text-2xl"
+                  className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
                   onClick={() => {
                     onShareClick?.(General.reactionType.LOVE);
                   }}
@@ -202,105 +228,139 @@ const DetailPostPage = () => {
 
             {/* Sort comments */}
             {/* <div className="mb-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-sm font-semibold text-muted-foreground"
-                >
-                  Most relevant ▼
-                </Button>
-              </div> */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-sm font-semibold text-muted-foreground"
+                  >
+                    Most relevant ▼
+                  </Button>
+                </div> */}
 
             {/* Comments section */}
-            {/* <div className="space-y-4">
-                {post.comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-2">
-                    <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarImage src={comment.avatar} />
-                      <AvatarFallback>{comment.author[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="bg-secondary rounded-2xl px-3 py-2 inline-block">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <h5 className="font-semibold text-sm">
-                            {comment.author}
-                          </h5>
-                          {comment.isTopFan && (
-                            <Badge
-                              variant="secondary"
-                              className="h-4 px-1 text-[10px] bg-primary/10 text-primary border-0"
-                            >
-                              <Crown className="h-2.5 w-2.5 mr-0.5" />
-                              Top fan
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm break-words">{comment.content}</p>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 px-3">
-                        <button className="text-xs font-semibold text-muted-foreground hover:underline">
-                          Like
-                        </button>
-                        <button className="text-xs font-semibold text-muted-foreground hover:underline">
-                          Reply
-                        </button>
-                        {comment.likes > 0 && (
-                          <>
-                            <button className="text-xs font-semibold text-muted-foreground hover:underline">
-                              Edited
-                            </button>
-                            <div className="flex items-center gap-1">
-                              <Heart className="h-3 w-3 fill-primary text-primary" />
-                              <span className="text-xs font-semibold">
-                                {comment.likes}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {comment.time}
-                        </span>
-                      </div>
-                      {comment.replies && (
-                        <button className="flex items-center gap-2 mt-2 px-3 text-xs font-semibold text-muted-foreground hover:underline">
-                          <div className="w-6 h-px bg-muted-foreground/30" />
-                          View {comment.replies} reply
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div> */}
 
-            {/* Add comment */}
-            {/* <div className="flex gap-2 mt-4 sticky bottom-0 bg-card pt-3 pb-2">
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" />
-                  <AvatarFallback>U</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 relative">
-                  <Input
-                    placeholder="Write a comment..."
-                    className="rounded-full bg-secondary border-0 focus-visible:ring-1 pr-20"
-                  />
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-full hover:bg-muted"
-                    >
-                      <Smile className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-full hover:bg-muted"
-                    >
-                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                </div>
-              </div> */}
+            {getCommentsOfPost.data?.length > 0 && (
+              <div className="space-y-4 text-white">
+                {getCommentsOfPost.data.map((comment) => {
+                  return (
+                    <div key={comment.id} className="flex gap-2">
+                      <img
+                        className="w-10 h-10 rounded-full object-cover"
+                        src={comment.user.Profile.avatar}
+                        alt={comment.user.username}
+                      ></img>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-black404040 rounded-2xl px-3 py-2 inline-block">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <h5 className="font-semibold text-[16px]">
+                              {comment.user.username}
+                            </h5>
+                          </div>
+                          <p className="text-[14px] break-words break-all whitespace-normal">
+                            {comment.content}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 px-3">
+                          <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
+                            Like
+                          </button>
+                          <button
+                            className="text-[14px] font-semibold text-muted-foreground hover:underline"
+                            onClick={() => setReplyTo(comment)}
+                          >
+                            Reply
+                          </button>
+
+                          {comment.childComments?.length > 0 && (
+                            <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
+                              View {comment.childComments.length} reply
+                            </button>
+                          )}
+                          {/* {comment.likes > 0 && (
+                            <>
+                              <button className="text-xs font-semibold text-muted-foreground hover:underline">
+                                Edited
+                              </button>
+                              <div className="flex items-center gap-1">
+                                <Heart className="h-3 w-3 fill-primary text-primary" />
+                                <span className="text-xs font-semibold">
+                                  {comment.likes}
+                                </span>
+                              </div>
+                            </>
+                          )} */}
+                          <span className="text-[14px] text-muted-foreground">
+                            {comment.createAt}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-1 rounded-full w-fit h-fit hover:bg-white/10">
+                        <MdMoreHoriz className="h-5 w-5 text-white" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Add comment */}
+
+          <div className="flex flex-col items-center bg-primary sticky h-auto mt-auto right-0 left-0 bottom-0 bg-card px-3 py-1">
+            {replyTo && (
+              <div className="flex space-x-2 justify-start self-stretch items-center">
+                <p className="text-sm text-white me-5">
+                  Reply to <b>{replyTo.user.username}</b>
+                </p>
+                <button
+                  className="text-white text-sm hover:underline"
+                  onClick={() => setReplyTo(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-2 w-full py-2 px-2 ">
+              <img
+                className="w-10 h-10 rounded-full object-cover"
+                src={appContext.currentUser?.avatar}
+                alt={appContext.currentUser?.username}
+              />
+
+              <textarea
+                placeholder="Add your answer"
+                value={content}
+                className="w-full py-2 px-3 max-h-[200px] overflow-y-auto text-[18px] outline-none text-white resize-none rounded-lg bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear"
+                onInput={(e) => {
+                  e.target.style.height = "auto";
+                  e.target.style.height =
+                    Math.min(e.target.scrollHeight, 200) + "px";
+                }}
+                rows={1}
+                onChange={(e) => setContent(e.target.value)}
+              />
+              <button
+                className="px-0 cursor-not-allowed"
+                disabled={!content || content === ""}
+                onClick={() => {
+                  addComment.mutate({
+                    postId: currentPost.id,
+                    content: content,
+                    parent: replyTo?.id,
+                  });
+                }}
+              >
+                <IoMdSend
+                  className={`h-10 w-10 text-proPurple hover:${
+                    !content || content === ""
+                      ? "cursor-not-allowed opacity-50"
+                      : ""
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </div>
       </div>
