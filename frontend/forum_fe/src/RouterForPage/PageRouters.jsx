@@ -12,12 +12,13 @@ import LoadingScreen from "../ui/pages/LoadingScreen";
 import { useContext } from "react";
 import AppContext from "../ui/Context/AppContext";
 import CreateProfilePage from "../ui/pages/CreateProfilePage";
+import DetailPostPage from "../ui/pages/DetailPostPage";
 
 function Layout() {
   const appContext = useContext(AppContext);
   return (
     <>
-      <div className="pt-[70px] box-border w-screen">
+      <div className="mt-[70px] box-border w-screen">
         <Header variant="primary"></Header>
         <Outlet></Outlet>
       </div>
@@ -38,6 +39,7 @@ function PageRouters() {
         <Route path="/sign-up" element={<SignUpPage />} />
         <Route path="/sign-up/verify-otp" element={<VerifyOTPPage />} />
         <Route path="/create-profile" element={<CreateProfilePage />} />
+        <Route path="/post-detail" element={<DetailPostPage />} />
       </Route>
     </Routes>
   );
