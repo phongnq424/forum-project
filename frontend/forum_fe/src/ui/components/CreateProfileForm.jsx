@@ -68,8 +68,7 @@ function CreateProfileForm() {
   useEffect(
     function () {
       if (updateMe.isSuccess) {
-        appContext.setIsCallAgain(true);
-        appContext.setIsCallAgain(false);
+        appContext.getCurrentUserAgain((prev) => !prev);
         navigate("/");
         toastHelper.success("Create your profile is successful!");
       }

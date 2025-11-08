@@ -1,6 +1,4 @@
-import { Outlet } from "react-router-dom";
 import Footer from "../components/Footer";
-import Introduction2 from "../components/Introduction2";
 import CreateProfileForm from "../components/CreateProfileForm";
 import { createContext, useState } from "react";
 import LoadingScreen from "./LoadingScreen";

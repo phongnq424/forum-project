@@ -49,6 +49,7 @@ function VerifyOTPForm({ email }) {
   }
 
   function onClickResendOTP() {
+    form.setValue("otp", "");
     const currEmail = form.getValues("email");
     if (!currEmail) {
       form.setError("email", {
@@ -68,6 +69,12 @@ function VerifyOTPForm({ email }) {
     [verifyOTP.isPending]
   );
 
+  useEffect(
+    function () {
+      verifyOTPContext.setIsLoading(resendOTP.isPending);
+    },
+    [resendOTP.isPending]
+  );
   return (
     <div className="w-full max-w-2xl mx-auto my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
       <h1 className="text-[40px] font-bold text-white text-center">
