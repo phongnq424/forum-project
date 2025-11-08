@@ -67,6 +67,7 @@ function App() {
         getCurrentUserAgain,
       }}
     >
+      {console.log(isLogged)}
       {isLoading && <LoadingScreen />}
       <div className="bg-primary min-h-screen overflow-y-hidden">
         <ToastContainer />

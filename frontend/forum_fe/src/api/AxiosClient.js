@@ -25,8 +25,9 @@ axiosClient.interceptors.response.use(
     const loginUrl =
       import.meta.env.BARE_URL || "http://localhost:3000/api" + "/auth/login";
     if (statusCode === 401 && responseURL != loginUrl) {
-      console.log("Let log in!");
       localStorage.removeItem("token");
+      (error.response.status = 401),
+        (error.response.data.error = "Please Log in to continue!");
     }
 
     return Promise.reject(error.response || error);

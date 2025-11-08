@@ -9,7 +9,7 @@ import {
 import AppContext from "../../Context/AppContext";
 import { DetailPostPageContext } from "../../pages/DetailPostPage";
 
-const CustomDropDown2 = forwardRef(
+const CustomDropDown3 = forwardRef(
   ({ options = [null], onSelect, displayField = null, className }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -33,6 +33,7 @@ const CustomDropDown2 = forwardRef(
 
     useImperativeHandle(ref, () => ({
       open: () => {
+        console.log("haha");
         setIsOpen(true);
       },
       close: () => setIsOpen(false),
@@ -42,7 +43,7 @@ const CustomDropDown2 = forwardRef(
     return (
       <div
         ref={dropdownRef}
-        className={`w-fit absolute bg-primary max-h-[300px] overflow-x-hidden overflow-y-auto rounded-lg z-20 ${className} text-white`}
+        className={`w-fit absolute bg-primary max-h-[300px] min-w-[200px] overflow-x-hidden overflow-y-auto rounded-lg z-20 ${className} text-white`}
       >
         {isOpen &&
           options.map((option, idx) => (
@@ -52,7 +53,7 @@ const CustomDropDown2 = forwardRef(
                 onSelect?.(option);
                 setIsOpen(false);
               }}
-              className={`px-4 py-2 cursor-pointer text-[18px] hover:bg-proPurple`}
+              className={`px-4 py-2 cursor-pointer text-center text-[20px] hover:bg-proPurple`}
             >
               {displayField == null ? option : option[displayField]}
             </div>
@@ -62,4 +63,4 @@ const CustomDropDown2 = forwardRef(
   }
 );
 
-export default CustomDropDown2;
+export default CustomDropDown3;

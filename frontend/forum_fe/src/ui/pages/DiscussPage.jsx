@@ -60,7 +60,7 @@ function DiscussPage() {
         toastHelper.success("Love: " + !toggleReaction.data.removed);
       }
       if (toggleReaction.isError) {
-        console.log(error);
+        console.log(toggleReaction.error.message);
       }
     },
     [toggleReaction.isError, toggleReaction.isSuccess]

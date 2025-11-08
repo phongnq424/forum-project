@@ -85,7 +85,7 @@ const DetailPostPage = () => {
     }
 
     if (deleteComment.isSuccess) {
-      toastHelper.success("Delete post successfully!");
+      toastHelper.success("Delete comment successfully!");
       getCommentsOfPost.refetch();
     }
   }, [deleteComment.isError, deleteComment.isSuccess]);
@@ -111,6 +111,7 @@ const DetailPostPage = () => {
         getCommentsOfPost.refetch();
       }
       if (addComment.isError) {
+        toastHelper.error(addComment.error.message);
       }
     },
     [addComment.isError, addComment.isSuccess]
@@ -215,7 +216,7 @@ const DetailPostPage = () => {
                   </div>
                 </div>
                 {/* Content */}
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col space-y-5">
                   {/* Post title */}
                   <p className="text-2xl font-bold leading-relaxed text-white">
                     {currentPost.title}
