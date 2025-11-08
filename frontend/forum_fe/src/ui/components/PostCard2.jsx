@@ -2,7 +2,6 @@ import { FaRegBookmark, FaRegHeart } from "react-icons/fa";
 import { FiMessageCircle, FiShare2 } from "react-icons/fi";
 import Button from "../elements/Button";
 import General from "../../General/General";
-
 const PostCard2 = ({
   variant = "",
   author = "",
@@ -87,7 +86,7 @@ const PostCard2 = ({
               <Button
                 className="flex items-center gap-2 transition-colors hover:text-proPurple"
                 isStopPropagation={true}
-                onClick={() => onSaveClick?.()}
+                onClick={(e) => onSaveClick?.(e)}
               >
                 <FaRegBookmark className="h-5 w-5" />
               </Button>

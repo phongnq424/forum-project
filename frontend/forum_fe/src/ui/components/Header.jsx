@@ -1,9 +1,11 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import logo_forum from "../../assets/Logo_Forum.svg";
 import NavigationBar from "./NavigationBar";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import Button from "../elements/Button";
 import AppContext from "../Context/AppContext";
+import CustomDropDown from "./CustomDropDown/CustomDropDown";
+import General from "../../General/General";
 
 function Header({ variant = "transparent", className = "" }) {
   const variants = {
@@ -12,6 +14,7 @@ function Header({ variant = "transparent", className = "" }) {
   };
 
   const appContext = useContext(AppContext);
+  const refOptionsMenu = useRef();
 
   const location = useLocation();
   const pathname = location.pathname;
@@ -41,11 +44,18 @@ function Header({ variant = "transparent", className = "" }) {
       )}
 
       {appContext.isLogged && (
-        <img
-          src={appContext.currentUser?.avatar}
-          alt={appContext.currentUser?.username || "avatar"}
-          className="h-[60px] w-[60px] self-center rounded-full bg-white object-cover"
-        ></img>
+        <div className="relative self-center w-fit h-fit">
+          <img
+            src={appContext.currentUser?.avatar}
+            alt={appContext.currentUser?.username || "avatar"}
+            className="h-[60px] w-[60px]  rounded-full bg-white object-cover"
+            onClick={() => refOptionsMenu.current.open()}
+          ></img>
+          <CustomDropDown
+            variant="menuOptions"
+            options={General.menuOptions}
+          ></CustomDropDown>
+        </div>
       )}
     </div>
   );

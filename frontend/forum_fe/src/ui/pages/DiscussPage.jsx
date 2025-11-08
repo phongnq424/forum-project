@@ -5,7 +5,11 @@ import SearchBar from "../components/SearchBar";
 import { LuFilePlus2 } from "react-icons/lu";
 import LoadingScreen from "./LoadingScreen";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
-import { useCreatePost, useGetPosts } from "../../api/hooks/postHook";
+import {
+  useCreatePost,
+  useGetPosts,
+  useSavePost,
+} from "../../api/hooks/postHook";
 import toastHelper from "../../helper/ToastHelper";
 import { useGetCategories } from "../../api/hooks/categoriesHook";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
@@ -21,18 +25,29 @@ function DiscussPage() {
   const getCategories = useGetCategories();
   const toggleReaction = useToggleReaction();
   const navigate = useNavigate();
+  const savePost = useSavePost();
 
   useEffect(
     function () {
       if (getPosts.isSuccess) {
         const responsePosts = getPosts.data.data;
-        console.log(responsePosts);
         setPosts(responsePosts);
       }
       if (getPosts.isError) {
       }
     },
-    [getPosts.isSuccess, getPosts.isError]
+    [getPosts.isSuccess, getPosts.isError, getPosts.data]
+  );
+
+  useEffect(
+    function () {
+      if (savePost.isSuccess) {
+        const responsePosts = savePost.data;
+      }
+      if (savePost.isError) {
+      }
+    },
+    [savePost.isSuccess, savePost.isError]
   );
 
   const handleSelectPost = function (post) {
@@ -42,7 +57,7 @@ function DiscussPage() {
   useEffect(
     function () {
       if (toggleReaction.isSuccess) {
-        toastHelper.success("Thêm bày tỏ: " + !toggleReaction.data.removed);
+        toastHelper.success("Love: " + !toggleReaction.data.removed);
       }
       if (toggleReaction.isError) {
         console.log(error);
@@ -57,6 +72,7 @@ function DiscussPage() {
       if (createPost.isSuccess) {
         setIsDialogClosing(true);
         toastHelper.success("Create post successfully!");
+        getPosts.refetch();
       } else if (createPost.isError) {
         toastHelper.error(createPost.error.message);
       }
@@ -65,7 +81,9 @@ function DiscussPage() {
   );
   return (
     <div className="px-(--primary-padding) pt-5 w-full h-full relative">
-      {(getPosts.isLoading || getCategories.isLoading) && <LoadingScreen />}
+      {(getPosts.isLoading ||
+        getCategories.isLoading ||
+        savePost.isPending) && <LoadingScreen />}
       <SearchBar />
       <div className="flex justify-between pt-5">
         {getCategories.data?.data?.length >= 1 && (
@@ -89,7 +107,7 @@ function DiscussPage() {
         <AddPostDialog
           isLoading={createPost.isPending}
           onClose={() => setIsDialogClosing(true)}
-          onSubmit={createPost.mutate}
+          onSubmit={(submitData) => createPost.mutate(submitData)}
         />
       )}
       {/* Posts */}
@@ -97,6 +115,7 @@ function DiscussPage() {
         <div className="pt-5 space-y-2.5">
           {posts.map((item) => (
             <PostCard2
+              onSaveClick={(e) => savePost.mutate({ postId: item.id })}
               variant="discuss"
               key={item.id}
               {...item}

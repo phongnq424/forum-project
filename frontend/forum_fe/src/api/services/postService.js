@@ -53,6 +53,7 @@ const postService = {
           isLiked: false,
           isSaved: false,
           topic: curr.Topic,
+          user: curr.User,
         });
       }
       return { data: ps, pagination: response.pagination };
@@ -78,7 +79,26 @@ const postService = {
         isLiked: false,
         isSaved: false,
         topic: result.Topic,
+        user: curr.User,
       };
+      return response;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
+  async save(postId) {
+    try {
+      const response = await axiosClient.post(`/post-saved/toggle/${postId}`);
+      return response;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
+  async delete(postId) {
+    try {
+      const response = await axiosClient.delete(`/posts/${postId}`);
       return response;
     } catch (error) {
       throw General.createError(error);

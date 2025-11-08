@@ -16,3 +16,9 @@ export function useAddComment() {
     },
   });
 }
+
+export function useDeleteComment() {
+  return useMutation({
+    mutationFn: ({ cmtId }) => commentService.delete(cmtId),
+  });
+}

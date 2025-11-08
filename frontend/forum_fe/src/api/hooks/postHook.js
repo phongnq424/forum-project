@@ -25,3 +25,17 @@ export function useGetPostById(postId) {
     enabled: !!postId,
   });
 }
+
+export function useSavePost() {
+  return useMutation({
+    mutationFn: (data) => {
+      return postService.save(data.postId);
+    },
+  });
+}
+
+export function useDeletePost() {
+  return useMutation({
+    mutationFn: ({ postId }) => postService.delete(postId),
+  });
+}

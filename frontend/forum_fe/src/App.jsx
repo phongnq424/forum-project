@@ -37,6 +37,7 @@ function App() {
     function () {
       if (getMe.isSuccess) {
         setCurrentUser(getMe.data);
+        localStorage.setItem("meId", getMe.data.user_id);
       }
     },
     [getMe.isSuccess]

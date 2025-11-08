@@ -5,21 +5,28 @@ const commentService = {
   async getCommentsOfPost(postId) {
     const responses = await axiosClient.get(`/comments/post/${postId}`);
     const results = [];
-    let item;
+    const change = function (from) {
+      const to = {
+        id: from.id,
+        userId: from.user_id,
+        postId: from.post_id,
+        parentCommentId: from.parentComment_id,
+        content: from.comment_detail,
+        createAt: new Date(from.created_at).toLocaleDateString(),
+        updateAt: new Date(from.update_at).toLocaleDateString(),
+        user: from.User,
+        childComments: from.childComments?.map((item) => change(item)),
+      };
+
+      return to;
+    };
+
     for (let i = 0; i < responses.length; i++) {
       const response = responses[i];
-      results.push({
-        id: response.id,
-        userId: response.user_id,
-        postId: response.post_id,
-        parentCommentId: response.parentComment_id,
-        content: response.comment_detail,
-        createAt: new Date(response.created_at).toLocaleDateString(),
-        updateAt: new Date(response.update_at).toLocaleDateString(),
-        user: response.User,
-        childComments: response.childComments,
-      });
+      results.push(change(response));
     }
+
+    console.log(results);
     return results;
   },
 
@@ -30,6 +37,15 @@ const commentService = {
       return response;
     } catch (error) {
       console.error(error);
+      throw General.createError(error);
+    }
+  },
+
+  async delete(cmtId) {
+    try {
+      const response = await axiosClient.delete(`/comments/${cmtId}`);
+      return response;
+    } catch (error) {
       throw General.createError(error);
     }
   },
