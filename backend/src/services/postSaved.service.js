@@ -1,3 +1,6 @@
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
+
 const PostSavedService = {
     toggleSave: async (userId, postId) => {
         const existing = await prisma.postSaved.findUnique({
