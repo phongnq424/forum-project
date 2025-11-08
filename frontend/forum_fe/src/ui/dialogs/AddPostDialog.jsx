@@ -83,7 +83,9 @@ export const AddPostDialog = ({ onClose, onSubmit, isLoading }) => {
                 <CustomDropDown
                   options={topics}
                   displayField="name"
-                  onChange={(value) => setPostTopic(value.id)}
+                  onChange={(value) => {
+                    setPostTopic(value.id);
+                  }}
                   indexValueSelected={0}
                   variant="addPost"
                 />

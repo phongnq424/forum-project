@@ -21,6 +21,8 @@ const General = {
   reactionType: {
     LOVE: "LOVE",
   },
+
+  menuOptions: ["Log Out"],
 };
 
 export default General;
