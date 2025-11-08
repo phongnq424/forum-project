@@ -13,9 +13,18 @@ function App() {
   );
   const [currentUser, setCurrentUser] = useState();
   const [isLoading, setIsLoading] = useState(false);
-  const [isCallAgain, setIsCallAgain] = useState(false);
+  const [flagGetCurrentUserAgain, getCurrentUserAgain] = useState(true);
 
-  const getMe = useGetMe(isLogged);
+  const getMe = useGetMe(false);
+
+  useEffect(
+    function () {
+      if (isLogged) {
+        getMe.refetch();
+      }
+    },
+    [isLogged, flagGetCurrentUserAgain]
+  );
 
   useEffect(
     function () {
@@ -28,6 +37,7 @@ function App() {
     function () {
       if (getMe.isSuccess) {
         setCurrentUser(getMe.data);
+        localStorage.setItem("meId", getMe.data.user_id);
       }
     },
     [getMe.isSuccess]
@@ -47,13 +57,6 @@ function App() {
     [getMe.isError]
   );
 
-  useEffect(() => {
-    if (isCallAgain) {
-      getMe.refetch();
-      setIsCallAgain(false);
-    }
-  }, [isCallAgain]);
-
   return (
     <AppContext.Provider
       value={{
@@ -61,11 +64,12 @@ function App() {
         setIsLogged,
         currentUser,
         setCurrentUser,
-        setIsCallAgain,
+        getCurrentUserAgain,
       }}
     >
+      {console.log(isLogged)}
       {isLoading && <LoadingScreen />}
-      <div className="bg-primary">
+      <div className="bg-primary min-h-screen overflow-y-hidden">
         <ToastContainer />
         <PageRouters />
       </div>

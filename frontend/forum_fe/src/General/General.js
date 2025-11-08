@@ -17,6 +17,12 @@ const General = {
   stringError: function (error) {
     return `Status: ${error.status}; Message: ${error.message}`;
   },
+
+  reactionType: {
+    LOVE: "LOVE",
+  },
+
+  menuOptions: ["Log Out"],
 };
 
 export default General;

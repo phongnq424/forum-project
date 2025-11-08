@@ -9,6 +9,7 @@ function Button({
   target = "_blank",
   onClick,
   children,
+  isStopPropagation = false,
 }) {
   const baseType = `hover:cursor-pointer ${className}`;
   if (type === "NavLink") {
@@ -36,7 +37,13 @@ function Button({
     );
   } else {
     return (
-      <button className={baseType} onClick={onClick}>
+      <button
+        className={baseType}
+        onClick={(e) => {
+          if (isStopPropagation) e.stopPropagation();
+          onClick();
+        }}
+      >
         {children}
       </button>
     );
