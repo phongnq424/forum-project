@@ -6,6 +6,7 @@ export function useGetCommentsOfPost(postId) {
     queryKey: ["comments", postId],
     queryFn: (context) => commentService.getCommentsOfPost(context.queryKey[1]),
     enabled: !!postId,
+    refetchOnWindowFocus: false,
   });
 }
 

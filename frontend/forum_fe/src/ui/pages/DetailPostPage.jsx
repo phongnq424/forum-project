@@ -48,22 +48,29 @@ const DetailPostPage = () => {
   const navigate = useNavigate();
   const deleteComment = useDeleteComment();
 
-  const optionsForMyPost = ["Delete", "Edit"];
-  const optionsForTheirPost = ["Report"];
-  const optionsForMyCmt = ["Delete", "Edit"];
-  const optionsForTheirCmt = ["Report"];
+  const optionsForMyPost = [
+    { id: 0, name: "Delete" },
+    { id: 1, name: "Edit" },
+  ];
+  const optionsForTheirPost = [{ id: 2, name: "Report" }];
+
+  const optionsForMyCmt = [
+    { id: 0, name: "Delete" },
+    { id: 1, name: "Edit" },
+  ];
+  const optionsForTheirCmt = [{ id: 2, name: "Report" }];
 
   const refDropDownForPost = useRef();
   const commentRefs = useRef({});
 
   function handlePostAction(option) {
-    if (option === "Delete") {
+    if (option.id === 0) {
       deletePost.mutate({ postId });
     }
   }
 
   function handleCommentAction(option, objectId) {
-    if (option === "Delete") {
+    if (option.id === 0) {
       deleteComment.mutate({ cmtId: objectId });
     }
   }
@@ -206,6 +213,7 @@ const DetailPostPage = () => {
                     <CustomDropDown2
                       onSelect={(option) => handlePostAction(option)}
                       ref={refDropDownForPost}
+                      displayField="name"
                       className="right-[20px]"
                       options={
                         localStorage.getItem("meId") === currentPost.user.id
@@ -350,6 +358,7 @@ const DetailPostPage = () => {
                                     ? optionsForMyCmt
                                     : optionsForTheirCmt
                                 }
+                                displayField="name"
                               />
 
                               <button

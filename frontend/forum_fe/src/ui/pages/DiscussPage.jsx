@@ -24,9 +24,9 @@ function DiscussPage() {
   const getPosts = useGetPosts();
   const getCategories = useGetCategories();
   const toggleReaction = useToggleReaction();
-  const navigate = useNavigate();
   const savePost = useSavePost();
-
+  const navigate = useNavigate();
+  const [selection, setSelection] = useState();
   useEffect(
     function () {
       if (getPosts.isSuccess) {
@@ -42,9 +42,12 @@ function DiscussPage() {
   useEffect(
     function () {
       if (savePost.isSuccess) {
-        const responsePosts = savePost.data;
+        toastHelper.success(
+          savePost.data.saved ? "Save successfully!" : "Unsave successfully!"
+        );
       }
       if (savePost.isError) {
+        toastHelper.error(savePost.error.message);
       }
     },
     [savePost.isSuccess, savePost.isError]
@@ -66,6 +69,16 @@ function DiscussPage() {
     [toggleReaction.isError, toggleReaction.isSuccess]
   );
 
+  useEffect(
+    function () {
+      if (selection?.id == 0) {
+        getPosts.refetch();
+        console.log("DDaay");
+      }
+    },
+    [selection]
+  );
+
   // Response for Create Post
   useEffect(
     function () {
@@ -79,6 +92,7 @@ function DiscussPage() {
     },
     [createPost.isError, createPost.isSuccess]
   );
+
   return (
     <div className="px-(--primary-padding) pt-5 w-full h-full relative">
       {(getPosts.isLoading ||
@@ -88,6 +102,7 @@ function DiscussPage() {
       <div className="flex justify-between pt-5">
         {getCategories.data?.data?.length >= 1 && (
           <CategoryBar
+            onChanged={(Selection) => setSelection(Selection)}
             categories={[
               { id: "0", name: "For you" },
               ...getCategories.data.data,
@@ -103,16 +118,9 @@ function DiscussPage() {
         </button>
       </div>
 
-      {!isDialogClosing && (
-        <AddPostDialog
-          isLoading={createPost.isPending}
-          onClose={() => setIsDialogClosing(true)}
-          onSubmit={(submitData) => createPost.mutate(submitData)}
-        />
-      )}
       {/* Posts */}
       {posts?.length > 0 && (
-        <div className="pt-5 space-y-2.5">
+        <div className="pt-10 space-y-10">
           {posts.map((item) => (
             <PostCard2
               onSaveClick={(e) => savePost.mutate({ postId: item.id })}
@@ -120,6 +128,7 @@ function DiscussPage() {
               key={item.id}
               {...item}
               onClick={(e) => {
+                console.log(item);
                 handleSelectPost(item);
               }}
               onReactionClick={(typeReaction) => {
@@ -128,6 +137,14 @@ function DiscussPage() {
             ></PostCard2>
           ))}
         </div>
+      )}
+
+      {!isDialogClosing && (
+        <AddPostDialog
+          isLoading={createPost.isPending}
+          onClose={() => setIsDialogClosing(true)}
+          onSubmit={(submitData) => createPost.mutate(submitData)}
+        />
       )}
     </div>
   );

@@ -62,3 +62,11 @@ export function useResendOTP(handleOnSuccess, handleOnError) {
     },
   });
 }
+
+export function useLogout() {
+  const execute = function () {
+    localStorage.removeItem("token");
+    localStorage.removeItem("meId");
+  };
+  return execute;
+}

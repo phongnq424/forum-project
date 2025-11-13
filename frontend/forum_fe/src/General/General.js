@@ -22,7 +22,15 @@ const General = {
     LOVE: "LOVE",
   },
 
-  menuOptions: ["Log Out"],
+  menuOptions: {
+    SEE_PROFILE: "See Profile",
+    EDIT_PROFILE: "Edit Profile",
+    LOG_OUT: "Log out",
+
+    asArray() {
+      return Object.values(this).filter((item) => typeof item != "function");
+    },
+  },
 };
 
 export default General;

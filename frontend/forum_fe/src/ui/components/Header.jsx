@@ -6,8 +6,9 @@ import Button from "../elements/Button";
 import AppContext from "../Context/AppContext";
 import CustomDropDown from "./CustomDropDown/CustomDropDown";
 import General from "../../General/General";
-import CustomDropDown2 from "./CustomDropDown/CustomDropDown3";
+import CustomDropDown3 from "./CustomDropDown/CustomDropDown3";
 import { fa } from "zod/v4/locales";
+import { useLogout } from "../../api/hooks/AuthenticationHook";
 
 function Header({ variant = "transparent", className = "" }) {
   const variants = {
@@ -19,16 +20,18 @@ function Header({ variant = "transparent", className = "" }) {
 
   const appContext = useContext(AppContext);
   const refOptionsMenu = useRef();
-
+  const logOut = useLogout();
   const navigate = useNavigate();
 
   const handleOnMenuSelection = function (option) {
-    if (option == "Log Out") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("meId");
+    if (option == General.menuOptions.LOG_OUT) {
+      logOut();
       navigate("/sign-in");
-      //appContext?.setCurrentUser?.(null);
       appContext.setIsLogged(false);
+    }
+
+    if (option === General.menuOptions.SEE_PROFILE) {
+      navigate("/profile");
     }
   };
 
@@ -73,11 +76,11 @@ function Header({ variant = "transparent", className = "" }) {
             ></img>
           </button>
 
-          <CustomDropDown2
+          <CustomDropDown3
             onSelect={(option) => handleOnMenuSelection(option)}
             ref={refMenu}
             className="right-[2px]"
-            options={["Log Out"]}
+            options={General.menuOptions.asArray()}
           />
         </div>
       )}
