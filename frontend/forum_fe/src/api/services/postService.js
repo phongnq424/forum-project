@@ -19,7 +19,6 @@ const postService = {
         }
       }
 
-      console.warn(data);
       const response = await axiosClient.post("/posts", request, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -56,6 +55,7 @@ const postService = {
           user: curr.User,
         });
       }
+      console.log("thành công");
       return { data: ps, pagination: response.pagination };
     } catch (error) {
       throw General.createError(error);
@@ -100,6 +100,37 @@ const postService = {
     try {
       const response = await axiosClient.delete(`/posts/${postId}`);
       return response;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
+  getPostOfUser: async function (userId) {
+    try {
+      const response = await axiosClient.get(`/posts/user/${userId}`);
+      console.log(response.data);
+      const ps = [];
+      for (let i = 0; i < response.data.length; i++) {
+        const curr = response.data[i];
+        ps.push({
+          id: curr.id,
+          author: curr.User?.username || "",
+          authorImg: curr.User?.Profile?.avatar || "",
+          date: new Date(curr.created_at).toLocaleDateString(),
+          title: curr.title,
+          description: curr.content,
+          likes: -1,
+          comments: -1,
+          images: curr.Image || [],
+          thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
+          isLiked: false,
+          isSaved: false,
+          topic: curr.Topic,
+          user: curr.User,
+        });
+      }
+
+      return { data: ps, pagination: response.pagination };
     } catch (error) {
       throw General.createError(error);
     }

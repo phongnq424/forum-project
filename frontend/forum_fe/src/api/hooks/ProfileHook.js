@@ -9,6 +9,8 @@ export function useGetMe(isEnable = true) {
       return profileService.getMe();
     },
     enabled: isEnable,
+    retry: 0,
+    refetchOnWindowFocus: false,
   });
 }
 

@@ -13,6 +13,7 @@ export function useGetPosts() {
   return useQuery({
     queryKey: ["post"],
     queryFn: () => postService.getPosts(),
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -23,6 +24,7 @@ export function useGetPostById(postId) {
       return postService.getPostById(context.queryKey[1]);
     },
     enabled: !!postId,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -37,5 +39,13 @@ export function useSavePost() {
 export function useDeletePost() {
   return useMutation({
     mutationFn: ({ postId }) => postService.delete(postId),
+  });
+}
+
+export function useGetPostsOfUser(userId) {
+  return useQuery({
+    queryKey: ["post_of_user", userId],
+    queryFn: (context) => postService.getPostOfUser(context.queryKey[1]),
+    refetchOnWindowFocus: false,
   });
 }
