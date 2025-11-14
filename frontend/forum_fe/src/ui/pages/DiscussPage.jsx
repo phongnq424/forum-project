@@ -24,9 +24,9 @@ function DiscussPage() {
   const [isDialogClosing, setIsDialogClosing] = useState(true);
   const createPost = useCreatePost();
   const getPosts = useGetPosts();
+  const navigate = useNavigate();
   const getCategories = useGetCategories();
   const toggleReaction = useToggleReaction();
-  const navigate = useNavigate();
   const savePost = useSavePost();
   const [selectedCategory, setSelectedCategory] = useState();
   const [searchKey, setSearchKey] = useState("");
@@ -142,6 +142,7 @@ function DiscussPage() {
     },
     [createPost.isError, createPost.isSuccess]
   );
+
   return (
     <div className="px-(--primary-padding) pt-5 w-full h-full relative">
       {(getPosts.isLoading ||
@@ -169,13 +170,6 @@ function DiscussPage() {
         </button>
       </div>
 
-      {!isDialogClosing && (
-        <AddPostDialog
-          isLoading={createPost.isPending}
-          onClose={() => setIsDialogClosing(true)}
-          onSubmit={(submitData) => createPost.mutate(submitData)}
-        />
-      )}
       {/* Posts */}
       {posts && (
         <div className="pt-10 space-y-10">
@@ -191,6 +185,7 @@ function DiscussPage() {
               key={item.id}
               {...item}
               onClick={(e) => {
+                console.log(item);
                 handleSelectPost(item);
               }}
               onReactionClick={(typeReaction) => {
@@ -199,6 +194,14 @@ function DiscussPage() {
             ></PostCard2>
           ))}
         </div>
+      )}
+
+      {!isDialogClosing && (
+        <AddPostDialog
+          isLoading={createPost.isPending}
+          onClose={() => setIsDialogClosing(true)}
+          onSubmit={(submitData) => createPost.mutate(submitData)}
+        />
       )}
     </div>
   );

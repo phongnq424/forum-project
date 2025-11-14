@@ -145,10 +145,13 @@ function CreateProfileForm({ currentProfile = null }) {
                           field.onChange(genderSelected.gender);
                         }}
                         onBlur={field.onBlur}
-                        initIndexSelected={genders.findIndex(
-                          (g) =>
-                            currentProfile.gender.toLowerCase() ===
-                            g.gender.toLowerCase()
+                        initIndexSelected={Math.max(
+                          0,
+                          genders.findIndex(
+                            (g) =>
+                              currentProfile?.gender?.toLowerCase() ===
+                              g?.gender?.toLowerCase()
+                          )
                         )}
                         displayField="gender"
                       ></CustomDropDown>

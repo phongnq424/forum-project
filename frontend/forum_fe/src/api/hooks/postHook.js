@@ -13,6 +13,7 @@ export function useGetPosts() {
   return useQuery({
     queryKey: ["post"],
     queryFn: () => postService.getPosts(),
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -23,6 +24,7 @@ export function useGetPostById(postId) {
       return postService.getPostById(context.queryKey[1]);
     },
     enabled: !!postId,
+    refetchOnWindowFocus: false,
   });
 }
 

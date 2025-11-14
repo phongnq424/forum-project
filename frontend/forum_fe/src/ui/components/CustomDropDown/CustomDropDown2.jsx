@@ -47,7 +47,7 @@ const CustomDropDown2 = forwardRef(
         {isOpen &&
           options.map((option, idx) => (
             <div
-              key={idx}
+              key={option.id}
               onClick={() => {
                 onSelect?.(option);
                 setIsOpen(false);

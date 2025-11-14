@@ -3,11 +3,11 @@ import { FiMessageCircle, FiShare2 } from "react-icons/fi";
 import Button from "../elements/Button";
 import General from "../../General/General";
 const PostCard2 = ({
-  variant = "",
-  author = "",
-  authorImg = "",
-  title = "",
-  description = "",
+  variant = "discuss",
+  author = "Author",
+  authorImg = "Author Img",
+  title = "Title",
+  description = "Description",
   likes = -1,
   comments = -1,
   thumbnail = "",

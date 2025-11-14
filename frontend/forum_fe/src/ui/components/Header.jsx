@@ -6,7 +6,7 @@ import Button from "../elements/Button";
 import AppContext from "../Context/AppContext";
 import CustomDropDown from "./CustomDropDown/CustomDropDown";
 import General from "../../General/General";
-import CustomDropDown2 from "./CustomDropDown/CustomDropDown3";
+import CustomDropDown3 from "./CustomDropDown/CustomDropDown3";
 import { fa } from "zod/v4/locales";
 import { useLogOut } from "../../api/hooks/AuthenticationHook";
 import { toast } from "react-toastify";
@@ -44,6 +44,10 @@ function Header({ variant = "transparent", className = "" }) {
       navigate("/profile");
     } else if (option.id === General.menuOptions.EDIT_PROFILE.id) {
       navigate("/update-profile");
+    }
+
+    if (option === General.menuOptions.SEE_PROFILE) {
+      navigate("/profile");
     }
   };
 
@@ -88,7 +92,7 @@ function Header({ variant = "transparent", className = "" }) {
             ></img>
           </button>
 
-          <CustomDropDown2
+          <CustomDropDown3
             onSelect={(option) => handleOnMenuSelection(option)}
             ref={refMenu}
             className="right-[2px]"

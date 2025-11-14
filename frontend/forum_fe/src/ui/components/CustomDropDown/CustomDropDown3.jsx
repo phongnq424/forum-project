@@ -33,7 +33,6 @@ const CustomDropDown3 = forwardRef(
 
     useImperativeHandle(ref, () => ({
       open: () => {
-        console.log("haha");
         setIsOpen(true);
       },
       close: () => setIsOpen(false),
