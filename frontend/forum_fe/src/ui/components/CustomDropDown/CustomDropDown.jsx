@@ -11,7 +11,7 @@ const CustomDropDown = forwardRef(
     {
       options = [null],
       display,
-      onChange,
+      onSelected,
       onBlur,
       displayField = null,
       variant,
@@ -19,9 +19,16 @@ const CustomDropDown = forwardRef(
     },
     ref
   ) => {
+    console.log(options);
     const [isOpen, setIsOpen] = useState(false);
-    const [selected, setSelected] = useState();
+    const [selected, setSelected] = useState(options[initIndexSelected]);
     const dropdownRef = useRef(null);
+    useEffect(
+      function () {
+        onSelected?.(selected);
+      },
+      [selected]
+    );
 
     useEffect(() => {
       function handleClickOutside(event) {
@@ -34,7 +41,7 @@ const CustomDropDown = forwardRef(
       }
       document.addEventListener("mousedown", handleClickOutside);
       setSelected(options[initIndexSelected]);
-      onChange?.(options[initIndexSelected]);
+      onSelected?.(options[initIndexSelected]);
       return () =>
         document.removeEventListener("mousedown", handleClickOutside);
     }, []);
@@ -81,7 +88,6 @@ const CustomDropDown = forwardRef(
                   key={idx}
                   onClick={() => {
                     setSelected(option);
-                    onChange?.(option);
                     setIsOpen(false);
                   }}
                   className={`px-4 py-2 cursor-pointer text-[20px] ${
@@ -106,7 +112,6 @@ const CustomDropDown = forwardRef(
                 key={idx}
                 onClick={() => {
                   setSelected(option);
-                  onChange?.(option);
                   setIsOpen(false);
                 }}
                 className={`px-4 py-2 cursor-pointer text-[20px] ${
@@ -136,7 +141,7 @@ const CustomDropDown = forwardRef(
               }
               readOnly
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 text-white w-full h-fit bg-primary rounded-xl placeholder:text-muted-foreground text-lg resize-none focus:outline-none"
+              className="p-2 hover:cursor-pointer text-white w-full h-fit bg-primary rounded-xl placeholder:text-muted-foreground text-lg resize-none focus:outline-none"
             ></input>
           </div>
 
@@ -147,7 +152,6 @@ const CustomDropDown = forwardRef(
                   key={idx}
                   onClick={() => {
                     setSelected(option);
-                    onChange?.(option);
                     setIsOpen(false);
                   }}
                   className={`px-4 py-2 cursor-pointer text-lg ${

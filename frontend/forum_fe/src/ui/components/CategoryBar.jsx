@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const CategoryBar = ({ onChanged, categories }) => {
   if (categories?.length <= 0) {
@@ -13,7 +13,10 @@ const CategoryBar = ({ onChanged, categories }) => {
     };
   }
 
-  onChanged(selectedItem.id);
+  useEffect(() => {
+    onChanged?.(selectedItem);
+  }, [selectedItem]);
+
   return (
     <div className="flex items-center justify-between gap-4 w-full text-[18px] text-white">
       {/* Categories */}

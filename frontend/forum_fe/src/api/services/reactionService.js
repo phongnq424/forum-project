@@ -9,6 +9,7 @@ const reactionService = {
         type: typeReaction,
       }).toString();
       const response = await axiosClient.post(`/reactions/toggle?${query}`);
+      response.postId = postId;
       return response;
     } catch (error) {
       console.log(error);

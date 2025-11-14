@@ -11,8 +11,9 @@ import ImagePicker from "./ImagePicker";
 import { useUpdateMe } from "../../api/hooks/ProfileHook";
 import toastHelper from "../../helper/ToastHelper";
 import { CreateProfileContext } from "../pages/CreateProfilePage";
+import General from "../../General/General";
 
-function CreateProfileForm() {
+function CreateProfileForm({ currentProfile = null }) {
   const navigate = useNavigate();
   const updateMe = useUpdateMe();
   const createProfileContext = useContext(CreateProfileContext);
@@ -42,15 +43,15 @@ function CreateProfileForm() {
       }),
   });
 
-  const genders = ["Male", "Female", "Other"];
+  const genders = General.genders.asArray();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
-      dob: new Date(),
-      gender: genders[0],
-      bio: "",
+      fullName: currentProfile?.fullname || "",
+      dob: currentProfile?.dob ? new Date(currentProfile?.dob) : new Date(),
+      gender: "",
+      bio: currentProfile?.bio || "",
     },
   });
 
@@ -70,7 +71,9 @@ function CreateProfileForm() {
       if (updateMe.isSuccess) {
         appContext.getCurrentUserAgain((prev) => !prev);
         navigate("/");
-        toastHelper.success("Create your profile is successful!");
+        toastHelper.success(
+          `${currentProfile ? "Update" : "Create"} your profile is successful!`
+        );
       }
 
       if (updateMe.isError) {
@@ -89,7 +92,12 @@ function CreateProfileForm() {
         <div className="flex justify-between">
           <div className="space-y-5 basis-[40%]">
             <h1 className="text-[30px] font-bold text-white text-center">
-              Complete Your Profile!
+              {createProfileContext.option ===
+                General.optionOfCreateProfilePage.CREATE &&
+                "Complete Your Profile!"}
+              {createProfileContext.option ===
+                General.optionOfCreateProfilePage.UPDATE &&
+                "Edit Your Profile!"}
             </h1>
 
             <div className="space-y-10">
@@ -132,9 +140,17 @@ function CreateProfileForm() {
                         variant="createProfile"
                         options={genders}
                         selected={field.value}
-                        onChange={field.onChange}
+                        onSelected={(genderSelected) => {
+                          console.log(genderSelected.gender);
+                          field.onChange(genderSelected.gender);
+                        }}
                         onBlur={field.onBlur}
-                        indexValueSelected={0}
+                        initIndexSelected={genders.findIndex(
+                          (g) =>
+                            currentProfile.gender.toLowerCase() ===
+                            g.gender.toLowerCase()
+                        )}
+                        displayField="gender"
                       ></CustomDropDown>
                     )}
                   />
@@ -154,7 +170,10 @@ function CreateProfileForm() {
                 type="submit"
                 className="w-full py-3 text-[14px] bg-proPurple text-white font-semibold rounded-lg hover:opacity-70 transition"
               >
-                NEXT
+                {createProfileContext.option ===
+                  General.optionOfCreateProfilePage.CREATE && "NEXT"}
+                {createProfileContext.option ===
+                  General.optionOfCreateProfilePage.UPDATE && "SAVE CHANGE"}
               </button>
             </div>
           </div>
@@ -172,6 +191,7 @@ function CreateProfileForm() {
                   <ImagePicker
                     variant="cover"
                     onChange={field.onChange}
+                    defaultImageURL={currentProfile?.cover}
                   ></ImagePicker>
                 )}
               ></Controller>
@@ -185,6 +205,7 @@ function CreateProfileForm() {
                   <ImagePicker
                     variant="avatar"
                     onChange={field.onChange}
+                    defaultImageURL={currentProfile?.avatar}
                   ></ImagePicker>
                 )}
               ></Controller>

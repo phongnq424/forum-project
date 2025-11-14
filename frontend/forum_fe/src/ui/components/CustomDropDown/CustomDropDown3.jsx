@@ -13,8 +13,8 @@ const CustomDropDown3 = forwardRef(
   ({ options = [null], onSelect, displayField = null, className }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const appContext = useContext(AppContext);
-    const detailPostPageContext = useContext(DetailPostPageContext);
+    // const appContext = useContext(AppContext);
+    // const detailPostPageContext = useContext(DetailPostPageContext);
 
     useEffect(() => {
       function handleClickOutside(event) {
@@ -48,7 +48,7 @@ const CustomDropDown3 = forwardRef(
         {isOpen &&
           options.map((option, idx) => (
             <div
-              key={idx}
+              key={option.id}
               onClick={() => {
                 onSelect?.(option);
                 setIsOpen(false);
