@@ -527,7 +527,7 @@ const DetailPostPage = () => {
                     e.target.style.height =
                       Math.min(e.target.scrollHeight, 200) + "px";
                   }}
-                  rows={1}
+                  rows="1"
                   onChange={(e) => setContent(e.target.value)}
                 />
                 <button

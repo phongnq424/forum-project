@@ -97,6 +97,7 @@ const postService = {
           user: curr.User,
         });
       }
+      console.log("thành công");
       return { data: ps, pagination: response.pagination };
     } catch (error) {
       throw General.createError(error);

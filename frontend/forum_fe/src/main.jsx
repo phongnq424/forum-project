@@ -6,11 +6,9 @@ import QueryProvider from "./providers/QueryProvider.jsx";
 import { BrowserRouter } from "react-router-dom";
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <QueryProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </QueryProvider>
-  </StrictMode>
+  <QueryProvider>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </QueryProvider>
 );
