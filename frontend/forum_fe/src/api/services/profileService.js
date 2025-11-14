@@ -36,6 +36,15 @@ const profileService = {
       throw General.createError(error);
     }
   },
+
+  async getUserProfileById(id) {
+    try {
+      const response = await axiosClient.get(`/profiles/${id}`);
+      return response;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
 };
 
 export default profileService;

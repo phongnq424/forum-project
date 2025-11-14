@@ -8,6 +8,9 @@ import CustomDropDown from "./CustomDropDown/CustomDropDown";
 import General from "../../General/General";
 import CustomDropDown2 from "./CustomDropDown/CustomDropDown3";
 import { fa } from "zod/v4/locales";
+import { useLogOut } from "../../api/hooks/AuthenticationHook";
+import { toast } from "react-toastify";
+import toastHelper from "../../helper/ToastHelper";
 
 function Header({ variant = "transparent", className = "" }) {
   const variants = {
@@ -19,16 +22,28 @@ function Header({ variant = "transparent", className = "" }) {
 
   const appContext = useContext(AppContext);
   const refOptionsMenu = useRef();
-
+  const logOut = useLogOut();
+  useEffect(
+    function () {
+      if (logOut.isSuccess) {
+        navigate("/sign-in");
+        appContext.setIsLogged(false);
+      }
+      if (logOut.isError) {
+        toast.error(logOut.error.message);
+      }
+    },
+    [logOut.isSuccess, logOut.isError]
+  );
   const navigate = useNavigate();
 
   const handleOnMenuSelection = function (option) {
-    if (option == "Log Out") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("meId");
-      navigate("/sign-in");
-      //appContext?.setCurrentUser?.(null);
-      appContext.setIsLogged(false);
+    if (option.id === General.menuOptions.LOG_OUT.id) {
+      logOut.mutate();
+    } else if (option.id === General.menuOptions.SEE_PROFILE.id) {
+      navigate("/profile");
+    } else if (option.id === General.menuOptions.EDIT_PROFILE.id) {
+      navigate("/update-profile");
     }
   };
 
@@ -77,7 +92,8 @@ function Header({ variant = "transparent", className = "" }) {
             onSelect={(option) => handleOnMenuSelection(option)}
             ref={refMenu}
             className="right-[2px]"
-            options={["Log Out"]}
+            options={General.menuOptions.asArray()}
+            displayField="name"
           />
         </div>
       )}

@@ -13,8 +13,8 @@ const CustomDropDown2 = forwardRef(
   ({ options = [null], onSelect, displayField = null, className }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const appContext = useContext(AppContext);
-    const detailPostPageContext = useContext(DetailPostPageContext);
+    // const appContext = useContext(AppContext);
+    // const detailPostPageContext = useContext(DetailPostPageContext);
 
     useEffect(() => {
       function handleClickOutside(event) {

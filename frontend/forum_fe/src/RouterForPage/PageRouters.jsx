@@ -13,6 +13,8 @@ import { useContext } from "react";
 import AppContext from "../ui/Context/AppContext";
 import CreateProfilePage from "../ui/pages/CreateProfilePage";
 import DetailPostPage from "../ui/pages/DetailPostPage";
+import ProfilePage from "../ui/pages/ProfilePage";
+import UpdateProfilePage from "../ui/pages/UpdateProfilePage";
 
 function Layout() {
   const appContext = useContext(AppContext);
@@ -42,6 +44,8 @@ function PageRouters() {
         <Route path="/sign-up/verify-otp" element={<VerifyOTPPage />} />
         <Route path="/create-profile" element={<CreateProfilePage />} />
         <Route path="/post-detail" element={<DetailPostPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/update-profile" element={<CreateProfilePage />} />
       </Route>
     </Routes>
   );

@@ -39,3 +39,32 @@ export function useDeletePost() {
     mutationFn: ({ postId }) => postService.delete(postId),
   });
 }
+
+export function useGetPostsOfUser(userId) {
+  return useQuery({
+    queryKey: ["post_of_user", userId],
+    queryFn: (context) => postService.getPostOfUser(context.queryKey[1]),
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useUpdatePost() {
+  return useMutation({
+    mutationFn: function (data) {
+      return postService.update(data);
+    },
+  });
+}
+
+export function useGetPostBySearchKey(searchKey, selectedCategoryId) {
+  return useQuery({
+    queryKey: ["posts", searchKey, selectedCategoryId],
+    queryFn: function (context) {
+      return postService.useGetPostBySearchKey(
+        context.queryKey[1],
+        context.queryKey[2]
+      );
+    },
+    enabled: searchKey != "",
+  });
+}

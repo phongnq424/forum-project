@@ -7,7 +7,12 @@ import {
 } from "react-router-dom";
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { useDeletePost, useGetPostById } from "../../api/hooks/postHook";
+import {
+  useDeletePost,
+  useGetPostById,
+  useSavePost,
+  useUpdatePost,
+} from "../../api/hooks/postHook";
 import { MdMoreHoriz } from "react-icons/md";
 import { FaRegBookmark, FaRegHeart } from "react-icons/fa";
 import { FiMessageCircle, FiShare2 } from "react-icons/fi";
@@ -24,6 +29,8 @@ import AppContext from "../Context/AppContext";
 import { IoMdSend } from "react-icons/io";
 import { da } from "zod/v4/locales";
 import CustomDropDown2 from "../components/CustomDropDown/CustomDropDown2";
+import { toast } from "react-toastify";
+import { AddPostDialog } from "../dialogs/AddPostDialog";
 
 // const button_ghost = "hover:bg-accent hover:text-accent-foreground";
 // const button_base =
@@ -47,23 +54,68 @@ const DetailPostPage = () => {
   const deletePost = useDeletePost();
   const navigate = useNavigate();
   const deleteComment = useDeleteComment();
+  const savePost = useSavePost();
+  const [isDialogClosing, setIsDialogClosing] = useState(true);
+  const updatePost = useUpdatePost();
+  useEffect(
+    function () {
+      if (updatePost.isError) {
+        toastHelper.error(updatePost.error.message);
+      }
+      if (updatePost.isSuccess) {
+        toastHelper.success("Update post successfully");
+        setIsDialogClosing(true);
+        setCurrentPost(updatePost.data);
+      }
+    },
+    [updatePost.isError, updatePost.isSuccess, updatePost.data]
+  );
+  useEffect(
+    function () {
+      if (savePost.isError) {
+        toastHelper.error(savePost.error.message);
+      }
 
-  const optionsForMyPost = ["Delete", "Edit"];
-  const optionsForTheirPost = ["Report"];
-  const optionsForMyCmt = ["Delete", "Edit"];
-  const optionsForTheirCmt = ["Report"];
+      if (savePost.isSuccess) {
+        toastHelper.success(
+          savePost.data.saved ? "Save successfully!" : "Unsave successfully!"
+        );
+      }
+    },
+    [savePost.isSuccess, savePost.isError, savePost.data]
+  );
+
+  const optionsForPost = {
+    DELETE: { id: 0, name: "Delete", showFor: [General.showFor.OWN] },
+    EDIT: { id: 1, name: "Edit", showFor: [General.showFor.OWN] },
+    REPORT: { id: 2, name: "Report", showFor: [General.showFor.VIEWER] },
+    asArray() {
+      return Object.values(this).filter((item) => typeof item != "function");
+    },
+  };
+
+  const optionsForCmt = {
+    DELETE: { id: 0, name: "Delete", showFor: [General.showFor.OWN] },
+    EDIT: { id: 1, name: "Edit", showFor: [General.showFor.OWN] },
+    REPORT: { id: 2, name: "Report", showFor: [General.showFor.VIEWER] },
+    asArray() {
+      return Object.values(this).filter((item) => typeof item != "function");
+    },
+  };
 
   const refDropDownForPost = useRef();
   const commentRefs = useRef({});
 
   function handlePostAction(option) {
-    if (option === "Delete") {
+    if (option.id === optionsForPost.DELETE.id) {
       deletePost.mutate({ postId });
+    } else if (option.id === optionsForPost.EDIT.id) {
+      setIsDialogClosing(false);
     }
   }
 
   function handleCommentAction(option, objectId) {
-    if (option === "Delete") {
+    if (option.id === optionsForCmt.DELETE.id) {
       deleteComment.mutate({ cmtId: objectId });
     }
   }
@@ -125,7 +177,9 @@ const DetailPostPage = () => {
 
   const onShareClick = function () {};
 
-  const onSaveClick = function () {};
+  const onSaveClick = function () {
+    savePost.mutate({ postId: currentPost.id });
+  };
 
   useEffect(
     function () {
@@ -137,6 +191,14 @@ const DetailPostPage = () => {
   );
 
   if (!currentPost) return <></>;
+
+  const handleOnClickOnUserInfo = function (currentPost) {
+    if (appContext?.currentUser?.user_id != currentPost.user.id) {
+      navigate(`/profile?id=${currentPost.user.id}`);
+    } else {
+      navigate(`/profile`);
+    }
+  };
 
   return (
     <>
@@ -174,8 +236,13 @@ const DetailPostPage = () => {
               {/* Author and title */}
               <div className="flex flex-col space-y-4 pb-4">
                 {/* Author */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between hover:cursor-pointer">
+                  <div
+                    className="flex items-center gap-3"
+                    onClick={function () {
+                      handleOnClickOnUserInfo(currentPost);
+                    }}
+                  >
                     <div className="h-15 w-15 rounded-full bg-secondary overflow-hidden shrink-0">
                       <img
                         src={currentPost.authorImg}
@@ -206,12 +273,20 @@ const DetailPostPage = () => {
                     <CustomDropDown2
                       onSelect={(option) => handlePostAction(option)}
                       ref={refDropDownForPost}
+                      displayField="name"
                       className="right-[20px]"
-                      options={
-                        localStorage.getItem("meId") === currentPost.user.id
-                          ? optionsForMyPost
-                          : optionsForTheirPost
-                      }
+                      options={optionsForPost.asArray().filter((item) => {
+                        if (item.showFor.includes(General.showFor.ALL))
+                          return true;
+                        if (
+                          appContext.currentUser?.user_id ===
+                          currentPost.user.id
+                        ) {
+                          return item.showFor.includes(General.showFor.OWN);
+                        } else {
+                          return item.showFor.includes(General.showFor.VIEWER);
+                        }
+                      })}
                     />
                   </div>
                 </div>
@@ -269,7 +344,7 @@ const DetailPostPage = () => {
                   <button
                     className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
                     onClick={() => {
-                      onSaveClick?.(General.reactionType.LOVE);
+                      onSaveClick?.();
                     }}
                   >
                     <FaRegBookmark className="h-fit w-fit" />
@@ -312,8 +387,8 @@ const DetailPostPage = () => {
                         <img
                           className="w-10 h-10 rounded-full object-cover"
                           src={
-                            commentItem.user?.Profile.avatar ||
-                            commentItem?.User.Profile.avatar
+                            commentItem.user?.Profile?.avatar ||
+                            commentItem?.User?.Profile?.avatar
                           }
                           alt={
                             commentItem.user?.username ||
@@ -344,12 +419,27 @@ const DetailPostPage = () => {
                                   handleCommentAction(option, commentItem.id)
                                 }
                                 className="absolute right-0 top-5 z-50"
-                                options={
-                                  localStorage.getItem("meId") ===
-                                  commentItem.user.id
-                                    ? optionsForMyCmt
-                                    : optionsForTheirCmt
-                                }
+                                displayField="name"
+                                options={optionsForCmt
+                                  .asArray()
+                                  .filter((item) => {
+                                    if (
+                                      item.showFor.includes(General.showFor.ALL)
+                                    )
+                                      return true;
+                                    if (
+                                      appContext.currentUser?.user_id ===
+                                      commentItem.user.id
+                                    ) {
+                                      return item.showFor.includes(
+                                        General.showFor.OWN
+                                      );
+                                    } else {
+                                      return item.showFor.includes(
+                                        General.showFor.VIEWER
+                                      );
+                                    }
+                                  })}
                               />
 
                               <button
@@ -463,6 +553,14 @@ const DetailPostPage = () => {
             </div>
           </div>
         </div>
+        {!isDialogClosing && (
+          <AddPostDialog
+            isLoading={updatePost.isPending}
+            onClose={() => setIsDialogClosing(true)}
+            onSubmit={(submitData) => updatePost.mutate(submitData)}
+            currentPost={currentPost}
+          />
+        )}
       </main>
     </>
   );

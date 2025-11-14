@@ -14,6 +14,7 @@ const PostCard2 = ({
   date,
   isLiked = true,
   isSaved = false,
+  isShared = false,
   onClick,
   onReactionClick,
   onCommentClick,
@@ -60,7 +61,9 @@ const PostCard2 = ({
           <div className="flex items-center justify-between w-2/5 text-white/70">
             <div className="flex justify-between basis-[75%]">
               <Button
-                className="flex items-center gap-2 transition-colors hover:text-proPurple"
+                className={`flex items-center gap-2 transition-colors ${
+                  isLiked ? "text-proPurple" : "text-white"
+                } hover:opacity-50`}
                 isStopPropagation={true}
                 onClick={() => {
                   onReactionClick?.(General.reactionType.LOVE);
@@ -72,7 +75,7 @@ const PostCard2 = ({
               </Button>
 
               <Button
-                className="flex items-center gap-2 transition-colors hover:text-proPurple"
+                className={`flex items-center gap-2 transition-colors text-white hover:opacity-50`}
                 isStopPropagation={true}
                 onClick={() => onCommentClick?.()}
               >
@@ -84,7 +87,9 @@ const PostCard2 = ({
             </div>
             <div className="flex justify-between basis-[20%]">
               <Button
-                className="flex items-center gap-2 transition-colors hover:text-proPurple"
+                className={`flex items-center gap-2 transition-colors ${
+                  isSaved ? "text-proPurple" : "text-white"
+                } hover:opacity-50`}
                 isStopPropagation={true}
                 onClick={(e) => onSaveClick?.(e)}
               >
@@ -92,7 +97,9 @@ const PostCard2 = ({
               </Button>
 
               <Button
-                className="flex items-center gap-2 transition-colors hover:text-proPurple"
+                className={`flex items-center gap-2 transition-colors ${
+                  isShared ? "text-proPurple" : "text-white"
+                } hover:opacity-50`}
                 isStopPropagation={true}
                 onClick={() => onShareClick?.()}
               >

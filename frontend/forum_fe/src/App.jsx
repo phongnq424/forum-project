@@ -33,16 +33,6 @@ function App() {
     [getMe.isLoading]
   );
 
-  useEffect(
-    function () {
-      if (getMe.isSuccess) {
-        setCurrentUser(getMe.data);
-        localStorage.setItem("meId", getMe.data.user_id);
-      }
-    },
-    [getMe.isSuccess]
-  );
-
   const nav = useNavigate();
 
   useEffect(
@@ -57,13 +47,19 @@ function App() {
     [getMe.isError]
   );
 
+  useEffect(
+    function () {
+      getMe.refetch();
+    },
+    [flagGetCurrentUserAgain]
+  );
+
   return (
     <AppContext.Provider
       value={{
         isLogged,
         setIsLogged,
-        currentUser,
-        setCurrentUser,
+        currentUser: isLogged ? getMe.data : null,
         getCurrentUserAgain,
       }}
     >
