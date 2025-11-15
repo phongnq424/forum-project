@@ -9,10 +9,11 @@ export function useCreatePost() {
   });
 }
 
-export function useGetPosts() {
+export function useGetPosts(page, limit) {
   return useQuery({
-    queryKey: ["post"],
-    queryFn: () => postService.getPosts(),
+    queryKey: ["post", page, limit],
+    queryFn: (context) =>
+      postService.getPosts(context.queryKey[1], context.queryKey[2]),
     refetchOnWindowFocus: false,
   });
 }
@@ -42,10 +43,15 @@ export function useDeletePost() {
   });
 }
 
-export function useGetPostsOfUser(userId) {
+export function useGetPostsOfUser(userId, page, limit) {
   return useQuery({
-    queryKey: ["post_of_user", userId],
-    queryFn: (context) => postService.getPostOfUser(context.queryKey[1]),
+    queryKey: ["post_of_user", userId, page, limit],
+    queryFn: (context) =>
+      postService.getPostOfUser(
+        context.queryKey[1],
+        context.queryKey[2],
+        context.queryKey[3]
+      ),
     refetchOnWindowFocus: false,
   });
 }

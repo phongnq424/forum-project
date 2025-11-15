@@ -49,6 +49,17 @@ const commentService = {
       throw General.createError(error);
     }
   },
+
+  async updateComment(id, content) {
+    try {
+      const response = await axiosClient.put(`/comments/${id}`, {
+        comment_detail: content,
+      });
+      return response;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
 };
 
 export default commentService;

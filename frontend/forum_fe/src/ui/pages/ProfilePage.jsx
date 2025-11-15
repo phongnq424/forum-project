@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import CategoryBar from "../components/CategoryBar";
 import ProfileCard from "../components/ProfileCard";
 import { BsPostcard } from "react-icons/bs";
@@ -19,6 +19,8 @@ import { useToggleReaction } from "../../api/hooks/reactionHook";
 import { useLocation, useNavigate } from "react-router-dom";
 import toastHelper from "../../helper/ToastHelper";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
+import AppContext from "../Context/AppContext";
+import PaginationInput from "../components/PaginationInput";
 
 const ProfilePageContext = createContext();
 
@@ -117,13 +119,20 @@ function RenderByCategory({ selectedCategory }) {
 function RenderPosts() {
   const createPost = useCreatePost();
   const profilePageContext = useContext(ProfilePageContext);
+  const appContext = useContext(AppContext);
   const [isDialogClosing, setIsDialogClosing] = useState(true);
-  const getPostOfUser = useGetPostsOfUser(
-    profilePageContext.currentUserProfile.user_id
-  );
+
   const savePost = useSavePost();
   const navigate = useNavigate();
   const toggleReaction = useToggleReaction();
+  const [pagination, setPagination] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const getPostOfUser = useGetPostsOfUser(
+    profilePageContext.currentUserProfile.user_id,
+    currentPage,
+    pagination?.limit
+  );
   const handleSelectPost = function (post) {
     navigate(`/post-detail?postId=${post.id}`, { state: { post } });
   };
@@ -133,8 +142,12 @@ function RenderPosts() {
       if (getPostOfUser.isError) {
         toastHelper.error(getMyPosts.error.message);
       }
+
+      if (getPostOfUser.isSuccess) {
+        setPagination(getPostOfUser.data.pagination);
+      }
     },
-    [getPostOfUser.isError]
+    [getPostOfUser.isError, getPostOfUser.isSuccess, getPostOfUser.data]
   );
 
   useEffect(
@@ -176,18 +189,35 @@ function RenderPosts() {
     [createPost.isError, createPost.isSuccess]
   );
 
+  // Scroll len dau
+  const [hasMounted, setHasMounted] = useState(false);
+  const containerPostsRef = useRef();
+  useEffect(
+    function () {
+      if (hasMounted) {
+        containerPostsRef.current.scrollIntoView({ behavior: "smooth" });
+      } else {
+        setHasMounted(true);
+      }
+    },
+    [currentPage]
+  );
+
   return (
-    <div className="space-y-5 flex flex-col">
+    <div className="space-y-5 flex flex-col min-h-full" ref={containerPostsRef}>
       {getPostOfUser.isPending && <LoadingScreen />}
       <SearchBar />
-      <button
-        onClick={() => setIsDialogClosing(false)}
-        className="self-end text-white text-[18px] bg-green px-6 py-2 flex items-center justify-center rounded-md font-medium transition-colors hover:opacity-70 duration-200 ease-linear"
-      >
-        <LuFilePlus className="h-4 w-4 me-2" />
-        Create
-      </button>
-      <div className="space-y-10">
+      {profilePageContext.currentUserProfile?.user_id ===
+        appContext.currentUser?.user_id && (
+        <button
+          onClick={() => setIsDialogClosing(false)}
+          className="self-end text-white text-[18px] bg-green px-6 py-2 flex items-center justify-center rounded-md font-medium transition-colors hover:opacity-70 duration-200 ease-linear"
+        >
+          <LuFilePlus className="h-4 w-4 me-2" />
+          Create
+        </button>
+      )}
+      <div className="space-y-10" ref={containerPostsRef}>
         {getPostOfUser.isSuccess &&
           getPostOfUser.data &&
           getPostOfUser.data.data &&
@@ -217,6 +247,12 @@ function RenderPosts() {
               ></PostCard2>
             );
           })}
+
+        <PaginationInput
+          currentPage={currentPage}
+          totalPages={pagination?.totalPages || 0}
+          onChange={(page) => setCurrentPage(page)}
+        />
       </div>
       {!isDialogClosing && (
         <AddPostDialog

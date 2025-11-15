@@ -14,6 +14,7 @@ import CreateProfilePage from "../ui/pages/CreateProfilePage";
 import DetailPostPage from "../ui/pages/DetailPostPage";
 import ProfilePage from "../ui/pages/ProfilePage";
 import UpdateProfilePage from "../ui/pages/UpdateProfilePage";
+import Footer from "../ui/components/Footer";
 
 function Layout() {
   const appContext = useContext(AppContext);
@@ -21,9 +22,10 @@ function Layout() {
     <>
       <div className="box-border">
         <Header variant="primary"></Header>
-        <div className="mt-[70px]">
+        <div className="mt-[70px] pb-10 min-h-(--view-h)">
           <Outlet></Outlet>
         </div>
+        <Footer></Footer>
       </div>
     </>
   );
