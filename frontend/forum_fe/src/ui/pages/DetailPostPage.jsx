@@ -23,19 +23,13 @@ import {
   useAddComment,
   useDeleteComment,
   useGetCommentsOfPost,
+  useUpdateComment,
 } from "../../api/hooks/commentHook";
 import LoadingScreen from "./LoadingScreen";
 import AppContext from "../Context/AppContext";
 import { IoMdSend } from "react-icons/io";
-import { da } from "zod/v4/locales";
 import CustomDropDown2 from "../components/CustomDropDown/CustomDropDown2";
-import { toast } from "react-toastify";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
-
-// const button_ghost = "hover:bg-accent hover:text-accent-foreground";
-// const button_base =
-//   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
-// const button_icon = "h-10 w-10";
 
 export const DetailPostPageContext = createContext();
 
@@ -57,6 +51,7 @@ const DetailPostPage = () => {
   const savePost = useSavePost();
   const [isDialogClosing, setIsDialogClosing] = useState(true);
   const updatePost = useUpdatePost();
+  const updateComment = useUpdateComment();
   useEffect(
     function () {
       if (updatePost.isError) {
@@ -114,9 +109,18 @@ const DetailPostPage = () => {
     }
   }
 
-  function handleCommentAction(option, objectId) {
+  // Usestate for edit comment
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentContent, setEditingCommentContent] = useState("");
+
+  function handleCommentAction(option, objectId, commentContent = "") {
     if (option.id === optionsForCmt.DELETE.id) {
       deleteComment.mutate({ cmtId: objectId });
+    }
+
+    if (option.id == optionsForCmt.EDIT.id) {
+      setEditingCommentId(objectId);
+      setEditingCommentContent(commentContent);
     }
   }
 
@@ -167,6 +171,19 @@ const DetailPostPage = () => {
       }
     },
     [addComment.isError, addComment.isSuccess]
+  );
+
+  // handle edit cmt
+  useEffect(
+    function () {
+      if (updateComment.isSuccess) {
+        getCommentsOfPost.refetch();
+      }
+      if (updateComment.isError) {
+        toastHelper.error(updateComment.error.message);
+      }
+    },
+    [updateComment.isError, updateComment.isSuccess, updateComment.data]
   );
 
   const onReactionClick = function (type) {
@@ -398,6 +415,7 @@ const DetailPostPage = () => {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex space-x-1">
+                            {/* Author info */}
                             <div className="bg-black404040 rounded-2xl px-3 py-2 inline-block">
                               <div className="flex items-center gap-2 mb-0.5">
                                 <h5 className="font-semibold text-[16px]">
@@ -405,9 +423,49 @@ const DetailPostPage = () => {
                                     commentItem.User?.username}
                                 </h5>
                               </div>
-                              <p className="text-[14px] break-words break-all whitespace-normal">
-                                {commentItem.content}
-                              </p>
+
+                              {/* Neu state editingCmntId === id cua comment nay thi */}
+                              {editingCommentId === commentItem.id ? (
+                                <div className="flex flex-col space-y-2">
+                                  <textarea
+                                    className="w-full py-2 px-3 max-h-[200px] overflow-y-auto text-[16px] outline-none text-white resize-none rounded-lg bg-white/10 focus:ring-2 focus:ring-proPurple"
+                                    value={editingCommentContent}
+                                    onChange={(e) =>
+                                      setEditingCommentContent(e.target.value)
+                                    }
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      disabled={editingCommentContent === ""}
+                                      className="px-3 py-1 text-sm bg-proPurple rounded text-white disabled:opacity-50"
+                                      onClick={() => {
+                                        updateComment.mutate({
+                                          id: editingCommentId,
+                                          content: editingCommentContent,
+                                        });
+
+                                        setEditingCommentId(null);
+                                        setEditingCommentContent("");
+                                      }}
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      className="px-3 py-1 text-sm bg-gray-500 rounded text-white"
+                                      onClick={() => {
+                                        setEditingCommentId(null);
+                                        setEditingCommentContent("");
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-[14px] break-words break-all whitespace-normal">
+                                  {commentItem.content}
+                                </p>
+                              )}
                             </div>
 
                             <div className="relative">
@@ -416,7 +474,11 @@ const DetailPostPage = () => {
                                   (commentRefs.current[commentItem.id] = el)
                                 }
                                 onSelect={(option) =>
-                                  handleCommentAction(option, commentItem.id)
+                                  handleCommentAction(
+                                    option,
+                                    commentItem.id,
+                                    commentItem.content
+                                  )
                                 }
                                 className="absolute right-0 top-5 z-50"
                                 displayField="name"
@@ -443,6 +505,7 @@ const DetailPostPage = () => {
                               />
 
                               <button
+                                className="hover:bg-white/10 rounded-full p-1"
                                 onClick={() => {
                                   if (!commentRefs.current[commentItem.id])
                                     return;

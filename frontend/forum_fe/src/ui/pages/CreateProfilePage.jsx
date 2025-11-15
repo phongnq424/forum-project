@@ -50,7 +50,6 @@ function CreateProfilePage() {
           <></>
         )}
       </div>
-      <Footer></Footer>
     </CreateProfileContext.Provider>
   );
 }

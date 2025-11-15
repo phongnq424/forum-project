@@ -73,9 +73,11 @@ const postService = {
     }
   },
 
-  getPosts: async function () {
+  getPosts: async function (page, limit) {
     try {
-      const response = await axiosClient.get("/posts");
+      const response = await axiosClient.get("/posts", {
+        params: { page: page || 1, limit: limit },
+      });
       const ps = [];
       for (let i = 0; i < response.data.length; i++) {
         const curr = response.data[i];
@@ -148,9 +150,11 @@ const postService = {
     }
   },
 
-  getPostOfUser: async function (userId) {
+  getPostOfUser: async function (userId, page, limit) {
     try {
-      const response = await axiosClient.get(`/posts/user/${userId}`);
+      const response = await axiosClient.get(`/posts/user/${userId}`, {
+        params: { page: page || 1, limit: limit },
+      });
       const ps = [];
       for (let i = 0; i < response.data.length; i++) {
         const curr = response.data[i];

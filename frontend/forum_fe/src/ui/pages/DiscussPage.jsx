@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CategoryBar from "../components/CategoryBar";
 import PostCard2 from "../components/PostCard2";
 import SearchBar from "../components/SearchBar";
@@ -16,6 +16,7 @@ import { useGetCategories } from "../../api/hooks/categoriesHook";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import PaginationInput from "../components/PaginationInput";
 
 const testPosts = [];
 
@@ -23,13 +24,17 @@ function DiscussPage() {
   const [posts, setPosts] = useState(testPosts);
   const [isDialogClosing, setIsDialogClosing] = useState(true);
   const createPost = useCreatePost();
-  const getPosts = useGetPosts();
+
   const navigate = useNavigate();
   const getCategories = useGetCategories();
   const toggleReaction = useToggleReaction();
   const savePost = useSavePost();
   const [selectedCategory, setSelectedCategory] = useState();
   const [searchKey, setSearchKey] = useState("");
+  const [pagination, setPagination] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const getPosts = useGetPosts(currentPage, pagination?.limit);
+
   const getPostsBySearchKey = useGetPostBySearchKey(
     searchKey,
     selectedCategory?.id || ""
@@ -60,6 +65,7 @@ function DiscussPage() {
       if (getPosts.isSuccess) {
         const responsePosts = getPosts.data.data;
         setPosts(responsePosts);
+        setPagination(getPosts.data.pagination);
       }
       if (getPosts.isError) {
       }
@@ -143,8 +149,25 @@ function DiscussPage() {
     [createPost.isError, createPost.isSuccess]
   );
 
+  // Scroll len dau
+  const [hasMounted, setHasMounted] = useState(false);
+  const containerPostsRef = useRef();
+  useEffect(
+    function () {
+      if (hasMounted) {
+        containerPostsRef.current.scrollIntoView({ behavior: "smooth" });
+      } else {
+        setHasMounted(true);
+      }
+    },
+    [currentPage]
+  );
+
   return (
-    <div className="px-(--primary-padding) pt-5 w-full h-full relative">
+    <div
+      className="px-(--primary-padding) pt-5 w-full min-h-full relative flex flex-col"
+      ref={containerPostsRef}
+    >
       {(getPosts.isLoading ||
         getCategories.isLoading ||
         savePost.isPending) && <LoadingScreen />}
@@ -171,30 +194,38 @@ function DiscussPage() {
       </div>
 
       {/* Posts */}
-      {posts && (
-        <div className="pt-10 space-y-10">
-          {posts.length < 1 && (
-            <p className="text-white text-center text-2xl">
-              No posts available
-            </p>
-          )}
-          {posts.map((item) => (
-            <PostCard2
-              onSaveClick={(e) => savePost.mutate({ postId: item.id })}
-              variant="discuss"
-              key={item.id}
-              {...item}
-              onClick={(e) => {
-                console.log(item);
-                handleSelectPost(item);
-              }}
-              onReactionClick={(typeReaction) => {
-                toggleReaction.mutate({ postId: item.id, typeReaction });
-              }}
-            ></PostCard2>
-          ))}
-        </div>
-      )}
+      <div className="space-y-5 flex flex-col">
+        {posts && (
+          <div className="pt-10 space-y-10">
+            {posts.length < 1 && (
+              <p className="text-white text-center text-2xl">
+                No posts available
+              </p>
+            )}
+            {posts.map((item) => (
+              <PostCard2
+                onSaveClick={(e) => savePost.mutate({ postId: item.id })}
+                variant="discuss"
+                key={item.id}
+                {...item}
+                onClick={(e) => {
+                  console.log(item);
+                  handleSelectPost(item);
+                }}
+                onReactionClick={(typeReaction) => {
+                  toggleReaction.mutate({ postId: item.id, typeReaction });
+                }}
+              ></PostCard2>
+            ))}
+          </div>
+        )}
+
+        <PaginationInput
+          currentPage={currentPage}
+          totalPages={pagination?.totalPages || 0}
+          onChange={(page) => setCurrentPage(page)}
+        />
+      </div>
 
       {!isDialogClosing && (
         <AddPostDialog

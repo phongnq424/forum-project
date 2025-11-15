@@ -23,3 +23,9 @@ export function useDeleteComment() {
     mutationFn: ({ cmtId }) => commentService.delete(cmtId),
   });
 }
+
+export function useUpdateComment() {
+  return useMutation({
+    mutationFn: ({ id, content }) => commentService.updateComment(id, content),
+  });
+}

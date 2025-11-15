@@ -17,7 +17,7 @@ function HeroPage() {
       <Introduction></Introduction>
       <TopPostIntroduction></TopPostIntroduction>
       <Stats></Stats>
-      <Footer></Footer>
+      
     </>
   );
 }
