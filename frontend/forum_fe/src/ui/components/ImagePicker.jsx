@@ -1,9 +1,14 @@
 import { useImperativeHandle, useRef, useState } from "react";
 import { FaImage } from "react-icons/fa6";
 
-export default function ImagePicker({ onChange, variant, outRef }) {
+export default function ImagePicker({
+  onChange,
+  variant,
+  defaultImageURL = "",
+  outRef,
+}) {
   const fileInputRef = useRef(null);
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState(defaultImageURL);
 
   const variants = {
     avatar: (

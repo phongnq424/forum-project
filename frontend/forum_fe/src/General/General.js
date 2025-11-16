@@ -22,7 +22,36 @@ const General = {
     LOVE: "LOVE",
   },
 
-  menuOptions: ["Log Out"],
+  menuOptions: {
+    SEE_PROFILE: { id: 0, name: "See Profile" },
+    EDIT_PROFILE: { id: 1, name: "Edit Profile" },
+    LOG_OUT: { id: 2, name: "Log Out" },
+
+    asArray() {
+      return Object.values(this).filter((item) => typeof item != "function");
+    },
+  },
+
+  optionOfCreateProfilePage: {
+    CREATE: "Create",
+    UPDATE: "Update",
+  },
+
+  genders: {
+    MALE: { id: 0, gender: "Male" },
+    FEMALE: { id: 1, gender: "Female" },
+    OTHER: { id: 2, gender: "Other" },
+
+    asArray() {
+      return Object.values(this).filter((item) => typeof item != "function");
+    },
+  },
+
+  showFor: {
+    ALL: "all",
+    OWN: "own",
+    VIEWER: "viewer",
+  },
 };
 
 export default General;

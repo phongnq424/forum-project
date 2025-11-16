@@ -10,19 +10,19 @@ import toastHelper from "../../helper/ToastHelper";
 import { useLogin } from "../../api/hooks/AuthenticationHook";
 import AppContext from "../Context/AppContext";
 import { SignInContext } from "../pages/SignInPage";
+import LoadingScreen from "../pages/LoadingScreen";
 
 function SignInForm() {
   const providers = ["facebook", "google"];
   const [isRememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const appContext = useContext(AppContext);
-  const signInContext = useContext(SignInContext);
 
   const login = useLogin(
     function (response) {
       toastHelper.success(response.message);
-      localStorage.setItem("token", response.token);
       appContext.setIsLogged(true);
+      localStorage.setItem("token", response.token);
       navigate("/");
     },
     function (error) {
@@ -47,15 +47,9 @@ function SignInForm() {
     login.mutate(data);
   }
 
-  useEffect(
-    function () {
-      signInContext.setIsLoading(login.isPending);
-    },
-    [login.isPending]
-  );
-
   return (
     <div className="w-full max-w-2xl mx-auto my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
+      {login.isPending && <LoadingScreen />}
       <h1 className="text-[30px] font-bold text-white text-center">
         Welcome back!
       </h1>
