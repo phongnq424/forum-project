@@ -6,10 +6,12 @@ export const UserFollowCard = ({
   username = "Username",
   avatarUrl = "",
   userId = "",
-  onFollow,
-  onRemove,
+  onFollowClick,
+  onRemoveClick,
   onChoose,
   isFollowing,
+  isFollowMe,
+  isShowButtons = true,
 }) => {
   return (
     <div
@@ -34,21 +36,37 @@ export const UserFollowCard = ({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
-        <button
-          className={`h-fit w-fit px-3 py-1 rounded-full bg-icon-button ${
-            isFollowing
-              ? "bg-transparent hover:bg-white/10"
-              : "bg-proPurple hover:bg-proPurple/50"
-          } text-white flex items-center justify-center`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onFollow?.(userId);
-          }}
-        >
-          {isFollowing ? "Following" : "Follow"}
-        </button>
-      </div>
+      {isShowButtons && (
+        <div className="flex items-center gap-2">
+          {isFollowing != null && isFollowing != undefined && (
+            <button
+              className={`h-fit w-fit px-3 py-1 rounded-full bg-icon-button ${
+                isFollowing
+                  ? "bg-transparent hover:bg-white/10"
+                  : "bg-proPurple hover:bg-proPurple/50"
+              } text-white flex items-center justify-center`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onFollowClick?.(userId);
+              }}
+            >
+              {isFollowing ? "Following" : "Follow"}
+            </button>
+          )}
+
+          {isFollowMe != null && isFollowMe != undefined && (
+            <button
+              className={`h-fit w-fit px-3 py-1 rounded-full bg-icon-button bg-red-600 hover:bg-red-600/50 text-white flex items-center justify-center`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemoveClick?.(userId);
+              }}
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
