@@ -344,7 +344,6 @@ function RenderConnections() {
     function () {
       if (toggleFollow.isSuccess) {
         setUsers(function (prev) {
-          console.error(toggleFollow.data.followed);
           return prev.map(function (item) {
             return toggleFollow.data.followedId === item.otherId
               ? { ...item, isFollowing: toggleFollow.data.followed }
@@ -390,7 +389,11 @@ function RenderConnections() {
   useEffect(
     function () {
       if (removeFollower.isSuccess) {
-        console.warn(removeFollower.data);
+        setUsers(function (prev) {
+          return prev.filter(
+            (item) => item.otherId !== removeFollower.data.user_id
+          );
+        });
       }
 
       if (removeFollower.isError) {
@@ -426,7 +429,9 @@ function RenderConnections() {
 
       {users?.length < 1 && (
         <p className="text-white text-center text-2xl py-10">
-          No following available
+          {selectedTab?.id === options.FOLLOWERS.id
+            ? "No follower available"
+            : "No following available"}
         </p>
       )}
 
@@ -448,7 +453,7 @@ function RenderConnections() {
                   appContext.currentUser?.user_id ===
                   profilePageContext.currentUserProfile?.user_id
                 }
-                onFollowClickClick={function (userId) {
+                onFollowClick={function (userId) {
                   toggleFollow.mutate({ targetUserId: userId });
                 }}
                 onChoose={function (userId) {
