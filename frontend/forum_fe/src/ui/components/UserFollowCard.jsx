@@ -8,10 +8,16 @@ export const UserFollowCard = ({
   userId = "",
   onFollow,
   onRemove,
+  onChoose,
   isFollowing,
 }) => {
   return (
-    <div className="flex items-center gap-4 bg-primary hover:bg-primary/50 hover:cursor-pointer transition-colors rounded-3xl p-4 pr-6">
+    <div
+      className="flex items-center gap-4 bg-primary hover:bg-primary/50 hover:cursor-pointer transition-colors rounded-3xl p-4 pr-6"
+      onClick={function (e) {
+        onChoose?.(userId);
+      }}
+    >
       {/* Avatar */}
       <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-background flex items-center justify-center bg-gray-700 text-white">
         <img
