@@ -3,7 +3,7 @@ import { FaStackOverflow } from "react-icons/fa";
 import { FaArrowUp } from "react-icons/fa6";
 import { useState } from "react";
 
-const SearchBar = ({ onChanged }) => {
+const SearchBar = ({ onChanged, onSearch }) => {
   if (!onChanged) {
     onChanged = (value) => {
       console.log(value);
@@ -33,6 +33,11 @@ const SearchBar = ({ onChanged }) => {
           type="text"
           className="flex h-10 outline-none w-full rounded-2xl bg-white/20 px-10 py-5 text-base placeholder:text-muted-foreground"
           placeholder="Search"
+          onKeyDown={function (e) {
+            if (e.key == "Enter") {
+              onSearch?.(e.target.value);
+            }
+          }}
         />
       </div>
 
