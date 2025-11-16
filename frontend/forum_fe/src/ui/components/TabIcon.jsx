@@ -13,7 +13,7 @@ function TabIcon({ onChanged, options }) {
     };
   }
 
-  useEffect(() => onChanged(selectedItem.id), [selectedItem]);
+  useEffect(() => onChanged(selectedItem), [selectedItem]);
 
   return (
     <div className="flex items-center justify-center gap-4 w-full text-white border-b-2 border-white/20">
