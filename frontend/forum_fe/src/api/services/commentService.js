@@ -5,6 +5,7 @@ const commentService = {
   async getCommentsOfPost(postId) {
     const responses = await axiosClient.get(`/comments/post/${postId}`);
     const results = [];
+
     const change = function (from) {
       const to = {
         id: from.id,
