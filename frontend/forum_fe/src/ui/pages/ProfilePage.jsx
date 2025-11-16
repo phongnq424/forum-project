@@ -26,7 +26,9 @@ import TabIcon from "../components/TabIcon";
 import { UserFollowCard } from "../components/UserFollowCard";
 import { IoSearch, IoServer } from "react-icons/io5";
 import {
+  useGetFollowersByUserId,
   useGetFollowingByUserId,
+  useRemoveFollower,
   useToggleFollow,
 } from "../../api/hooks/followHook";
 
@@ -142,7 +144,6 @@ function RenderPosts() {
   const [pagination, setPagination] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [posts, setPosts] = useState([]);
-
   const getPostOfUser = useGetPostsOfUser(
     profilePageContext.currentUserProfile?.user_id,
     currentPage,
@@ -317,6 +318,7 @@ function RenderConnections() {
     },
   };
 
+  const [selectedTab, setSelectedTab] = useState();
   const profilePageContext = useContext(ProfilePageContext);
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -324,16 +326,26 @@ function RenderConnections() {
   const getFollowing = useGetFollowingByUserId(
     profilePageContext.currentUserProfile?.user_id,
     currentPage,
-    pagination?.limit
+    selectedTab?.id,
+    selectedTab?.id === options.FOLLOWING.id
   );
+
+  const getFollower = useGetFollowersByUserId(
+    profilePageContext.currentUserProfile?.user_id,
+    currentPage,
+    selectedTab?.id,
+    selectedTab?.id === options.FOLLOWERS.id
+  );
+
   const toggleFollow = useToggleFollow();
   const appContext = useContext(AppContext);
+  const removeFollower = useRemoveFollower();
   useEffect(
     function () {
       if (toggleFollow.isSuccess) {
         setUsers(function (prev) {
           return prev.map(function (item) {
-            return toggleFollow.data.followedId === item.followedId
+            return toggleFollow.data.followedId === item.otherId
               ? { ...item, isFollowing: toggleFollow.data.followed }
               : { ...item };
           });
@@ -345,12 +357,6 @@ function RenderConnections() {
     },
     [toggleFollow.isError, toggleFollow.isSuccess, toggleFollow.data]
   );
-
-  const handleOnChangeOption = function (selectedOption) {
-    if (selectedOption.id === options.FOLLOWERS.id) {
-    } else if (selectedOption.id === options.FOLLOWING.id) {
-    }
-  };
 
   useEffect(
     function () {
@@ -366,13 +372,46 @@ function RenderConnections() {
     [getFollowing.isSuccess, getFollowing.isError, getFollowing.data]
   );
 
+  useEffect(
+    function () {
+      if (getFollower.isSuccess) {
+        setPagination(getFollower.data.pagination);
+        setUsers(getFollower.data.data);
+      }
+
+      if (getFollower.isError) {
+        toastHelper.error(getFollower.error.message);
+      }
+    },
+    [getFollower.isSuccess, getFollower.isError, getFollower.data]
+  );
+
+  useEffect(
+    function () {
+      if (removeFollower.isSuccess) {
+        setUsers(function (prev) {
+          return prev.filter(
+            (item) => item.otherId !== removeFollower.data.user_id
+          );
+        });
+      }
+
+      if (removeFollower.isError) {
+        toastHelper.error(removeFollower.error.message);
+      }
+    },
+    [removeFollower.isError, removeFollower.isSuccess, removeFollower.data]
+  );
+
   const navigate = useNavigate();
 
   return (
     <>
       <TabIcon
         options={options.asArray()}
-        onChange={(selectedOption) => handleOnChangeOption(selectedOption)}
+        onChanged={(selectedOption) => {
+          setSelectedTab(selectedOption);
+        }}
       />
 
       <div className="relative w-full md:w-96 basis-[60%] mt-5">
@@ -390,7 +429,9 @@ function RenderConnections() {
 
       {users?.length < 1 && (
         <p className="text-white text-center text-2xl py-10">
-          No following available
+          {selectedTab?.id === options.FOLLOWERS.id
+            ? "No follower available"
+            : "No following available"}
         </p>
       )}
 
@@ -398,16 +439,21 @@ function RenderConnections() {
         <div className="grid grid-cols-2 gap-4 py-10">
           {users.map(function (item, index) {
             const info = {
-              username: item.followedUsername,
-              avatarUrl: item.followedProfile.avatar,
-              userId: item.followedId,
+              username: item.otherUsername,
+              avatarUrl: item.otherProfile.avatar,
+              userId: item.otherId,
               isFollowing: item.isFollowing,
+              isFollowMe: item.isFollowMe,
             };
             return (
               <UserFollowCard
                 key={index}
                 {...info}
-                onFollow={function (userId) {
+                isShowButtons={
+                  appContext.currentUser?.user_id ===
+                  profilePageContext.currentUserProfile?.user_id
+                }
+                onFollowClick={function (userId) {
                   toggleFollow.mutate({ targetUserId: userId });
                 }}
                 onChoose={function (userId) {
@@ -416,6 +462,9 @@ function RenderConnections() {
                   } else {
                     navigate(`/profile`);
                   }
+                }}
+                onRemoveClick={function (userId) {
+                  removeFollower.mutate({ followerId: userId });
                 }}
               />
             );

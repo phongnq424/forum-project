@@ -209,9 +209,17 @@ const DetailPostPage = () => {
 
   if (!currentPost) return <></>;
 
-  const handleOnClickOnUserInfo = function (currentPost) {
+  const handleOnClickOnUserInfo = function () {
     if (appContext?.currentUser?.user_id != currentPost.user.id) {
       navigate(`/profile?id=${currentPost.user.id}`);
+    } else {
+      navigate(`/profile`);
+    }
+  };
+
+  const handleOnClickCommentAuthInfo = function (commentItem) {
+    if (appContext?.currentUser?.user_id != commentItem.userId) {
+      navigate(`/profile?id=${commentItem.userId}`);
     } else {
       navigate(`/profile`);
     }
@@ -257,7 +265,7 @@ const DetailPostPage = () => {
                   <div
                     className="flex items-center gap-3"
                     onClick={function () {
-                      handleOnClickOnUserInfo(currentPost);
+                      handleOnClickOnUserInfo();
                     }}
                   >
                     <div className="h-15 w-15 rounded-full bg-secondary overflow-hidden shrink-0">
@@ -402,7 +410,10 @@ const DetailPostPage = () => {
                         className={`flex gap-2 ${level > 0 ? "ms-6" : ""}`}
                       >
                         <img
-                          className="w-10 h-10 rounded-full object-cover"
+                          className="w-10 h-10 rounded-full object-cover hover:cursor-pointer"
+                          onClick={function (e) {
+                            handleOnClickCommentAuthInfo(commentItem);
+                          }}
                           src={
                             commentItem.user?.Profile?.avatar ||
                             commentItem?.User?.Profile?.avatar
@@ -423,7 +434,12 @@ const DetailPostPage = () => {
                                   : "inline-block"
                               }`}
                             >
-                              <div className="flex items-center gap-2 mb-0.5">
+                              <div
+                                className="flex items-center gap-2 mb-0.5 hover:cursor-pointer"
+                                onClick={function (e) {
+                                  handleOnClickCommentAuthInfo(commentItem);
+                                }}
+                              >
                                 <h5 className="font-semibold text-[16px]">
                                   {commentItem.user?.username ||
                                     commentItem.User?.username}
