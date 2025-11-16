@@ -70,7 +70,7 @@ const followService = {
         },
       };
       const response = await axiosClient.delete("/followers/remove", config);
-      return response;
+      return { ...response, user_id: followerId };
       //return { followed: response.followed, followedId: otherUserId };
     } catch (error) {
       throw General.createError(error);

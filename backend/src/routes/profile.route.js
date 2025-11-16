@@ -6,13 +6,13 @@ const { rateLimitMiddleware } = require("../middlewares/rateLimit.middleware");
 const router = Router();
 
 router.get("/me", verifyToken, ProfileController.getMyProfile); //
-router.get("/:userId", ProfileController.getProfileByUserId);
+router.get("/:userId", ProfileController.getProfileByUserId); //
 router.put(
   "/me",
   rateLimitMiddleware,
   verifyToken,
   ProfileController.updateMyProfile
-);
+); //
 router.get("/", ProfileController.listProfiles);
 router.get("/search/all", ProfileController.searchUsers);
 
