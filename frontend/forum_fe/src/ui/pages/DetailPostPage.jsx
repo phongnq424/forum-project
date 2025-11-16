@@ -416,7 +416,13 @@ const DetailPostPage = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex space-x-1">
                             {/* Author info */}
-                            <div className="bg-black404040 rounded-2xl px-3 py-2 inline-block">
+                            <div
+                              className={`bg-black404040 rounded-2xl px-3 py-2 ${
+                                editingCommentId === commentItem.id
+                                  ? "w-full"
+                                  : "inline-block"
+                              }`}
+                            >
                               <div className="flex items-center gap-2 mb-0.5">
                                 <h5 className="font-semibold text-[16px]">
                                   {commentItem.user?.username ||
@@ -426,7 +432,7 @@ const DetailPostPage = () => {
 
                               {/* Neu state editingCmntId === id cua comment nay thi */}
                               {editingCommentId === commentItem.id ? (
-                                <div className="flex flex-col space-y-2">
+                                <div className="flex flex-col space-y-2 w-full">
                                   <textarea
                                     className="w-full py-2 px-3 max-h-[200px] overflow-y-auto text-[16px] outline-none text-white resize-none rounded-lg bg-white/10 focus:ring-2 focus:ring-proPurple"
                                     value={editingCommentContent}

@@ -220,11 +220,12 @@ function DiscussPage() {
           </div>
         )}
 
-        <PaginationInput
-          currentPage={currentPage}
-          totalPages={pagination?.totalPages || 0}
-          onChange={(page) => setCurrentPage(page)}
-        />
+        {pagination && pagination?.totalPages > 1 && (
+          <PaginationInput
+            totalPages={pagination?.totalPages || 0}
+            onChange={(page) => setCurrentPage(page)}
+          />
+        )}
       </div>
 
       {!isDialogClosing && (

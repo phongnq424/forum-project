@@ -24,7 +24,11 @@ export function useGetProfileByUserId(userId, isEnable = true) {
     queryKey: ["profile", userId],
 
     queryFn: (context) => {
-      return profileService.getUserProfileById(context.queryKey[1]);
+      if (context.queryKey[1] !== "") {
+        return profileService.getUserProfileById(context.queryKey[1]);
+      } else {
+        return profileService.getMe();
+      }
     },
     enabled: isEnable,
     refetchOnWindowFocus: false,

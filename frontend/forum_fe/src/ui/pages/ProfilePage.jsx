@@ -21,14 +21,24 @@ import toastHelper from "../../helper/ToastHelper";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
 import AppContext from "../Context/AppContext";
 import PaginationInput from "../components/PaginationInput";
+import { FaUserFriends } from "react-icons/fa";
+import TabIcon from "../components/TabIcon";
+import { UserFollowCard } from "../components/UserFollowCard";
+import { IoSearch, IoServer } from "react-icons/io5";
+import {
+  useGetFollowingByUserId,
+  useToggleFollow,
+} from "../../api/hooks/followHook";
 
 const ProfilePageContext = createContext();
 
 const ProfilePage = () => {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
+  const toggleFollow = useToggleFollow();
 
   const userId = query.get("id") || "";
+  const [currentProfile, setCurrentProfile] = useState(null);
 
   const categories = [
     { id: 1, name: "Posts", icon: <BsPostcard className="text-[24px]" /> },
@@ -42,53 +52,58 @@ const ProfilePage = () => {
       name: "Achievements",
       icon: <PiMedalFill className="text-[24px]" />,
     },
+
+    {
+      id: 4,
+      name: "Connections",
+      icon: <FaUserFriends className="text-[24px]" />,
+    },
   ];
 
   const [selectedCategory, setSelectedCategory] = useState();
-  let getProfile;
-
-  if (userId === "") {
-    getProfile = useGetMe();
-  } else {
-    getProfile = useGetProfileByUserId(userId);
-  }
+  const getProfile = useGetProfileByUserId(userId);
+  useEffect(
+    function () {
+      setCurrentProfile(getProfile.data);
+    },
+    [getProfile.isSuccess, getProfile.isError, getProfile.data]
+  );
 
   useEffect(
     function () {
-      if (getProfile.isError) {
-        toastHelper.error(getProfile.error.message);
+      if (toggleFollow.isSuccess) {
+        setCurrentProfile(function (prev) {
+          return { ...prev, isFollowing: toggleFollow.data.followed };
+        });
+        console.warn(toggleFollow.data);
+      }
+      if (toggleFollow.isError) {
+        toastHelper.error(toggleFollow.error.message);
       }
     },
-    [getProfile.isError]
+    [toggleFollow.isError, toggleFollow.isSuccess, toggleFollow.data]
   );
 
-  var userProfile = null;
   if (getProfile.isLoading) {
     return <LoadingScreen></LoadingScreen>;
   }
 
-  if (getProfile.isSuccess) {
-    userProfile = {
-      user_id: getProfile.data?.User?.id || "",
-      fullName: getProfile.data?.fullname || "No Fullname",
-      username: getProfile.data?.User?.username || "No Username",
-      avatar: getProfile.data?.avatar || "",
-      bio: getProfile.data?.bio || "No bio",
-      followers: getProfile.data?.followers || -1,
-      following: getProfile.data?.following || -1,
-      posts: getProfile.data?.posts || -1,
-      comments: getProfile.data?.comments || -1,
-    };
-  } else {
+  if (currentProfile === null) {
     return <></>;
   }
 
   return (
-    <ProfilePageContext.Provider value={{ currentUserProfile: userProfile }}>
+    <ProfilePageContext.Provider value={{ currentUserProfile: currentProfile }}>
       <div className="bg-primary px-(--primary-padding) py-[20px] ">
         <main className="mx-auto space-y-7">
           <div className="w-[75%] mx-auto space-y-7">
-            <ProfileCard {...userProfile} isOwnProfile={userId === ""} />
+            <ProfileCard
+              {...currentProfile}
+              isOwnProfile={userId === ""}
+              handleToggleFollow={(id) =>
+                toggleFollow.mutate({ targetUserId: id })
+              }
+            />
             <CategoryBar
               categories={categories}
               onChanged={(i) => setSelectedCategory(i)}
@@ -110,7 +125,8 @@ function RenderByCategory({ selectedCategory }) {
   switch (selectedCategory.id) {
     case 1:
       return <RenderPosts />;
-
+    case 4:
+      return <RenderConnections />;
     default:
       return <></>;
   }
@@ -121,12 +137,12 @@ function RenderPosts() {
   const profilePageContext = useContext(ProfilePageContext);
   const appContext = useContext(AppContext);
   const [isDialogClosing, setIsDialogClosing] = useState(true);
-
   const savePost = useSavePost();
   const navigate = useNavigate();
   const toggleReaction = useToggleReaction();
   const [pagination, setPagination] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [posts, setPosts] = useState([]);
 
   const getPostOfUser = useGetPostsOfUser(
     profilePageContext.currentUserProfile.user_id,
@@ -145,6 +161,7 @@ function RenderPosts() {
 
       if (getPostOfUser.isSuccess) {
         setPagination(getPostOfUser.data.pagination);
+        setPosts(getPostOfUser.data.data);
       }
     },
     [getPostOfUser.isError, getPostOfUser.isSuccess, getPostOfUser.data]
@@ -155,6 +172,16 @@ function RenderPosts() {
       if (savePost.isSuccess) {
         toastHelper.success(
           savePost.data.saved ? "Save successfully!" : "Unsave successfully!"
+        );
+        setPosts((prev) =>
+          prev.map((p) => {
+            return p.id === savePost.data.postId
+              ? {
+                  ...p,
+                  isSaved: savePost.data.saved,
+                }
+              : p;
+          })
         );
       }
       if (savePost.isError) {
@@ -168,6 +195,17 @@ function RenderPosts() {
     function () {
       if (toggleReaction.isSuccess) {
         toastHelper.success("Love: " + !toggleReaction.data.removed);
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === toggleReaction.data.postId
+              ? {
+                  ...p,
+                  likes: p.likes + (toggleReaction.data.removed ? -1 : 1),
+                  isLiked: !toggleReaction.data.removed,
+                }
+              : p
+          )
+        );
       }
       if (toggleReaction.isError) {
         console.log(toggleReaction.error.message);
@@ -218,41 +256,39 @@ function RenderPosts() {
         </button>
       )}
       <div className="space-y-10" ref={containerPostsRef}>
-        {getPostOfUser.isSuccess &&
-          getPostOfUser.data &&
-          getPostOfUser.data.data &&
-          getPostOfUser.data.data.map((item) => {
-            item.author = profilePageContext.currentUserProfile.username;
-            item.authorImg = profilePageContext.currentUserProfile.avatar;
-            item.user = {
-              id: profilePageContext.currentUserProfile.user_id,
-              username: profilePageContext.currentUserProfile.username,
-              Profile: {
-                avatar: profilePageContext.currentUserProfile.avatar,
-              },
-            };
+        {posts.map((item) => {
+          item.author = profilePageContext.currentUserProfile.username;
+          item.authorImg = profilePageContext.currentUserProfile.avatar;
+          item.user = {
+            id: profilePageContext.currentUserProfile.user_id,
+            username: profilePageContext.currentUserProfile.username,
+            Profile: {
+              avatar: profilePageContext.currentUserProfile.avatar,
+            },
+          };
 
-            return (
-              <PostCard2
-                onSaveClick={(e) => savePost.mutate({ postId: item.id })}
-                variant="discuss"
-                key={item.id}
-                {...item}
-                onClick={(e) => {
-                  handleSelectPost(item);
-                }}
-                onReactionClick={(typeReaction) => {
-                  toggleReaction.mutate({ postId: item.id, typeReaction });
-                }}
-              ></PostCard2>
-            );
-          })}
+          return (
+            <PostCard2
+              onSaveClick={(e) => savePost.mutate({ postId: item.id })}
+              variant="discuss"
+              key={item.id}
+              {...item}
+              onClick={(e) => {
+                handleSelectPost(item);
+              }}
+              onReactionClick={(typeReaction) => {
+                toggleReaction.mutate({ postId: item.id, typeReaction });
+              }}
+            ></PostCard2>
+          );
+        })}
 
-        <PaginationInput
-          currentPage={currentPage}
-          totalPages={pagination?.totalPages || 0}
-          onChange={(page) => setCurrentPage(page)}
-        />
+        {pagination && pagination?.totalPages > 1 && (
+          <PaginationInput
+            totalPages={pagination?.totalPages}
+            onChange={(page) => setCurrentPage(page)}
+          />
+        )}
       </div>
       {!isDialogClosing && (
         <AddPostDialog
@@ -262,6 +298,129 @@ function RenderPosts() {
         />
       )}
     </div>
+  );
+}
+
+function RenderConnections() {
+  const options = {
+    FOLLOWING: {
+      id: 0,
+      name: "Following",
+    },
+
+    FOLLOWERS: {
+      id: 1,
+      name: "Followers",
+    },
+
+    asArray() {
+      return Object.values(this).filter((item) => typeof item != "function");
+    },
+  };
+
+  const profilePageContext = useContext(ProfilePageContext);
+  const [users, setUsers] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const getFollowing = useGetFollowingByUserId(
+    profilePageContext.currentUserProfile?.user_id,
+    currentPage,
+    pagination?.limit
+  );
+  const toggleFollow = useToggleFollow();
+  useEffect(
+    function () {
+      if (toggleFollow.isSuccess) {
+        setUsers(function (prev) {
+          return prev.map(function (item) {
+            return toggleFollow.data.followedId === item.followedId
+              ? { ...item, isFollowing: toggleFollow.data.followed }
+              : { ...item };
+          });
+        });
+      }
+      if (toggleFollow.isError) {
+        toastHelper.error(toggleFollow.error.message);
+      }
+    },
+    [toggleFollow.isError, toggleFollow.isSuccess, toggleFollow.data]
+  );
+
+  const handleOnChangeOption = function (selectedOption) {
+    if (selectedOption.id === options.FOLLOWERS.id) {
+    } else if (selectedOption.id === options.FOLLOWING.id) {
+    }
+  };
+
+  useEffect(
+    function () {
+      if (getFollowing.isSuccess) {
+        setPagination(getFollowing.data.pagination);
+        setUsers(getFollowing.data.data);
+      }
+
+      if (getFollowing.isError) {
+        toastHelper.error(getFollowing.error.message);
+      }
+    },
+    [getFollowing.isSuccess, getFollowing.isError, getFollowing.data]
+  );
+
+  return (
+    <>
+      <TabIcon
+        options={options.asArray()}
+        onChange={(selectedOption) => handleOnChangeOption(selectedOption)}
+      />
+
+      <div className="relative w-full md:w-96 basis-[60%] mt-5">
+        <IoSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground " />
+        <input
+          type="text"
+          className="flex h-10 outline-none w-full rounded-2xl bg-white/20 px-10 py-5 text-base placeholder:text-muted-foreground"
+          placeholder="Search"
+          onKeyDown={function (e) {
+            if (e.key == "Enter") {
+            }
+          }}
+        />
+      </div>
+
+      {users?.length < 1 && (
+        <p className="text-white text-center text-2xl py-10">
+          No following available
+        </p>
+      )}
+
+      {users?.length >= 1 && (
+        <div className="grid grid-cols-2 gap-4 py-10">
+          {users.map(function (item, index) {
+            const info = {
+              username: item.followedUsername,
+              avatarUrl: item.followedProfile.avatar,
+              userId: item.followedId,
+              isFollowing: item.isFollowing,
+            };
+            return (
+              <UserFollowCard
+                key={index}
+                {...info}
+                onFollow={function (userId) {
+                  toggleFollow.mutate({ targetUserId: userId });
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {pagination && pagination?.totalPages <= 1 && (
+        <PaginationInput
+          onChange={(page) => setCurrentPage(page)}
+          totalPages={pagination?.totalPages}
+        />
+      )}
+    </>
   );
 }
 
