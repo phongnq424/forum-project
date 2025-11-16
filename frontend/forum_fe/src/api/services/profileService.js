@@ -20,7 +20,6 @@ const profileService = {
         isOwnProfile: true,
         isFollowing: false,
       };
-      console.warn(response);
       return result;
     } catch (error) {
       throw General.createError(error);

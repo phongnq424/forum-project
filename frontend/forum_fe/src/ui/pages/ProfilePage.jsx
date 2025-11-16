@@ -75,7 +75,6 @@ const ProfilePage = () => {
         setCurrentProfile(function (prev) {
           return { ...prev, isFollowing: toggleFollow.data.followed };
         });
-        console.warn(toggleFollow.data);
       }
       if (toggleFollow.isError) {
         toastHelper.error(toggleFollow.error.message);
@@ -88,7 +87,7 @@ const ProfilePage = () => {
     return <LoadingScreen></LoadingScreen>;
   }
 
-  if (currentProfile === null) {
+  if (!currentProfile) {
     return <></>;
   }
 
@@ -145,7 +144,7 @@ function RenderPosts() {
   const [posts, setPosts] = useState([]);
 
   const getPostOfUser = useGetPostsOfUser(
-    profilePageContext.currentUserProfile.user_id,
+    profilePageContext.currentUserProfile?.user_id,
     currentPage,
     pagination?.limit
   );
@@ -328,6 +327,7 @@ function RenderConnections() {
     pagination?.limit
   );
   const toggleFollow = useToggleFollow();
+  const appContext = useContext(AppContext);
   useEffect(
     function () {
       if (toggleFollow.isSuccess) {
@@ -365,6 +365,8 @@ function RenderConnections() {
     },
     [getFollowing.isSuccess, getFollowing.isError, getFollowing.data]
   );
+
+  const navigate = useNavigate();
 
   return (
     <>
@@ -407,6 +409,13 @@ function RenderConnections() {
                 {...info}
                 onFollow={function (userId) {
                   toggleFollow.mutate({ targetUserId: userId });
+                }}
+                onChoose={function (userId) {
+                  if (appContext?.currentUser?.user_id != userId) {
+                    navigate(`/profile?id=${userId}`);
+                  } else {
+                    navigate(`/profile`);
+                  }
                 }}
               />
             );
