@@ -23,8 +23,10 @@ function TabIcon({ onChanged, options }) {
           <button
             key={category.id}
             onClick={() => setSelectedItem(category)}
-            className={`h-fit text-[18px]  flex items-center justify-between gap-2 whitespace-nowrap rounded-md font-medium transition-colors duration-100 [&>svg]:text-3xl ${
-              selectedItem.id === category.id ? "text-white" : "text-white/20"
+            className={`h-fit text-[18px]  flex items-center justify-between gap-2 py-1 whitespace-nowrap font-medium transition-colors duration-100 [&>svg]:text-3xl ${
+              selectedItem.id === category.id
+                ? "text-white border-b-3 border-white"
+                : "text-white/20"
             }`}
           >
             {category.icon}

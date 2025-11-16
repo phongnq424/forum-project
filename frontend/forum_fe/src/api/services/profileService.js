@@ -5,7 +5,23 @@ const profileService = {
   getMe: async function () {
     try {
       const response = await axiosClient.get("/profiles/me");
-      return response;
+      console.log(response);
+      const result = {
+        user_id: response.user_id,
+        fullName: response.fullname,
+        username: response.User.username,
+        avatar: response.avatar,
+        cover: response.cover,
+        bio: response.bio,
+        followers: -1,
+        following: -1,
+        posts: -1,
+        comments: -1,
+        isOwnProfile: true,
+        isFollowing: false,
+      };
+      console.warn(response);
+      return result;
     } catch (error) {
       throw General.createError(error);
     }
@@ -40,7 +56,22 @@ const profileService = {
   async getUserProfileById(id) {
     try {
       const response = await axiosClient.get(`/profiles/${id}`);
-      return response;
+      console.log(response);
+      const result = {
+        user_id: response.user_id,
+        fullName: response.fullname,
+        username: response.User.username,
+        avatar: response.avatar,
+        cover: response.cover,
+        bio: response.bio,
+        followers: -1,
+        following: -1,
+        posts: -1,
+        comments: -1,
+        isOwnProfile: false,
+        isFollowing: false,
+      };
+      return result;
     } catch (error) {
       throw General.createError(error);
     }

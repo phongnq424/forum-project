@@ -48,7 +48,7 @@ function CreateProfileForm({ currentProfile = null }) {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullName: currentProfile?.fullname || "",
+      fullName: currentProfile?.fullName || "",
       dob: currentProfile?.dob ? new Date(currentProfile?.dob) : new Date(),
       gender: "",
       bio: currentProfile?.bio || "",

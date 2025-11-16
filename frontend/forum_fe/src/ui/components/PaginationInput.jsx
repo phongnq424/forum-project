@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-function PaginationInput({ currentPage = 1, totalPages = 0, onChange }) {
-  if (totalPages === 0) return <></>;
-  const [current, setCurrent] = useState(currentPage);
-  const [currentView, setCurrentView] = useState(currentPage);
+function PaginationInput({ totalPages = 0, onChange }) {
+  if (totalPages <= 1) return <></>;
+  const [current, setCurrent] = useState(1);
+  const [currentView, setCurrentView] = useState(1);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
