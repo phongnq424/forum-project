@@ -69,7 +69,11 @@ const ProfileCard = ({
                   onClick={function () {
                     handleToggleFollow?.(user_id);
                   }}
-                  className="min-w-fit mt-5 bg-secondary w-fit hover:shadow-[0_0_10px_var(--color-proPurple)] text-lg gap-2 flex border-2 border-white/10 px-5 py-1 rounded-xl items-center shadow-[0_0_10px_rgba(255,255,255,50)]"
+                  className={`min-w-fit mt-5 text-lg gap-2 flex px-5 py-1 rounded-xl items-center ${
+                    isFollowing
+                      ? "bg-primary w-fit hover:bg-white/10"
+                      : "bg-proPurple w-fit hover:bg-proPurple/50"
+                  }`}
                 >
                   <FaPen className="h-5 w-5" />
                   {isFollowing ? "Following" : "Follow"}
@@ -77,7 +81,7 @@ const ProfileCard = ({
 
                 <button
                   onClick={function () {}}
-                  className="min-w-fit mt-5 bg-secondary w-fit hover:shadow-[0_0_10px_red] text-lg gap-2 flex border-2 border-white/10 px-5 py-1 rounded-xl items-center shadow-[0_0_10px_rgba(255,255,255,50)]"
+                  className="min-w-fit mt-5 bg-red-500 w-fit hover:bg-red-500/50 text-lg gap-2 flex px-5 py-1 rounded-xl items-center"
                 >
                   <FaPen className="h-5 w-5" />
                   Block
