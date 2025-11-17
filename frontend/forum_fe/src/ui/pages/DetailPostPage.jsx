@@ -31,6 +31,8 @@ import AppContext from "../Context/AppContext";
 import { IoMdSend } from "react-icons/io";
 import CustomDropDown2 from "../components/CustomDropDown/CustomDropDown2";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
+import StarRating from "../components/StartRating";
+import { useRateComment } from "../../api/hooks/commentRatingHook";
 
 export const DetailPostPageContext = createContext();
 
@@ -53,6 +55,8 @@ const DetailPostPage = () => {
   const [isDialogClosing, setIsDialogClosing] = useState(true);
   const updatePost = useUpdatePost();
   const updateComment = useUpdateComment();
+  const rateComment = useRateComment();
+
   useEffect(
     function () {
       if (updatePost.isError) {
@@ -65,6 +69,21 @@ const DetailPostPage = () => {
       }
     },
     [updatePost.isError, updatePost.isSuccess, updatePost.data]
+  );
+
+  useEffect(
+    function () {
+      if (rateComment.isSuccess) {
+        toastHelper.success(
+          rateComment.data.comment_id + " " + rateComment.data.rating
+        );
+      }
+
+      if (rateComment.isError) {
+        toastHelper.error(rateComment.error.message);
+      }
+    },
+    [rateComment.isSuccess, rateComment.isError, rateComment.data]
   );
   useEffect(
     function () {
@@ -101,6 +120,7 @@ const DetailPostPage = () => {
 
   const refDropDownForPost = useRef();
   const commentRefs = useRef({});
+  const refStarRatings = useRef({});
 
   function handlePostAction(option) {
     if (option.id === optionsForPost.DELETE.id) {
@@ -540,29 +560,50 @@ const DetailPostPage = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3 mt-1 px-3">
-                            <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
-                              Rate
-                            </button>
-
-                            {level == 0 && (
+                          <div className="relative">
+                            <div className="flex items-center gap-3 mt-1 px-3">
                               <button
                                 className="text-[14px] font-semibold text-muted-foreground hover:underline"
-                                onClick={() => setReplyTo(commentItem)}
+                                onClick={function () {
+                                  refStarRatings.current?.[
+                                    commentItem.id
+                                  ]?.open();
+                                }}
                               >
-                                Reply
+                                Rate
                               </button>
-                            )}
 
-                            {commentItem.childComments?.length > 0 && (
-                              <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
-                                View {commentItem.childComments.length} reply
-                              </button>
-                            )}
+                              {level == 0 && (
+                                <button
+                                  className="text-[14px] font-semibold text-muted-foreground hover:underline"
+                                  onClick={() => setReplyTo(commentItem)}
+                                >
+                                  Reply
+                                </button>
+                              )}
 
-                            <span className="text-[14px] text-muted-foreground">
-                              {commentItem.createAt}
-                            </span>
+                              {commentItem.childComments?.length > 0 && (
+                                <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
+                                  View {commentItem.childComments.length} reply
+                                </button>
+                              )}
+
+                              <span className="text-[14px] text-muted-foreground">
+                                {commentItem.createAt}
+                              </span>
+                            </div>
+
+                            <StarRating
+                              onChange={(startNumber) => {
+                                rateComment.mutate({
+                                  commentId: commentItem.id,
+                                  rating: startNumber,
+                                });
+                              }}
+                              ref={(el) => {
+                                refStarRatings.current[commentItem.id] = el;
+                              }}
+                            />
                           </div>
 
                           <div className="space-y-1 pt-1.5 text-white">

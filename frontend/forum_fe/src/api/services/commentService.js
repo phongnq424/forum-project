@@ -26,8 +26,6 @@ const commentService = {
       const response = responses[i];
       results.push(change(response));
     }
-
-    console.log(results);
     return results;
   },
 

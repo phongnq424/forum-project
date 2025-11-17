@@ -6,9 +6,6 @@ import {
   forwardRef,
   useContext,
 } from "react";
-import AppContext from "../../Context/AppContext";
-import { DetailPostPageContext } from "../../pages/DetailPostPage";
-
 const CustomDropDown2 = forwardRef(
   ({ options = [null], onSelect, displayField = null, className }, ref) => {
     const [isOpen, setIsOpen] = useState(false);

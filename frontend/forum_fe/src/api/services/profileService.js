@@ -5,7 +5,6 @@ const profileService = {
   getMe: async function () {
     try {
       const response = await axiosClient.get("/profiles/me");
-      console.log(response);
       const result = {
         user_id: response.user_id,
         fullName: response.fullname,
