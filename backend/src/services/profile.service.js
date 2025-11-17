@@ -3,8 +3,8 @@ const { CloudinaryService } = require('./cloudinary.service')
 const prisma = new PrismaClient();
 
 const ProfileService = {
-    getProfileByUserId: async (userId) => {
-        return await prisma.profile.findUnique({
+    getProfileByUserId: async (userId, viewerId = null) => {
+        const profile = await prisma.profile.findUnique({
             where: { user_id: userId },
             include: {
                 User: {
@@ -13,9 +13,7 @@ const ProfileService = {
                             select: {
                                 id: true,
                                 topic_id: true,
-                                Topic: {
-                                    select: { name: true }
-                                }
+                                Topic: { select: { name: true } }
                             }
                         },
                         id: true,
@@ -27,6 +25,33 @@ const ProfileService = {
                 }
             }
         })
+
+        if (!profile) return null
+
+        const [postCount, commentCount, followingCount, followerCount] = await Promise.all([
+            prisma.post.count({ where: { user_id: userId } }),
+            prisma.comment.count({ where: { user_id: userId } }),
+            prisma.follower.count({ where: { follow_id: userId } }), // số người user follow
+            prisma.follower.count({ where: { followed_id: userId } }) // số người follow user
+        ])
+
+        // Kiểm tra viewer có follow user này không
+        let isFollowing = false
+        if (viewerId) {
+            const follow = await prisma.follower.findUnique({
+                where: { follower_id_following_id: { follower_id: viewerId, following_id: userId } }
+            })
+            isFollowing = !!follow
+        }
+
+        return {
+            ...profile,
+            postCount,
+            commentCount,
+            followingCount,
+            followerCount,
+            isFollowing
+        }
     },
 
     updateProfile: async (userId, data, files = {}) => {
