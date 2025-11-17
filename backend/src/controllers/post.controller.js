@@ -30,7 +30,8 @@ const PostController = {
 
     getPost: async (req, res) => {
         try {
-            const post = await PostService.getPostById(req.params.id)
+            const viewerId = req.user?.id || null
+            const post = await PostService.getPostById(req.params.id, viewerId)
             if (!post) return res.status(404).json({ message: 'Post not found' })
             return res.status(200).json(post)
         } catch (e) {
@@ -49,7 +50,6 @@ const PostController = {
                 const postId = req.params.id
                 const userId = req.user.id
                 const { content, topic_id, title, removeImageIds } = req.body
-                // removeImageIds: optional string of comma-separated image ids to delete
                 const removeIds = removeImageIds
                     ? (Array.isArray(removeImageIds) ? removeImageIds : String(removeImageIds).split(',').map(s => s.trim()).filter(Boolean))
                     : []
@@ -87,7 +87,8 @@ const PostController = {
 
     list: async (req, res) => {
         try {
-            const result = await PostService.list(req.query)
+            const viewerId = req.user?.id || null
+            const result = await PostService.list(req.query, viewerId)
             return res.status(200).json(result)
         } catch (e) {
             return res.status(500).json({ message: e.message })
@@ -96,8 +97,9 @@ const PostController = {
 
     getByUser: async (req, res) => {
         try {
-            const userId = req.params.userId
-            const result = await PostService.getByUser(userId, req.query)
+            const ownerId = req.params.userId
+            const viewerId = req.user?.id || null
+            const result = await PostService.getByUser(ownerId, req.query, viewerId)
             return res.status(200).json(result)
         } catch (e) {
             return res.status(500).json({ message: e.message })
@@ -107,7 +109,8 @@ const PostController = {
     search: async (req, res) => {
         try {
             const q = req.query.q || ''
-            const results = await PostService.searchPosts(q)
+            const viewerId = req.user?.id || null
+            const results = await PostService.searchPosts(q, viewerId)
             return res.status(200).json(results)
         } catch (e) {
             return res.status(500).json({ message: e.message })
