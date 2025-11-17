@@ -38,6 +38,10 @@ function App() {
     [flagGetCurrentUserAgain]
   );
 
+  if (getMe.isLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -47,7 +51,6 @@ function App() {
         getCurrentUserAgain,
       }}
     >
-      {getMe.isLoading && <LoadingScreen />}
       <div className="bg-primary min-h-screen overflow-y-hidden">
         <ToastContainer />
         <PageRouters />

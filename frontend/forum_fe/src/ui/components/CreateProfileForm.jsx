@@ -18,7 +18,6 @@ function CreateProfileForm({ currentProfile = null }) {
   const updateMe = useUpdateMe();
   const createProfileContext = useContext(CreateProfileContext);
   const appContext = useContext(AppContext);
-
   const formSchema = z.object({
     fullName: z.string().min(1, "Fullname must not be empty!"),
     dob: z
@@ -140,7 +139,6 @@ function CreateProfileForm({ currentProfile = null }) {
                         variant="createProfile"
                         options={genders}
                         onSelected={(genderSelected) => {
-                          console.log(genderSelected?.gender);
                           field.onChange(genderSelected?.gender);
                         }}
                         onBlur={field.onBlur}

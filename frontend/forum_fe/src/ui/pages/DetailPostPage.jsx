@@ -33,6 +33,7 @@ import CustomDropDown2 from "../components/CustomDropDown/CustomDropDown2";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
 import StarRating from "../components/StartRating";
 import { useRateComment } from "../../api/hooks/commentRatingHook";
+import CustomDropDown from "../components/CustomDropDown/CustomDropDown";
 
 export const DetailPostPageContext = createContext();
 
@@ -109,19 +110,7 @@ const DetailPostPage = () => {
     },
   };
 
-  const optionsForCmt = {
-    DELETE: { id: 0, name: "Delete", showFor: [General.showFor.OWN] },
-    EDIT: { id: 1, name: "Edit", showFor: [General.showFor.OWN] },
-    REPORT: { id: 2, name: "Report", showFor: [General.showFor.VIEWER] },
-    asArray() {
-      return Object.values(this).filter((item) => typeof item != "function");
-    },
-  };
-
   const refDropDownForPost = useRef();
-  const commentRefs = useRef({});
-  const refStarRatings = useRef({});
-
   function handlePostAction(option) {
     if (option.id === optionsForPost.DELETE.id) {
       deletePost.mutate({ postId });
@@ -129,10 +118,6 @@ const DetailPostPage = () => {
       setIsDialogClosing(false);
     }
   }
-
-  // Usestate for edit comment
-  const [editingCommentId, setEditingCommentId] = useState(null);
-  const [editingCommentContent, setEditingCommentContent] = useState("");
 
   function handleCommentAction(option, objectId, commentContent = "") {
     if (option.id === optionsForCmt.DELETE.id) {
@@ -199,6 +184,7 @@ const DetailPostPage = () => {
     function () {
       if (updateComment.isSuccess) {
         getCommentsOfPost.refetch();
+        toastHelper.success("Update comment successfully!");
       }
       if (updateComment.isError) {
         toastHelper.error(updateComment.error.message);
@@ -238,7 +224,7 @@ const DetailPostPage = () => {
     }
   };
 
-  const handleOnClickCommentAuthInfo = function (commentItem) {
+  const onSelectAuthorOfComment = function (commentItem) {
     if (appContext?.currentUser?.user_id != commentItem.userId) {
       navigate(`/profile?id=${commentItem.userId}`);
     } else {
@@ -409,214 +395,37 @@ const DetailPostPage = () => {
 
               <div className="mb-2 h-[1px] bg-black404040" />
 
-              {/* Sort comments */}
-              {/* <div className="mb-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-sm font-semibold text-muted-foreground"
-                      >
-                        Most relevant ▼
-                      </Button>
-                    </div> */}
-
-              {/* Comments section */}
-
               {getCommentsOfPost.data?.length > 0 && (
                 <div className="space-y-4 text-white">
                   {getCommentsOfPost.data.map((comment) => {
-                    const renderComment = (commentItem, level = 0) => (
-                      <div
-                        key={commentItem.id}
-                        className={`flex gap-2 ${level > 0 ? "ms-6" : ""}`}
-                      >
-                        <img
-                          className="w-10 h-10 rounded-full object-cover hover:cursor-pointer"
-                          onClick={function (e) {
-                            handleOnClickCommentAuthInfo(commentItem);
-                          }}
-                          src={
-                            commentItem.user?.Profile?.avatar ||
-                            commentItem?.User?.Profile?.avatar
-                          }
-                          alt={
-                            commentItem.user?.username ||
-                            commentItem.User?.username
-                          }
-                        />
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex space-x-1">
-                            {/* Author info */}
-                            <div
-                              className={`bg-black404040 rounded-2xl px-3 py-2 ${
-                                editingCommentId === commentItem.id
-                                  ? "w-full"
-                                  : "inline-block"
-                              }`}
-                            >
-                              <div
-                                className="flex items-center gap-2 mb-0.5 hover:cursor-pointer"
-                                onClick={function (e) {
-                                  handleOnClickCommentAuthInfo(commentItem);
-                                }}
-                              >
-                                <h5 className="font-semibold text-[16px]">
-                                  {commentItem.user?.username ||
-                                    commentItem.User?.username}
-                                </h5>
-                              </div>
-
-                              {/* Neu state editingCmntId === id cua comment nay thi */}
-                              {editingCommentId === commentItem.id ? (
-                                <div className="flex flex-col space-y-2 w-full">
-                                  <textarea
-                                    className="w-full py-2 px-3 max-h-[200px] overflow-y-auto text-[16px] outline-none text-white resize-none rounded-lg bg-white/10 focus:ring-2 focus:ring-proPurple"
-                                    value={editingCommentContent}
-                                    onChange={(e) =>
-                                      setEditingCommentContent(e.target.value)
-                                    }
-                                  />
-                                  <div className="flex gap-2">
-                                    <button
-                                      disabled={editingCommentContent === ""}
-                                      className="px-3 py-1 text-sm bg-proPurple rounded text-white disabled:opacity-50"
-                                      onClick={() => {
-                                        updateComment.mutate({
-                                          id: editingCommentId,
-                                          content: editingCommentContent,
-                                        });
-
-                                        setEditingCommentId(null);
-                                        setEditingCommentContent("");
-                                      }}
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      className="px-3 py-1 text-sm bg-gray-500 rounded text-white"
-                                      onClick={() => {
-                                        setEditingCommentId(null);
-                                        setEditingCommentContent("");
-                                      }}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <p className="text-[14px] break-words break-all whitespace-normal">
-                                  {commentItem.content}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="relative">
-                              <CustomDropDown2
-                                ref={(el) =>
-                                  (commentRefs.current[commentItem.id] = el)
-                                }
-                                onSelect={(option) =>
-                                  handleCommentAction(
-                                    option,
-                                    commentItem.id,
-                                    commentItem.content
-                                  )
-                                }
-                                className="absolute right-0 top-5 z-50"
-                                displayField="name"
-                                options={optionsForCmt
-                                  .asArray()
-                                  .filter((item) => {
-                                    if (
-                                      item.showFor.includes(General.showFor.ALL)
-                                    )
-                                      return true;
-                                    if (
-                                      appContext.currentUser?.user_id ===
-                                      commentItem.user.id
-                                    ) {
-                                      return item.showFor.includes(
-                                        General.showFor.OWN
-                                      );
-                                    } else {
-                                      return item.showFor.includes(
-                                        General.showFor.VIEWER
-                                      );
-                                    }
-                                  })}
-                              />
-
-                              <button
-                                className="hover:bg-white/10 rounded-full p-1"
-                                onClick={() => {
-                                  if (!commentRefs.current[commentItem.id])
-                                    return;
-                                  commentRefs.current[commentItem.id].open();
-                                }}
-                              >
-                                <MdMoreHoriz className="h-5 w-5 text-white" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="relative">
-                            <div className="flex items-center gap-3 mt-1 px-3">
-                              <button
-                                className="text-[14px] font-semibold text-muted-foreground hover:underline"
-                                onClick={function () {
-                                  refStarRatings.current?.[
-                                    commentItem.id
-                                  ]?.open();
-                                }}
-                              >
-                                Rate
-                              </button>
-
-                              {level == 0 && (
-                                <button
-                                  className="text-[14px] font-semibold text-muted-foreground hover:underline"
-                                  onClick={() => setReplyTo(commentItem)}
-                                >
-                                  Reply
-                                </button>
-                              )}
-
-                              {commentItem.childComments?.length > 0 && (
-                                <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
-                                  View {commentItem.childComments.length} reply
-                                </button>
-                              )}
-
-                              <span className="text-[14px] text-muted-foreground">
-                                {commentItem.createAt}
-                              </span>
-                            </div>
-
-                            <StarRating
-                              onChange={(startNumber) => {
-                                rateComment.mutate({
-                                  commentId: commentItem.id,
-                                  rating: startNumber,
-                                });
-                              }}
-                              ref={(el) => {
-                                refStarRatings.current[commentItem.id] = el;
-                              }}
-                            />
-                          </div>
-
-                          <div className="space-y-1 pt-1.5 text-white">
-                            {commentItem.childComments?.length > 0 &&
-                              commentItem.childComments.map((child) =>
-                                renderComment(child, level + 1)
-                              )}
-                          </div>
-                        </div>
-                      </div>
+                    return (
+                      <RenderComment
+                        key={comment.id}
+                        commentItem={comment}
+                        currentUser={appContext?.currentUser}
+                        onSelectAuthor={function (commentItem) {
+                          onSelectAuthorOfComment(commentItem);
+                        }}
+                        onEditComment={function (commentItem, newContent) {
+                          updateComment.mutate({
+                            cmtId: commentItem.id,
+                            content: newContent,
+                          });
+                        }}
+                        onDeleteComment={function (comment) {
+                          deleteComment.mutate({ cmtId: comment.id });
+                        }}
+                        onReplyTo={function (comment) {
+                          setReplyTo(comment);
+                        }}
+                        onRatingComment={function (commentItem, startNumber) {
+                          rateComment.mutate({
+                            commentId: commentItem.id,
+                            rating: startNumber,
+                          });
+                        }}
+                      />
                     );
-
-                    return renderComment(comment);
                   })}
                 </div>
               )}
@@ -690,6 +499,207 @@ const DetailPostPage = () => {
         )}
       </main>
     </>
+  );
+};
+
+const RenderComment = function ({
+  commentItem,
+  currentUser,
+  level = 0,
+  onSelectAuthor,
+  onDeleteComment,
+  onEditComment,
+  onReplyTo,
+  onRatingComment,
+}) {
+  const refCommentDropDownOptions = useRef();
+  const refRatingStar = useRef();
+  const [isEditing, setIsEditing] = useState(false);
+  const [newContent, setNewContent] = useState(commentItem?.content);
+  const optionsForCmt = {
+    DELETE: { id: 0, name: "Delete", showFor: [General.showFor.OWN] },
+    EDIT: { id: 1, name: "Edit", showFor: [General.showFor.OWN] },
+    REPORT: { id: 2, name: "Report", showFor: [General.showFor.VIEWER] },
+    asArray() {
+      return Object.values(this).filter((item) => typeof item != "function");
+    },
+  };
+
+  function handleOnSelectDropDownOption(option) {
+    switch (option.id) {
+      case optionsForCmt.DELETE.id:
+        onDeleteComment?.(commentItem);
+        break;
+      case optionsForCmt.EDIT.id:
+        setIsEditing(true);
+        break;
+      case optionsForCmt.REPORT.id:
+        break;
+      default:
+        toastHelper.error("FE Error: Option is invalid!");
+    }
+  }
+
+  return (
+    <div
+      key={commentItem.id}
+      className={`flex gap-2 ${level > 0 ? "ms-6" : ""}`}
+    >
+      <img
+        className="w-10 h-10 rounded-full object-cover hover:cursor-pointer"
+        onClick={function (e) {
+          onSelectAuthor?.(commentItem);
+        }}
+        src={
+          commentItem.user?.Profile?.avatar ||
+          commentItem?.User?.Profile?.avatar
+        }
+        alt={commentItem.user?.username || commentItem.User?.username}
+      />
+
+      <div className="flex-1 min-w-0">
+        <div className="flex space-x-1">
+          {/* Author info */}
+          <div
+            className={`bg-black404040 rounded-2xl px-3 py-2 ${
+              isEditing ? "w-full" : "inline-block"
+            }`}
+          >
+            <div
+              className="flex items-center gap-2 mb-0.5 hover:cursor-pointer"
+              onClick={function (e) {
+                onSelectAuthor(commentItem);
+              }}
+            >
+              <h5 className="font-semibold text-[16px]">
+                {commentItem.user?.username || commentItem.User?.username}
+              </h5>
+            </div>
+
+            {/* Neu state editingCmntId === id cua comment nay thi */}
+            {isEditing ? (
+              <div className="flex flex-col space-y-2 w-full">
+                <textarea
+                  className="w-full py-2 px-3 max-h-[200px] overflow-y-auto text-[16px] outline-none text-white resize-none rounded-lg bg-white/10 focus:ring-2 focus:ring-proPurple"
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button
+                    disabled={newContent === ""}
+                    className="px-3 py-1 text-sm bg-proPurple rounded text-white disabled:opacity-30 hover:not-disabled:bg-proPurple/50 disabled:cursor-not-allowed"
+                    onClick={() => {
+                      onEditComment?.(commentItem, newContent);
+                      setIsEditing(false);
+                    }}
+                  >
+                    Save
+                  </button>
+
+                  <button
+                    className="px-3 py-1 text-sm bg-white/10 rounded text-white hover:bg-white/30"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setNewContent(commentItem?.content);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[14px] break-words break-all whitespace-normal">
+                {commentItem?.content}
+              </p>
+            )}
+          </div>
+
+          <div className="relative">
+            <CustomDropDown2
+              ref={refCommentDropDownOptions}
+              onSelect={function (option) {
+                handleOnSelectDropDownOption(option);
+              }}
+              className="absolute right-0 top-5 z-50"
+              displayField="name"
+              options={optionsForCmt.asArray().filter((item) => {
+                if (item.showFor.includes(General.showFor.ALL)) return true;
+                if (currentUser.user_id === commentItem.user.id) {
+                  return item.showFor.includes(General.showFor.OWN);
+                } else {
+                  return item.showFor.includes(General.showFor.VIEWER);
+                }
+              })}
+            />
+
+            <button
+              className="hover:bg-white/10 rounded-full p-1"
+              onClick={() => {
+                refCommentDropDownOptions.current?.open();
+              }}
+            >
+              <MdMoreHoriz className="h-5 w-5 text-white" />
+            </button>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="flex items-center gap-3 mt-1 px-3">
+            <button
+              className="text-[14px] font-semibold text-muted-foreground hover:underline"
+              onClick={function () {
+                refRatingStar.current?.open();
+              }}
+            >
+              Rate
+            </button>
+
+            {level == 0 && (
+              <button
+                className="text-[14px] font-semibold text-muted-foreground hover:underline"
+                onClick={() => onReplyTo(commentItem)}
+              >
+                Reply
+              </button>
+            )}
+
+            {commentItem.childComments?.length > 0 && (
+              <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
+                View {commentItem.childComments.length} reply
+              </button>
+            )}
+
+            <span className="text-[14px] text-muted-foreground">
+              {commentItem.createAt}
+            </span>
+          </div>
+
+          <StarRating
+            onChange={function (startNumber) {
+              onRatingComment?.(commentItem, startNumber);
+            }}
+            ref={refRatingStar}
+          />
+        </div>
+
+        <div className="space-y-1 pt-1.5 text-white">
+          {commentItem.childComments?.length > 0 &&
+            commentItem.childComments.map((child) => (
+              <RenderComment
+                key={child.id}
+                currentUser={currentUser}
+                commentItem={child}
+                level={level + 1}
+                onSelectAuthor={onSelectAuthor}
+                onDeleteComment={onDeleteComment}
+                onEditComment={onEditComment}
+                onReplyTo={onReplyTo}
+                onRatingComment={onRatingComment}
+              />
+            ))}
+        </div>
+      </div>
+    </div>
   );
 };
 
