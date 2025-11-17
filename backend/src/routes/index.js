@@ -12,6 +12,7 @@ const CommentRoutes = require("./comment.route.js")
 const ReactionRoutes = require("./reaction.route.js")
 const FollowerRoutes = require("./follower.route.js")
 const PostSavedRoutes = require("./postSaved.route.js")
+const AlRoutes = require("./ai.route.js")
 
 router.use("/auth", authRoutes)
 router.use("/users", userRoutes)
@@ -24,5 +25,6 @@ router.use("/comments", CommentRoutes)
 router.use("/reactions", ReactionRoutes)
 router.use("/followers", FollowerRoutes)
 router.use("/post-saved", PostSavedRoutes)
+router.use("/ai", AlRoutes)
 
 module.exports = router
