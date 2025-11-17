@@ -8,11 +8,11 @@ import { useRegister } from "../../api/hooks/AuthenticationHook";
 import toastHelper from "../../helper/ToastHelper";
 import { useContext, useEffect } from "react";
 import { SignUpPageContext } from "../pages/SignUpPage";
+import LoadingScreen from "../pages/LoadingScreen";
 
 function SignUpForm() {
   const providers = ["facebook", "google"];
   const navigate = useNavigate();
-  const signUpContext = useContext(SignUpPageContext);
   const register = useRegister(
     function (res) {
       toastHelper.info(res.message);
@@ -54,15 +54,9 @@ function SignUpForm() {
     register.mutate(data);
   }
 
-  useEffect(
-    function () {
-      signUpContext.setIsLoading(register.isPending);
-    },
-    [register.isPending]
-  );
-
   return (
     <div className="w-full max-w-2xl mx-auto my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
+      {register.isPending && <LoadingScreen />}
       <h1 className="text-[30px] font-bold text-white text-center">
         Create a new account!
       </h1>

@@ -1,4 +1,5 @@
 import General from "../../General/General";
+import toastHelper from "../../helper/ToastHelper";
 import axiosClient from "../AxiosClient";
 
 const authService = {
@@ -49,6 +50,18 @@ const authService = {
       };
       const response = await axiosClient.post("/auth/resend-otp", request);
       return response;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
+  logOut: async function () {
+    try {
+      var token = localStorage.getItem("token");
+      const request = { token };
+      const result = await axiosClient.post("/auth/logout", request);
+      localStorage.removeItem("token");
+      return result;
     } catch (error) {
       throw General.createError(error);
     }

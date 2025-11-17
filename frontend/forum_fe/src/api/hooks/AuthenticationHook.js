@@ -62,3 +62,11 @@ export function useResendOTP(handleOnSuccess, handleOnError) {
     },
   });
 }
+
+export function useLogOut() {
+  return useMutation({
+    mutationFn: function () {
+      return authService.logOut();
+    },
+  });
+}
