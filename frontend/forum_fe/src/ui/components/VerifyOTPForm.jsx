@@ -5,12 +5,10 @@ import InputField from "./InputField";
 import { useResendOTP, useVerifyOTP } from "../../api/hooks/AuthenticationHook";
 import toastHelper from "../../helper/ToastHelper";
 import { useNavigate } from "react-router-dom";
-import { useContext, useEffect } from "react";
-import { VerifyOTPContext } from "../pages/VerifyOTPPage";
+import LoadingScreen from "../pages/LoadingScreen";
 
 function VerifyOTPForm({ email }) {
   const navigate = useNavigate();
-  const verifyOTPContext = useContext(VerifyOTPContext);
 
   const verifyOTP = useVerifyOTP(
     function (response) {
@@ -62,21 +60,9 @@ function VerifyOTPForm({ email }) {
     resendOTP.mutate({ email: currEmail });
   }
 
-  useEffect(
-    function () {
-      verifyOTPContext.setIsLoading(verifyOTP.isPending);
-    },
-    [verifyOTP.isPending]
-  );
-
-  useEffect(
-    function () {
-      verifyOTPContext.setIsLoading(resendOTP.isPending);
-    },
-    [resendOTP.isPending]
-  );
   return (
     <div className="w-full max-w-2xl mx-auto my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
+      {(resendOTP.isPending || verifyOTP.isPending) && <LoadingScreen />}
       <h1 className="text-[40px] font-bold text-white text-center">
         Verify OTP!
       </h1>

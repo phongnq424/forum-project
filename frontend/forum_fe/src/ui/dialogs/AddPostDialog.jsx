@@ -4,28 +4,29 @@ import { IoMdCloseCircle } from "react-icons/io";
 import ImagePicker from "../components/ImagePicker";
 import { useGetTopic } from "../../api/hooks/topicHook";
 import LoadingScreen from "../pages/LoadingScreen";
-import { set } from "date-fns";
 import toastHelper from "../../helper/ToastHelper";
 import CustomDropDown from "../components/CustomDropDown/CustomDropDown";
 
-export const AddPostDialog = ({ onClose, onSubmit, isLoading }) => {
-  if (!onClose) {
-    console.log("Dialog close");
-  }
-  const [postContent, setPostContent] = useState("");
-  const [postTitle, setPostTitle] = useState("");
+export const AddPostDialog = ({
+  onClose,
+  onSubmit,
+  isLoading,
+  currentPost = null,
+}) => {
+  const [postContent, setPostContent] = useState(
+    currentPost?.description || ""
+  );
+  const [postTitle, setPostTitle] = useState(currentPost?.title || "");
   const [images, setImages] = useState([]);
   const [postTopic, setPostTopic] = useState();
-  const [topics, setTopics] = useState([]);
 
   const getTopics = useGetTopic(false);
-
   useEffect(() => {
     if (getTopics.isSuccess) {
-      setTopics(getTopics.data.data);
     }
     if (getTopics.isError) {
       toastHelper.error(getTopics.error.message);
+      return <></>;
     }
   }, [getTopics.isSuccess, getTopics.isError]);
 
@@ -38,9 +39,12 @@ export const AddPostDialog = ({ onClose, onSubmit, isLoading }) => {
     "font-medium ring-offset-background transition-colors focus-visible:outline-none disabled:pointer-events-none " +
     "disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:cursor-pointer";
 
-  const iconSize = "h-10 w-10";
   const iconSize2 = "h-7 w-7";
   const ghostStyle = "hover:bg-accent hover:text-accent-foreground";
+
+  if (!getTopics.isSuccess) {
+    return <LoadingScreen></LoadingScreen>;
+  }
 
   return (
     <div className="fixed flex top-1 pt-10 inset-0 z-10 flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
@@ -74,19 +78,24 @@ export const AddPostDialog = ({ onClose, onSubmit, isLoading }) => {
               />
             </div>
 
-            <div className="px-5 flex items-center w-[50%]">
-              <h1 className="text-white text-[18px] basis-[40%] font-semibold">
-                Topic
+            <div className="px-5 flex items-center w-[70%]">
+              <h1 className="text-white text-[18px] basis-[30%] font-semibold">
+                Post's Topic
               </h1>
 
-              {topics?.length >= 1 && (
+              {getTopics.data?.data?.length >= 1 && (
                 <CustomDropDown
-                  options={topics}
+                  options={getTopics.data?.data}
                   displayField="name"
-                  onChange={(value) => {
-                    setPostTopic(value.id);
+                  onSelected={(value) => {
+                    setPostTopic(value?.id);
                   }}
-                  indexValueSelected={0}
+                  initIndexSelected={Math.max(
+                    0,
+                    getTopics.data?.data?.findIndex(
+                      (i) => i.id === currentPost?.topic?.id
+                    )
+                  )}
                   variant="addPost"
                 />
               )}
@@ -146,19 +155,29 @@ export const AddPostDialog = ({ onClose, onSubmit, isLoading }) => {
           <button
             disabled={!postContent.trim() || !postTitle.trim()}
             className={`${generalStyle} bg-proPurple w-full h-12 font-semibold transition-all disabled:bg-mute text-white text-2xl disabled:opacity-50`}
-            onClick={() =>
+            onClick={() => {
               onSubmit({
                 postTitle,
                 postContent,
                 images,
                 topic: postTopic,
-              })
-            }
+                id: currentPost?.id || "",
+              });
+            }}
           >
-            Post
+            {currentPost ? "Save Change" : "Post"}
           </button>
         </div>
       </div>
     </div>
   );
 };
+
+async function convertUrlsToFiles(urls) {
+  return Promise.all(
+    urls.map(async (url) => {
+      const filename = url.split("/").pop();
+      return await urlToFile(url, filename);
+    })
+  );
+}

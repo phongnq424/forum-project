@@ -12,4 +12,4 @@ router.put('/me', rateLimitMiddleware, verifyToken, ProfileController.updateMyPr
 router.get('/', ProfileController.listProfiles)
 router.get('/search/all', ProfileController.searchUsers)
 
-module.exports = router
+module.exports = router;
