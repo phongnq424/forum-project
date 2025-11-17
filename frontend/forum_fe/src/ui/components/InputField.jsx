@@ -7,6 +7,7 @@ function InputField({
   variant,
   propForValueWorking,
   isDisable = false,
+  isReadOnly = false,
 }) {
   const [isShowPassword, setShowPassword] = useState(false);
 
@@ -14,6 +15,7 @@ function InputField({
     authInp: (
       <div className="relative">
         <input
+          readOnly={isReadOnly}
           type={
             type != "password" ? type : isShowPassword ? "text" : "password"
           }
@@ -75,6 +77,7 @@ function InputField({
     createProfile: (
       <div className="relative">
         <input
+          readOnly={isReadOnly}
           type={
             type != "password" ? type : isShowPassword ? "text" : "password"
           }
@@ -105,6 +108,7 @@ function InputField({
     createProfileBio: (
       <div className="flex flex-col-reverse">
         <textarea
+          readOnly={isReadOnly}
           type={
             type != "password" ? type : isShowPassword ? "text" : "password"
           }

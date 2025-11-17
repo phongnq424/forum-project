@@ -14,8 +14,9 @@ import {
   useUpdatePost,
 } from "../../api/hooks/postHook";
 import { MdMoreHoriz } from "react-icons/md";
-import { FaRegBookmark, FaRegHeart } from "react-icons/fa";
-import { FiMessageCircle, FiShare2 } from "react-icons/fi";
+import { FaBookmark, FaHeart } from "react-icons/fa";
+import { TbMessageCircleFilled } from "react-icons/tb";
+import { IoMdShare } from "react-icons/io";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
 import toastHelper from "../../helper/ToastHelper";
 import General from "../../General/General";
@@ -345,7 +346,7 @@ const DetailPostPage = () => {
                       onReactionClick?.(General.reactionType.LOVE);
                     }}
                   >
-                    <FaRegHeart className="h-fit w-fit" />
+                    <FaHeart className="h-fit w-fit" />
                     <span className="text-xl font-medium">
                       {currentPost.likes || -1}
                     </span>
@@ -357,7 +358,7 @@ const DetailPostPage = () => {
                       onCommentClick?.(General.reactionType.LOVE);
                     }}
                   >
-                    <FiMessageCircle className="h-fit w-fit" />
+                    <TbMessageCircleFilled className="h-fit w-fit" />
                     <span className="text-xl font-medium">
                       {currentPost.comments || -1}
                     </span>
@@ -372,7 +373,7 @@ const DetailPostPage = () => {
                       onSaveClick?.();
                     }}
                   >
-                    <FaRegBookmark className="h-fit w-fit" />
+                    <FaBookmark className="h-fit w-fit" />
                   </button>
 
                   <button
@@ -381,7 +382,7 @@ const DetailPostPage = () => {
                       onShareClick?.(General.reactionType.LOVE);
                     }}
                   >
-                    <FiShare2 className="h-fit w-fit" />
+                    <IoMdShare className="h-fit w-fit" />
                   </button>
                 </div>
               </div>

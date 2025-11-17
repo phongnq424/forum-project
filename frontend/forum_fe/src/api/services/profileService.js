@@ -19,6 +19,7 @@ const profileService = {
         comments: -1,
         isOwnProfile: true,
         isFollowing: false,
+        gender: response.gender,
       };
       return result;
     } catch (error) {

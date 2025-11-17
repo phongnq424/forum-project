@@ -22,7 +22,8 @@ function SignInForm() {
     function (response) {
       toastHelper.success(response.message);
       appContext.setIsLogged(true);
-      localStorage.setItem("token", response.token);
+      appContext.getCurrentUserAgain((p) => !p);
+
       navigate("/");
     },
     function (error) {

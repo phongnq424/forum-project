@@ -4,7 +4,6 @@ import profileService from "../services/profileService";
 export function useGetMe(isEnable = true) {
   return useQuery({
     queryKey: ["profile", "me"],
-
     queryFn: () => {
       return profileService.getMe();
     },

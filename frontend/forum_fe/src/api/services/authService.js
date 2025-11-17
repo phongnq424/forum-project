@@ -37,6 +37,7 @@ const authService = {
         password: data.password,
       };
       const response = await axiosClient.post("/auth/login", request);
+      localStorage.setItem("token", response.token);
       return response;
     } catch (error) {
       throw General.createError(error);

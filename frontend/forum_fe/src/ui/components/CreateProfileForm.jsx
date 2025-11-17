@@ -139,20 +139,21 @@ function CreateProfileForm({ currentProfile = null }) {
                         display="Gender"
                         variant="createProfile"
                         options={genders}
-                        selected={field.value}
                         onSelected={(genderSelected) => {
-                          console.log(genderSelected.gender);
-                          field.onChange(genderSelected.gender);
+                          console.log(genderSelected?.gender);
+                          field.onChange(genderSelected?.gender);
                         }}
                         onBlur={field.onBlur}
-                        initIndexSelected={Math.max(
-                          0,
-                          genders.findIndex(
-                            (g) =>
-                              currentProfile?.gender?.toLowerCase() ===
-                              g?.gender?.toLowerCase()
-                          )
-                        )}
+                        initIndexSelected={
+                          currentProfile?.gender
+                            ? genders.findIndex((g) => {
+                                return (
+                                  g?.gender?.toLowerCase() ===
+                                  currentProfile.gender.toLowerCase()
+                                );
+                              })
+                            : 0
+                        }
                         displayField="gender"
                       ></CustomDropDown>
                     )}
