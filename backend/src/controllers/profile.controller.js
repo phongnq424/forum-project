@@ -19,9 +19,10 @@ const ProfileController = {
     getProfileByUserId: async (req, res) => {
         try {
             const { userId } = req.params
+            const viewerId = req.user?.id || null
             if (!userId) return res.status(400).json({ error: 'Invalid userId' })
 
-            const profile = await ProfileService.getProfileByUserId(userId)
+            const profile = await ProfileService.getProfileByUserId(userId, viewerId)
             if (!profile) return res.status(404).json({ error: 'Not found' })
             return res.status(200).json(profile)
         } catch (error) {

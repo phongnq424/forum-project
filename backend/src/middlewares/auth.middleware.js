@@ -3,30 +3,52 @@ const redisClient = require('../config/redis');
 
 const SECRET_KEY = process.env.JWT_SECRET || 'secret';
 
-const verifyToken = async (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
-    if (!token) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
+// Hàm helper chung
+const checkToken = async (token) => {
+    if (!token) return null;
 
-    try {
-        const isBlacklisted = await redisClient.get(`blacklist:${token}`);
-        if (isBlacklisted) {
-            return res.status(403).json({ message: 'Token has been logged out' });
-        }
-    } catch (error) {
-        console.error('Error checking token blacklist:', error);
-        return res.status(500).json({ message: 'Internal server error' });
-    }
+    const isBlacklisted = await redisClient.get(`blacklist:${token}`);
+    if (isBlacklisted) throw new Error('BLACKLISTED');
 
-    jwt.verify(token, SECRET_KEY, (err, decoded) => {
-        if (err) {
-            return res.status(401).json({ message: 'Invalid token' });
-        }
-        req.user = decoded;
-        console.log('Middleware: verifyToken called');
-        next();
+    return new Promise((resolve, reject) => {
+        jwt.verify(token, SECRET_KEY, (err, decoded) => {
+            if (err) return resolve(null); // token sai → coi như null
+            resolve(decoded);
+        });
     });
 };
 
-module.exports = { verifyToken };
+// Middleware bắt buộc token
+const verifyToken = async (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+    try {
+        const decoded = await checkToken(token);
+        if (!decoded) return res.status(401).json({ message: 'Unauthorized' });
+        req.user = decoded;
+        next();
+    } catch (err) {
+        if (err.message === 'BLACKLISTED') {
+            return res.status(403).json({ message: 'Token has been logged out' });
+        }
+        console.error(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Middleware tùy chọn token
+const verifyTokenOptional = async (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+    try {
+        const decoded = await checkToken(token);
+        req.user = decoded; // decoded = null nếu không hợp lệ hoặc không có token
+        next();
+    } catch (err) {
+        if (err.message === 'BLACKLISTED') {
+            return res.status(403).json({ message: 'Token has been logged out' });
+        }
+        console.error(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+module.exports = { verifyToken, verifyTokenOptional };

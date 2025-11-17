@@ -23,8 +23,7 @@ const PostService = {
                     uploaded.push({ url: u.url, public_id: u.public_id, post_id: created.id })
                 }
 
-                await prisma.image.createMany({ data: uploaded.map(i => ({ url: i.url, post_id: i.post_id, /* public_id: i.public_id */ })) })
-                // if DB has public_id field uncomment above public_id and include it in createMany data
+                await prisma.image.createMany({ data: uploaded.map(i => ({ url: i.url, post_id: i.post_id })) })
             } catch (err) {
                 for (const up of uploaded) {
                     if (up.public_id) await CloudinaryService.delete(up.public_id).catch(() => { })
@@ -43,8 +42,8 @@ const PostService = {
         })
     },
 
-    getPostById: async (postId) => {
-        return await prisma.post.findUnique({
+    getPostById: async (postId, viewerId = null) => {
+        const post = await prisma.post.findUnique({
             where: { id: postId },
             include: {
                 User: { select: { id: true, username: true, Profile: { select: { avatar: true } } } },
@@ -63,6 +62,26 @@ const PostService = {
                 Reaction: { select: { id: true, type: true, user_id: true } }
             }
         })
+
+        if (!post) return null
+
+        const commentCount = await prisma.comment.count({ where: { post_id: postId } })
+        const reactionCount = await prisma.reaction.count({ where: { post_id: postId } })
+
+        let isSaved = false
+        if (viewerId) {
+            const s = await prisma.postSaved.findUnique({
+                where: { user_id_post_id: { user_id: viewerId, post_id: postId } }
+            })
+            isSaved = !!s
+        }
+
+        return {
+            ...post,
+            commentCount,
+            reactionCount,
+            isSaved
+        }
     },
 
     updatePost: async (userId, postId, payload) => {
@@ -90,7 +109,7 @@ const PostService = {
                     uploaded.push({ url: u.url, public_id: u.public_id, post_id: postId })
                     uploadedPublicIds.push(u.public_id)
                 }
-                await prisma.image.createMany({ data: uploaded.map(i => ({ url: i.url, post_id: i.post_id, /* public_id: i.public_id */ })) })
+                await prisma.image.createMany({ data: uploaded.map(i => ({ url: i.url, post_id: i.post_id })) })
             }
 
             const updated = await prisma.post.update({
@@ -132,7 +151,7 @@ const PostService = {
         return
     },
 
-    list: async (query) => {
+    list: async (query, viewerId = null) => {
         const page = parseInt(query.page) || 1
         const limit = parseInt(query.limit) || 10
         const skip = (page - 1) * limit
@@ -155,20 +174,62 @@ const PostService = {
             prisma.post.count({ where })
         ])
 
+        if (posts.length === 0) {
+            return {
+                data: [],
+                pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
+            }
+        }
+
+        const postIds = posts.map(p => p.id)
+
+        const commentGroups = await prisma.comment.groupBy({
+            by: ['post_id'],
+            where: { post_id: { in: postIds } },
+            _count: { _all: true }
+        })
+
+        const reactionGroups = await prisma.reaction.groupBy({
+            by: ['post_id'],
+            where: { post_id: { in: postIds } },
+            _count: { _all: true }
+        })
+
+        let savedSet = new Set()
+        if (viewerId) {
+            const saved = await prisma.postSaved.findMany({
+                where: { user_id: viewerId, post_id: { in: postIds } },
+                select: { post_id: true }
+            })
+            savedSet = new Set(saved.map(s => s.post_id))
+        }
+
+        const commentMap = new Map(commentGroups.map(g => [g.post_id, g._count._all]))
+        const reactionMap = new Map(reactionGroups.map(g => [g.post_id, g._count._all]))
+
+        const data = posts.map(p => ({
+            ...p,
+            commentCount: commentMap.get(p.id) || 0,
+            reactionCount: reactionMap.get(p.id) || 0,
+            isSaved: savedSet.has(p.id)
+        }))
+
         return {
-            data: posts,
+            data,
             pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
         }
     },
 
-    getByUser: async (userId, query) => {
+    getByUser: async (userIdOwner, query, viewerId = null) => {
         const page = parseInt(query.page) || 1
         const limit = parseInt(query.limit) || 10
         const skip = (page - 1) * limit
 
+        const where = { user_id: userIdOwner }
+
         const [posts, total] = await Promise.all([
             prisma.post.findMany({
-                where: { user_id: userId },
+                where,
                 skip,
                 take: limit,
                 orderBy: { created_at: 'desc' },
@@ -177,18 +238,44 @@ const PostService = {
                     Image: { select: { id: true, url: true } }
                 }
             }),
-            prisma.post.count({ where: { user_id: userId } })
+            prisma.post.count({ where })
         ])
 
+        if (posts.length === 0) {
+            return {
+                data: [],
+                pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
+            }
+        }
+
+        const postIds = posts.map(p => p.id)
+
+        const [commentGroups, reactionGroups, saved] = await Promise.all([
+            prisma.comment.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
+            prisma.reaction.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
+            viewerId ? prisma.postSaved.findMany({ where: { user_id: viewerId, post_id: { in: postIds } }, select: { post_id: true } }) : []
+        ])
+
+        const commentMap = new Map(commentGroups.map(g => [g.post_id, g._count._all]))
+        const reactionMap = new Map(reactionGroups.map(g => [g.post_id, g._count._all]))
+        const savedSet = new Set(saved.map(s => s.post_id))
+
+        const data = posts.map(p => ({
+            ...p,
+            commentCount: commentMap.get(p.id) || 0,
+            reactionCount: reactionMap.get(p.id) || 0,
+            isSaved: savedSet.has(p.id)
+        }))
+
         return {
-            data: posts,
+            data,
             pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
         }
     },
 
-    searchPosts: async (q) => {
+    searchPosts: async (q, viewerId = null) => {
         const query = q || ''
-        return await prisma.post.findMany({
+        const posts = await prisma.post.findMany({
             where: {
                 OR: [
                     { content: { contains: query, mode: 'insensitive' } },
@@ -205,6 +292,27 @@ const PostService = {
                 Image: { select: { id: true, url: true } }
             }
         })
+
+        if (posts.length === 0) return []
+
+        const postIds = posts.map(p => p.id)
+
+        const [commentGroups, reactionGroups, saved] = await Promise.all([
+            prisma.comment.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
+            prisma.reaction.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
+            viewerId ? prisma.postSaved.findMany({ where: { user_id: viewerId, post_id: { in: postIds } }, select: { post_id: true } }) : []
+        ])
+
+        const commentMap = new Map(commentGroups.map(g => [g.post_id, g._count._all]))
+        const reactionMap = new Map(reactionGroups.map(g => [g.post_id, g._count._all]))
+        const savedSet = new Set(saved.map(s => s.post_id))
+
+        return posts.map(p => ({
+            ...p,
+            commentCount: commentMap.get(p.id) || 0,
+            reactionCount: reactionMap.get(p.id) || 0,
+            isSaved: savedSet.has(p.id)
+        }))
     }
 }
 
