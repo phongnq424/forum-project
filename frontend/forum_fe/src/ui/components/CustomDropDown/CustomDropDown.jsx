@@ -19,6 +19,7 @@ const CustomDropDown = forwardRef(
     },
     ref
   ) => {
+    console.error(initIndexSelected);
     const [isOpen, setIsOpen] = useState(false);
     const [selected, setSelected] = useState();
     const dropdownRef = useRef(null);

@@ -7,10 +7,7 @@ import General from "../../General/General";
 import { useGetMe } from "../../api/hooks/ProfileHook";
 import toastHelper from "../../helper/ToastHelper";
 
-export const CreateProfileContext = createContext();
-
 function CreateProfilePage() {
-  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const getMyProfile = useGetMe(false);
 
@@ -35,9 +32,8 @@ function CreateProfilePage() {
   );
 
   return (
-    <CreateProfileContext.Provider value={{ isLoading, setIsLoading, option }}>
-      {(isLoading || getMyProfile.isLoading) && <LoadingScreen></LoadingScreen>}
-
+    <>
+      {getMyProfile.isLoading && <LoadingScreen></LoadingScreen>}
       <div className="w-[90%] px-20 py-5 m-auto">
         {option === General.optionOfCreateProfilePage.CREATE && (
           <CreateProfileForm></CreateProfileForm>
@@ -50,7 +46,7 @@ function CreateProfilePage() {
           <></>
         )}
       </div>
-    </CreateProfileContext.Provider>
+    </>
   );
 }
 

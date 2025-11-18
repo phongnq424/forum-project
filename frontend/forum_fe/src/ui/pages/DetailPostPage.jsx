@@ -260,7 +260,7 @@ const DetailPostPage = () => {
           </div>
 
           {/* Right side - Post details and comments */}
-          <div className="relative flex flex-col lg:w-[53%] overflow-y-auto h-(--view-h) bg-white/5">
+          <div className="relative flex flex-col lg:w-[53%] overflow-y-auto overscroll-contain h-(--view-h) bg-white/5">
             {(getCommentsOfPost.isLoading ||
               addComment.isPending ||
               deletePost.isPending) && <LoadingScreen />}

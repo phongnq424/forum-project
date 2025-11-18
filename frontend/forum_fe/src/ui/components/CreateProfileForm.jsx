@@ -10,13 +10,12 @@ import CustomDropDown from "./CustomDropDown/CustomDropDown";
 import ImagePicker from "./ImagePicker";
 import { useUpdateMe } from "../../api/hooks/ProfileHook";
 import toastHelper from "../../helper/ToastHelper";
-import { CreateProfileContext } from "../pages/CreateProfilePage";
 import General from "../../General/General";
+import LoadingScreen from "../pages/LoadingScreen";
 
 function CreateProfileForm({ currentProfile = null }) {
   const navigate = useNavigate();
   const updateMe = useUpdateMe();
-  const createProfileContext = useContext(CreateProfileContext);
   const appContext = useContext(AppContext);
   const formSchema = z.object({
     fullName: z.string().min(1, "Fullname must not be empty!"),
@@ -60,13 +59,6 @@ function CreateProfileForm({ currentProfile = null }) {
 
   useEffect(
     function () {
-      createProfileContext.setIsLoading(updateMe.isPending);
-    },
-    [updateMe.isPending]
-  );
-
-  useEffect(
-    function () {
       if (updateMe.isSuccess) {
         appContext.getCurrentUserAgain((prev) => !prev);
         navigate("/");
@@ -84,6 +76,7 @@ function CreateProfileForm({ currentProfile = null }) {
 
   return (
     <div className="w-full my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
+      {updateMe.isPending && <LoadingScreen />}
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-12 my-4 w-full"
@@ -91,12 +84,8 @@ function CreateProfileForm({ currentProfile = null }) {
         <div className="flex justify-between">
           <div className="space-y-5 basis-[40%]">
             <h1 className="text-[30px] font-bold text-white text-center">
-              {createProfileContext.option ===
-                General.optionOfCreateProfilePage.CREATE &&
-                "Complete Your Profile!"}
-              {createProfileContext.option ===
-                General.optionOfCreateProfilePage.UPDATE &&
-                "Edit Your Profile!"}
+              {!currentProfile && "Complete Your Profile!"}
+              {currentProfile && "Edit Your Profile!"}
             </h1>
 
             <div className="space-y-10">
@@ -139,16 +128,13 @@ function CreateProfileForm({ currentProfile = null }) {
                         variant="createProfile"
                         options={genders}
                         onSelected={(genderSelected) => {
-                          field.onChange(genderSelected?.gender);
+                          field.onChange(genderSelected?.id);
                         }}
                         onBlur={field.onBlur}
                         initIndexSelected={
                           currentProfile?.gender
                             ? genders.findIndex((g) => {
-                                return (
-                                  g?.gender?.toLowerCase() ===
-                                  currentProfile.gender.toLowerCase()
-                                );
+                                return g?.id === currentProfile.gender;
                               })
                             : 0
                         }
@@ -172,10 +158,8 @@ function CreateProfileForm({ currentProfile = null }) {
                 type="submit"
                 className="w-full py-3 text-[14px] bg-proPurple text-white font-semibold rounded-lg hover:opacity-70 transition"
               >
-                {createProfileContext.option ===
-                  General.optionOfCreateProfilePage.CREATE && "NEXT"}
-                {createProfileContext.option ===
-                  General.optionOfCreateProfilePage.UPDATE && "SAVE CHANGE"}
+                {!currentProfile && "NEXT"}
+                {currentProfile && "SAVE CHANGE"}
               </button>
             </div>
           </div>
