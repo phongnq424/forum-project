@@ -73,10 +73,13 @@ const postService = {
     }
   },
 
-  getPosts: async function (page, limit) {
+  getPosts: async function (page, cateId) {
     try {
+      if (cateId === "0") {
+        cateId = null;
+      }
       const response = await axiosClient.get("/posts", {
-        params: { page: page || 1, limit: limit },
+        params: { page: page || 1, category_id: cateId },
       });
       const ps = [];
       for (let i = 0; i < response.data.length; i++) {
@@ -125,7 +128,7 @@ const postService = {
         topic: result.Topic,
         user: result.User,
       };
-      console.error(response);
+
       return response;
     } catch (error) {
       throw General.createError(error);
@@ -151,10 +154,10 @@ const postService = {
     }
   },
 
-  getPostOfUser: async function (userId, page, limit) {
+  getPostOfUser: async function (userId, page) {
     try {
       const response = await axiosClient.get(`/posts/user/${userId}`, {
-        params: { page: page || 1, limit: limit },
+        params: { page: page || 1 },
       });
       const ps = [];
       for (let i = 0; i < response.data.length; i++) {
@@ -207,7 +210,7 @@ const postService = {
           likes: curr?.reactionCount ?? -1,
           images: curr.Image || [],
           thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
-          isLiked: false,
+          isLiked: curr?.isLiked ?? false,
           isSaved: curr?.isSaved ?? false,
           topic: curr.Topic,
           user: curr.User,

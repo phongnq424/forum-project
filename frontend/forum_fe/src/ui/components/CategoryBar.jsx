@@ -5,12 +5,13 @@ const CategoryBar = ({
   categories,
   textSize,
   variant = "discuss",
+  initIndex = 0,
 }) => {
   if (categories?.length <= 0) {
     return <></>;
   }
 
-  const [selectedItem, setSelectedItem] = useState(categories[0]);
+  const [selectedItem, setSelectedItem] = useState(categories[initIndex]);
 
   if (!onChanged) {
     onChanged = (value) => {

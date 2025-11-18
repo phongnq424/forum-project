@@ -17,7 +17,7 @@ const profileService = {
         posts: -1,
         comments: -1,
         isOwnProfile: true,
-        isFollowing: false,
+        isFollowing: response.isFollowing,
         gender: response.gender,
       };
       return result;
@@ -68,7 +68,7 @@ const profileService = {
         posts: -1,
         comments: -1,
         isOwnProfile: false,
-        isFollowing: false,
+        isFollowing: response.isFollowing,
       };
       return result;
     } catch (error) {
