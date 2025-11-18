@@ -78,6 +78,8 @@ model User {
   ReportUser       ReportUser[]
   ActivityLogs     ActivityLogs[]
   Comment_Rate     Comment_Rate[]
+  blocks           Block[]            @relation("blocker")
+  blockedBy        Block[]            @relation("blocked")
 }
 
 model UserStatus {
@@ -225,6 +227,17 @@ model Follower {
   followed User @relation("follower", fields: [followed_id], references: [id], onDelete: Cascade)
 
   @@unique([follow_id, followed_id])
+}
+
+model Block {
+  id         String @id @default(uuid())
+  blocker_id String
+  blocked_id String
+
+  Blocker User @relation("blocker", fields: [blocker_id], references: [id], onDelete: Cascade)
+  Blocked User @relation("blocked", fields: [blocked_id], references: [id], onDelete: Cascade)
+
+  @@unique([blocker_id, blocked_id])
 }
 
 model Conversation {

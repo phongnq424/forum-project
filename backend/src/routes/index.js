@@ -12,6 +12,7 @@ const CommentRoutes = require("./comment.route.js");
 const ReactionRoutes = require("./reaction.route.js");
 const FollowerRoutes = require("./follower.route.js");
 const PostSavedRoutes = require("./postSaved.route.js");
+const AlRoutes = require("./ai.route.js");
 const CommentRateRoutes = require("./commentRate.route.js");
 
 router.use("/auth", authRoutes);
@@ -25,6 +26,7 @@ router.use("/comments", CommentRoutes);
 router.use("/reactions", ReactionRoutes);
 router.use("/followers", FollowerRoutes);
 router.use("/post-saved", PostSavedRoutes);
+router.use("/ai", AlRoutes);
 router.use("/comment-rating", CommentRateRoutes);
 
 module.exports = router;
