@@ -46,6 +46,13 @@ enum FILE_TYPE {
   OTHER
 }
 
+enum SUBMISSION_STATUS {
+  PENDING
+  RUNNING
+  WA
+  ACCEPTED
+}
+
 /**
  * * MODELS **
  */
@@ -342,14 +349,14 @@ model Testcase {
 }
 
 model Submission {
-  id           String   @id @default(uuid())
+  id           String            @id @default(uuid())
   challenge_id String
   user_id      String
   code         String
   language_id  String
-  status       String?
+  status       SUBMISSION_STATUS @default(PENDING)
   score        Int?
-  submitted_at DateTime @default(now())
+  submitted_at DateTime          @default(now())
 
   Challenge Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
   User      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
