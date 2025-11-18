@@ -8,10 +8,8 @@ import { createContext, useState } from "react";
 export const SignUpPageContext = createContext();
 
 function SignUpPage() {
-  const [isLoading, setIsLoading] = useState(false);
   return (
-    <SignUpPageContext.Provider value={{ isLoading, setIsLoading }}>
-      {isLoading && <LoadingScreen />}
+    <>
       <div className="flex justify-between">
         <div className="basis-[50%] px-20">
           <SignUpForm></SignUpForm>
@@ -23,7 +21,7 @@ function SignUpPage() {
       </div>
       <Footer></Footer>
       <Outlet />
-    </SignUpPageContext.Provider>
+    </>
   );
 }
 
