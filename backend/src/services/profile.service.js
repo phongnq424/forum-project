@@ -35,11 +35,10 @@ const ProfileService = {
             prisma.follower.count({ where: { followed_id: userId } }) // số người follow user
         ])
 
-        // Kiểm tra viewer có follow user này không
         let isFollowing = false
         if (viewerId) {
             const follow = await prisma.follower.findUnique({
-                where: { follower_id_following_id: { follower_id: viewerId, following_id: userId } }
+                where: { follow_id_followed_id: { follow_id: viewerId, followed_id: userId } }
             })
             isFollowing = !!follow
         }
