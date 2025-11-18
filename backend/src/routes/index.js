@@ -1,5 +1,5 @@
-const express = require("express")
-const router = express.Router()
+const express = require("express");
+const router = express.Router();
 
 const authRoutes = require("./auth.route.js")
 const userRoutes = require("./user.route.js")
@@ -41,4 +41,4 @@ router.use("/leaderboards", LeaderboardRoutes)
 router.use("/languages", LanguageRoutes)
 router.use("/comment-rates", CommentRatesRoutes)
 
-module.exports = router
+module.exports = router;
