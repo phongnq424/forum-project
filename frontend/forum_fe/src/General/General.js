@@ -38,9 +38,9 @@ const General = {
   },
 
   genders: {
-    MALE: { id: 0, gender: "Male" },
-    FEMALE: { id: 1, gender: "Female" },
-    OTHER: { id: 2, gender: "Other" },
+    MALE: { id: "MALE", gender: "Male" },
+    FEMALE: { id: "FEMALE", gender: "Female" },
+    OTHER: { id: "OTHER", gender: "Other" },
 
     asArray() {
       return Object.values(this).filter((item) => typeof item != "function");

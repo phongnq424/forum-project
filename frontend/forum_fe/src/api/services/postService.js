@@ -58,12 +58,12 @@ const postService = {
         date: new Date(result.created_at).toLocaleDateString(),
         title: result.title,
         description: result.content,
-        likes: -1,
-        comments: -1,
+        comments: result?.commentCount ?? -1,
+        likes: result?.reactionCount ?? -1,
         images: result.Image || [],
         thumbnail: result.Image.length > 0 ? result.Image[0].url : null,
         isLiked: false,
-        isSaved: false,
+        isSaved: result.isSaved ?? false,
         topic: result.Topic,
         user: result.User,
       };
@@ -89,12 +89,12 @@ const postService = {
           date: new Date(curr.created_at).toLocaleDateString(),
           title: curr.title,
           description: curr.content,
-          likes: -1,
-          comments: -1,
-          images: curr.Image || [],
+          comments: curr?.commentCount ?? -1,
+          likes: curr?.reactionCount ?? -1,
+          images: curr.Image ?? [],
           thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
           isLiked: false,
-          isSaved: false,
+          isSaved: curr.isSaved ?? false,
           topic: curr.Topic,
           user: curr.User,
         });
@@ -116,15 +116,16 @@ const postService = {
         date: new Date(result.created_at).toLocaleDateString(),
         title: result.title,
         description: result.content,
-        likes: -1,
-        comments: -1,
-        images: result.Image || [],
+        comments: result?.commentCount ?? -1,
+        likes: result?.reactionCount ?? -1,
+        images: result.Image ?? [],
         thumbnail: result.Image.length > 0 ? result.Image[0].url : null,
         isLiked: false,
-        isSaved: false,
+        isSaved: result?.isSaved ?? false,
         topic: result.Topic,
         user: result.User,
       };
+      console.error(response);
       return response;
     } catch (error) {
       throw General.createError(error);
@@ -158,6 +159,7 @@ const postService = {
       const ps = [];
       for (let i = 0; i < response.data.length; i++) {
         const curr = response.data[i];
+        console.log(curr);
         ps.push({
           id: curr.id,
           author: curr.User?.username || "",
@@ -165,12 +167,12 @@ const postService = {
           date: new Date(curr.created_at).toLocaleDateString(),
           title: curr.title,
           description: curr.content,
-          likes: -1,
-          comments: -1,
+          comments: curr?.commentCount ?? -1,
+          likes: curr?.reactionCount ?? -1,
           images: curr.Image || [],
           thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
           isLiked: false,
-          isSaved: false,
+          isSaved: curr.isSaved ?? false,
           topic: curr.Topic,
           user: curr.User,
         });
@@ -201,12 +203,12 @@ const postService = {
           date: new Date(curr.created_at).toLocaleDateString(),
           title: curr.title,
           description: curr.content,
-          likes: -1,
-          comments: -1,
+          comments: curr?.commentCount ?? -1,
+          likes: curr?.reactionCount ?? -1,
           images: curr.Image || [],
           thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
           isLiked: false,
-          isSaved: false,
+          isSaved: curr?.isSaved ?? false,
           topic: curr.Topic,
           user: curr.User,
         });
