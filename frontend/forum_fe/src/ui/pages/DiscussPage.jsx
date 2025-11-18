@@ -14,7 +14,7 @@ import {
 import toastHelper from "../../helper/ToastHelper";
 import { useGetCategories } from "../../api/hooks/categoriesHook";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import PaginationInput from "../components/PaginationInput";
 
@@ -33,7 +33,7 @@ function DiscussPage() {
   const [searchKey, setSearchKey] = useState("");
   const [pagination, setPagination] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
-  const getPosts = useGetPosts(currentPage, pagination?.limit);
+  const getPosts = useGetPosts(currentPage, selectedCategory?.id);
 
   const getPostsBySearchKey = useGetPostBySearchKey(
     searchKey,
@@ -128,9 +128,8 @@ function DiscussPage() {
 
   useEffect(
     function () {
-      if (selectedCategory?.id == 0) {
-        getPosts.refetch();
-      }
+      getPosts.refetch();
+      setCurrentPage(1);
     },
     [selectedCategory]
   );
@@ -175,13 +174,14 @@ function DiscussPage() {
       <div className="flex justify-between pt-5">
         {getCategories.data?.data?.length >= 1 && (
           <CategoryBar
-            onChanged={(selectedCategory) =>
-              setSelectedCategory(selectedCategory)
-            }
+            onChanged={function (selectedCategory) {
+              setSelectedCategory(selectedCategory);
+            }}
             categories={[
               { id: "0", name: "For you" },
               ...getCategories.data.data,
             ]}
+            initIndex={0}
           />
         )}
         <button
@@ -222,8 +222,11 @@ function DiscussPage() {
 
         {pagination && pagination?.totalPages > 1 && (
           <PaginationInput
+            currentPage={currentPage}
             totalPages={pagination?.totalPages || 0}
-            onChange={(page) => setCurrentPage(page)}
+            onChange={function (page) {
+              setCurrentPage(page);
+            }}
           />
         )}
       </div>

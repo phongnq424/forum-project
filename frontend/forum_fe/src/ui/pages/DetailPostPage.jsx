@@ -96,6 +96,12 @@ const DetailPostPage = () => {
         toastHelper.success(
           savePost.data.saved ? "Save successfully!" : "Unsave successfully!"
         );
+        setCurrentPost(function (prev) {
+          return {
+            ...prev,
+            isSaved: savePost.data.saved,
+          };
+        });
       }
     },
     [savePost.isSuccess, savePost.isError, savePost.data]
@@ -116,17 +122,6 @@ const DetailPostPage = () => {
       deletePost.mutate({ postId });
     } else if (option.id === optionsForPost.EDIT.id) {
       setIsDialogClosing(false);
-    }
-  }
-
-  function handleCommentAction(option, objectId, commentContent = "") {
-    if (option.id === optionsForCmt.DELETE.id) {
-      deleteComment.mutate({ cmtId: objectId });
-    }
-
-    if (option.id == optionsForCmt.EDIT.id) {
-      setEditingCommentId(objectId);
-      setEditingCommentContent(commentContent);
     }
   }
 
@@ -154,8 +149,31 @@ const DetailPostPage = () => {
 
   useEffect(
     function () {
+      if (getCommentsOfPost.isSuccess) {
+        setCurrentPost(function (prev) {
+          return { ...prev, comments: getCommentsOfPost.data.length };
+        });
+      }
+      if (getCommentsOfPost.isError) {
+      }
+    },
+    [
+      getCommentsOfPost.isSuccess,
+      getCommentsOfPost.isError,
+      getCommentsOfPost.data,
+    ]
+  );
+
+  useEffect(
+    function () {
       if (toggleReaction.isSuccess) {
-        toastHelper.success("Love: " + !toggleReaction.data.removed);
+        //getPostById.refetch();
+        setCurrentPost(function (prev) {
+          return {
+            ...prev,
+            i,
+          };
+        });
       }
       if (toggleReaction.isError) {
         toastHelper.error(toggleReaction.error);
@@ -211,7 +229,7 @@ const DetailPostPage = () => {
         setCurrentPost(getPostById.data);
       }
     },
-    [getPostById.isSuccess, getPostById.isError]
+    [getPostById.isSuccess, getPostById.isError, getPostById.data]
   );
 
   if (!currentPost) return <></>;
@@ -347,7 +365,9 @@ const DetailPostPage = () => {
               <div className="flex items-center justify-around mb-3 text-white">
                 <div className="flex justify-between basis-[75%]">
                   <button
-                    className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
+                    className={`flex items-center gap-2 transition-colors ${
+                      currentPost.isLiked ? "text-proPurple" : "text-white"
+                    } hover:opacity-50 text-xl`}
                     onClick={() => {
                       onReactionClick?.(General.reactionType.LOVE);
                     }}
@@ -359,7 +379,7 @@ const DetailPostPage = () => {
                   </button>
 
                   <button
-                    className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
+                    className="flex items-center gap-2 transition-colors hover:opacity-50 text-xl"
                     onClick={() => {
                       onCommentClick?.(General.reactionType.LOVE);
                     }}
@@ -374,7 +394,9 @@ const DetailPostPage = () => {
                 </div>
                 <div className="flex justify-between basis-[20%]">
                   <button
-                    className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
+                    className={`flex items-center gap-2 transition-colors ${
+                      currentPost.isSaved ? "text-proPurple" : "text-white"
+                    } hover:opacity-50 text-xl`}
                     onClick={() => {
                       onSaveClick?.();
                     }}
@@ -383,7 +405,7 @@ const DetailPostPage = () => {
                   </button>
 
                   <button
-                    className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
+                    className="flex items-center gap-2 transition-colors hover:backdrop-opacity-50 text-xl"
                     onClick={() => {
                       onShareClick?.(General.reactionType.LOVE);
                     }}

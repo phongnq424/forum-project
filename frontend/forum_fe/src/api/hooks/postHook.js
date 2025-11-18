@@ -9,9 +9,9 @@ export function useCreatePost() {
   });
 }
 
-export function useGetPosts(page, limit) {
+export function useGetPosts(page, selectedCateId) {
   return useQuery({
-    queryKey: ["post", page, limit],
+    queryKey: ["post", page, selectedCateId],
     queryFn: (context) =>
       postService.getPosts(context.queryKey[1], context.queryKey[2]),
     refetchOnWindowFocus: false,
