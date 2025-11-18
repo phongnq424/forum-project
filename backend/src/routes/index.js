@@ -19,6 +19,7 @@ const SubmissionRoutes = require("./submission.route.js")
 const TestcaseRoutes = require("./testcase.route.js")
 const LeaderboardRoutes = require("./leaderboard.route.js")
 const LanguageRoutes = require("./language.route.js")
+const CommentRatesRoutes = require("./commentRate.route.js")
 
 router.use("/auth", authRoutes)
 router.use("/users", userRoutes)
@@ -38,5 +39,6 @@ router.use("/submissions", SubmissionRoutes)
 router.use("/testcases", TestcaseRoutes)
 router.use("/leaderboards", LeaderboardRoutes)
 router.use("/languages", LanguageRoutes)
+router.use("/comment-rates", CommentRatesRoutes)
 
 module.exports = router

@@ -6,11 +6,7 @@ const { rateLimitMiddleware } = require("../middlewares/rateLimit.middleware");
 const router = Router();
 
 router.post(
-  "/toggle/:postId",
-  rateLimitMiddleware,
-  verifyToken,
-  PostSavedController.toggleSave
-); //
+  "/toggle/:postId", rateLimitMiddleware, verifyToken, PostSavedController.toggleSave);
 router.get("/", verifyToken, PostSavedController.getSavedPosts);
 
 module.exports = router;

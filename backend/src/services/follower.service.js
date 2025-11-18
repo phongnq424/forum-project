@@ -36,46 +36,30 @@ const FollowerService = {
     }
   },
 
-    removeFollower: async (currentUserId, followerId) => {
-        const existing = await prisma.follower.findUnique({
-            where: {
-                follow_id_followed_id: {
-                    follow_id: followerId,
-                    followed_id: currentUserId
-                }
-            }
-        })
-
-        if (!existing) {
-            throw new Error("This user is not following you")
+  removeFollower: async (currentUserId, followerId) => {
+    const existing = await prisma.follower.findUnique({
+      where: {
+        follow_id_followed_id: {
+          follow_id: followerId,
+          followed_id: currentUserId
         }
-
-        await prisma.follower.delete({
-            where: {
-                follow_id_followed_id: {
-                    follow_id: followerId,
-                    followed_id: currentUserId
-                }
-            }
-        })
-
-        return { removed: true }
-    },
+      }
+    })
 
     if (!existing) {
-      throw new Error("This user is not following you");
+      throw new Error("This user is not following you")
     }
 
     await prisma.follower.delete({
       where: {
         follow_id_followed_id: {
           follow_id: followerId,
-          followed_id: currentUserId,
-        },
-      },
-    });
+          followed_id: currentUserId
+        }
+      }
+    })
 
-    return { removed: true };
+    return { removed: true }
   },
 
   getFollowers: async (userId, query) => {
