@@ -624,7 +624,7 @@ const RenderComment = function ({
               displayField="name"
               options={optionsForCmt.asArray().filter((item) => {
                 if (item.showFor.includes(General.showFor.ALL)) return true;
-                if (currentUser.user_id === commentItem.user.id) {
+                if (currentUser?.user_id === commentItem.user.id) {
                   return item.showFor.includes(General.showFor.OWN);
                 } else {
                   return item.showFor.includes(General.showFor.VIEWER);
