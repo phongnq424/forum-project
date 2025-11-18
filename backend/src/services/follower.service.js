@@ -37,11 +37,12 @@ const FollowerService = {
   },
 
   removeFollower: async (currentUserId, followerId) => {
+    // followerId follow currentUserId
     const existing = await prisma.follower.findUnique({
       where: {
         follow_id_followed_id: {
           follow_id: followerId,
-          followed_id: currentUserId
+          followed_id: currentUserId,
         }
       }
     })
