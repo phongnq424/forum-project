@@ -10,12 +10,7 @@ router.get("/", UserController.listUsers); //
 router.get("/me", verifyToken, UserController.getMe); //
 router.get("/:id", UserController.getUserById);
 router.put("/me", rateLimitMiddleware, verifyToken, UserController.updateMe);
-router.put(
-  "/me/password",
-  rateLimitMiddleware,
-  verifyToken,
-  UserController.changePassword
-);
+router.put("/me/password", rateLimitMiddleware, verifyToken, UserController.changePassword);
 router.put("/:id", rateLimitMiddleware, verifyToken, UserController.updateUser);
 router.delete("/:id", verifyToken, UserController.deleteUser);
 
