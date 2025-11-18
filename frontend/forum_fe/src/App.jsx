@@ -8,40 +8,15 @@ import { useGetMe } from "./api/hooks/ProfileHook";
 import LoadingScreen from "./ui/pages/LoadingScreen";
 
 function App() {
+  console.log("APP RENDER");
+
   const [isLogged, setIsLogged] = useState(
     (localStorage.getItem("token") || "") != ""
   );
-  const [currentUser, setCurrentUser] = useState();
-  const [isLoading, setIsLoading] = useState(false);
+
   const [flagGetCurrentUserAgain, getCurrentUserAgain] = useState(true);
 
-  const getMe = useGetMe(false);
-
-  useEffect(
-    function () {
-      if (isLogged) {
-        getMe.refetch();
-      }
-    },
-    [isLogged, flagGetCurrentUserAgain]
-  );
-
-  useEffect(
-    function () {
-      setIsLoading(getMe.isLoading);
-    },
-    [getMe.isLoading]
-  );
-
-  useEffect(
-    function () {
-      if (getMe.isSuccess) {
-        setCurrentUser(getMe.data);
-        localStorage.setItem("meId", getMe.data.user_id);
-      }
-    },
-    [getMe.isSuccess]
-  );
+  const getMe = useGetMe(isLogged);
 
   const nav = useNavigate();
 
@@ -49,7 +24,6 @@ function App() {
     function () {
       if (getMe.isError) {
         if (getMe.error.status == 404) {
-          setCurrentUser(null);
           nav("/create-profile");
         }
       }
@@ -57,18 +31,23 @@ function App() {
     [getMe.isError]
   );
 
+  useEffect(
+    function () {
+      getMe.refetch();
+    },
+    [flagGetCurrentUserAgain]
+  );
+
   return (
     <AppContext.Provider
       value={{
         isLogged,
         setIsLogged,
-        currentUser,
-        setCurrentUser,
+        currentUser: isLogged ? getMe.data : null,
         getCurrentUserAgain,
       }}
     >
-      {console.log(isLogged)}
-      {isLoading && <LoadingScreen />}
+      {getMe.isLoading && <LoadingScreen />}
       <div className="bg-primary min-h-screen overflow-y-hidden">
         <ToastContainer />
         <PageRouters />

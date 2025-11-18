@@ -6,5 +6,6 @@ export function useGetTopic(isEnable) {
     queryKey: ["topics"],
     queryFn: () => topicService.getTopics(),
     enabled: isEnable,
+    refetchOnWindowFocus: false,
   });
 }

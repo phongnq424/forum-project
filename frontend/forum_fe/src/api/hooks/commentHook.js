@@ -6,6 +6,7 @@ export function useGetCommentsOfPost(postId) {
     queryKey: ["comments", postId],
     queryFn: (context) => commentService.getCommentsOfPost(context.queryKey[1]),
     enabled: !!postId,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -20,5 +21,11 @@ export function useAddComment() {
 export function useDeleteComment() {
   return useMutation({
     mutationFn: ({ cmtId }) => commentService.delete(cmtId),
+  });
+}
+
+export function useUpdateComment() {
+  return useMutation({
+    mutationFn: ({ id, content }) => commentService.updateComment(id, content),
   });
 }

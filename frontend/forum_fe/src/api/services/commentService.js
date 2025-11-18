@@ -5,6 +5,7 @@ const commentService = {
   async getCommentsOfPost(postId) {
     const responses = await axiosClient.get(`/comments/post/${postId}`);
     const results = [];
+
     const change = function (from) {
       const to = {
         id: from.id,
@@ -44,6 +45,17 @@ const commentService = {
   async delete(cmtId) {
     try {
       const response = await axiosClient.delete(`/comments/${cmtId}`);
+      return response;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
+  async updateComment(id, content) {
+    try {
+      const response = await axiosClient.put(`/comments/${id}`, {
+        comment_detail: content,
+      });
       return response;
     } catch (error) {
       throw General.createError(error);
