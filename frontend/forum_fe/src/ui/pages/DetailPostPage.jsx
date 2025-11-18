@@ -42,9 +42,9 @@ const DetailPostPage = () => {
   const postId = getParams.get("postId");
   const location = useLocation();
   const [currentPost, setCurrentPost] = useState(location?.state?.post);
-  const getPostById = useGetPostById(currentPost.id);
+  const getPostById = useGetPostById(postId);
   const toggleReaction = useToggleReaction(null, null);
-  const getCommentsOfPost = useGetCommentsOfPost(currentPost.id);
+  const getCommentsOfPost = useGetCommentsOfPost(postId);
   const appContext = useContext(AppContext);
   const [replyTo, setReplyTo] = useState(null);
   const addComment = useAddComment();
@@ -354,7 +354,7 @@ const DetailPostPage = () => {
                   >
                     <FaHeart className="h-fit w-fit" />
                     <span className="text-xl font-medium">
-                      {currentPost.likes || -1}
+                      {currentPost?.likes ?? -1}
                     </span>
                   </button>
 
@@ -366,7 +366,7 @@ const DetailPostPage = () => {
                   >
                     <TbMessageCircleFilled className="h-fit w-fit" />
                     <span className="text-xl font-medium">
-                      {currentPost.comments || -1}
+                      {currentPost?.comments ?? -1}
                     </span>
                   </button>
 

@@ -125,6 +125,7 @@ const postService = {
         topic: result.Topic,
         user: result.User,
       };
+      console.error(response);
       return response;
     } catch (error) {
       throw General.createError(error);
