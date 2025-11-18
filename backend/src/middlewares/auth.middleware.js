@@ -40,7 +40,7 @@ const verifyTokenOptional = async (req, res, next) => {
     const token = req.headers['authorization']?.split(' ')[1];
     try {
         const decoded = await checkToken(token);
-        req.user = decoded; // decoded = null nếu không hợp lệ hoặc không có token
+        req.user = decoded;
         next();
     } catch (err) {
         if (err.message === 'BLACKLISTED') {

@@ -1,0 +1,37 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --save "" --appendonly no
+
+  sandbox-cpp:
+    build:
+      context: .
+      dockerfile: Sandbox/Judge-cpp.Dockerfile
+    image: sandbox-cpp
+
+  sandbox-python:
+    build:
+      context: .
+      dockerfile: Sandbox/Judge-python.Dockerfile
+    image: sandbox-python
+
+  judge-worker:
+    build: .
+    env_file: .env
+    depends_on:
+      - redis
+      - sandbox-cpp
+      - sandbox-python
+    restart: unless-stopped
+    network_mode: host  # hoặc dùng network dưới
+    # networks:
+    #   - judge-net
+
+# networks:
+#   judge-net:
+#     driver: bridge
