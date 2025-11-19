@@ -75,7 +75,7 @@ const postService = {
 
   getPosts: async function (page, cateId) {
     try {
-      if (cateId === "0") {
+      if (cateId === "all") {
         cateId = null;
       }
       const response = await axiosClient.get("/posts", {
@@ -192,7 +192,7 @@ const postService = {
       const response = await axiosClient.get(`/posts/search`, {
         params: {
           q: searchKey,
-          cate: categoryId,
+          category_id: categoryId != "all" ? categoryId : null,
         },
       });
       const ps = [];

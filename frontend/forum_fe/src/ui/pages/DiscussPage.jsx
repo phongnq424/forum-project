@@ -15,7 +15,6 @@ import toastHelper from "../../helper/ToastHelper";
 import { useGetCategories } from "../../api/hooks/categoriesHook";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
 import PaginationInput from "../components/PaginationInput";
 
 const testPosts = [];
@@ -25,20 +24,20 @@ function DiscussPage() {
   const [isDialogClosing, setIsDialogClosing] = useState(true);
   const createPost = useCreatePost();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const cateId = searchParams.get("cateId");
+  const page = searchParams.get("page") ?? "1";
+
   const navigate = useNavigate();
   const getCategories = useGetCategories();
   const toggleReaction = useToggleReaction();
   const savePost = useSavePost();
-  const [selectedCategory, setSelectedCategory] = useState();
+
   const [searchKey, setSearchKey] = useState("");
   const [pagination, setPagination] = useState({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const getPosts = useGetPosts(currentPage, selectedCategory?.id);
+  const getPosts = useGetPosts(page, cateId);
 
-  const getPostsBySearchKey = useGetPostBySearchKey(
-    searchKey,
-    selectedCategory?.id || ""
-  );
+  const getPostsBySearchKey = useGetPostBySearchKey(searchKey, cateId);
   useEffect(
     function () {
       if (getPostsBySearchKey.isSuccess) {
@@ -129,9 +128,27 @@ function DiscussPage() {
   useEffect(
     function () {
       getPosts.refetch();
-      setCurrentPage(1);
+      setSearchParams(function (prev) {
+        const newParams = new URLSearchParams(prev);
+        newParams.set("page", 1);
+        return newParams;
+      });
     },
-    [selectedCategory]
+    [cateId]
+  );
+
+  // Scroll len dau
+  const [hasMounted, setHasMounted] = useState(false);
+  const containerPostsRef = useRef();
+  useEffect(
+    function () {
+      if (hasMounted) {
+        containerPostsRef.current.scrollIntoView({ behavior: "smooth" });
+      } else {
+        setHasMounted(true);
+      }
+    },
+    [page]
   );
 
   // Response for Create Post
@@ -148,20 +165,6 @@ function DiscussPage() {
     [createPost.isError, createPost.isSuccess]
   );
 
-  // Scroll len dau
-  const [hasMounted, setHasMounted] = useState(false);
-  const containerPostsRef = useRef();
-  useEffect(
-    function () {
-      if (hasMounted) {
-        containerPostsRef.current.scrollIntoView({ behavior: "smooth" });
-      } else {
-        setHasMounted(true);
-      }
-    },
-    [currentPage]
-  );
-
   return (
     <div
       className="px-(--primary-padding) pt-5 w-full min-h-full relative flex flex-col"
@@ -175,13 +178,21 @@ function DiscussPage() {
         {getCategories.data?.data?.length >= 1 && (
           <CategoryBar
             onChanged={function (selectedCategory) {
-              setSelectedCategory(selectedCategory);
+              setSearchParams(function (prev) {
+                const newParams = new URLSearchParams(prev);
+                newParams.set("cateId", selectedCategory.id);
+                return newParams;
+              });
             }}
             categories={[
-              { id: "0", name: "For you" },
+              { id: "all", name: "For you" },
               ...getCategories.data.data,
             ]}
-            initIndex={0}
+            initIndex={
+              getCategories.data?.data?.findIndex(function (i) {
+                return i.id === cateId;
+              }) + 1
+            }
           />
         )}
         <button
@@ -222,10 +233,14 @@ function DiscussPage() {
 
         {pagination && pagination?.totalPages > 1 && (
           <PaginationInput
-            currentPage={currentPage}
+            currentPage={parseInt(page, 10) || 1}
             totalPages={pagination?.totalPages || 0}
             onChange={function (page) {
-              setCurrentPage(page);
+              setSearchParams(function (prev) {
+                const newParams = new URLSearchParams(prev);
+                newParams.set("page", page);
+                return newParams;
+              });
             }}
           />
         )}
