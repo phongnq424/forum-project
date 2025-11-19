@@ -16,7 +16,7 @@ import {
 import { useGetMe, useGetProfileByUserId } from "../../api/hooks/ProfileHook";
 import LoadingScreen from "./LoadingScreen";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import toastHelper from "../../helper/ToastHelper";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
 import AppContext from "../Context/AppContext";
@@ -61,7 +61,6 @@ const ProfilePage = () => {
       icon: <FaUserFriends className="text-[24px]" />,
     },
   ];
-
   const [selectedCategory, setSelectedCategory] = useState();
   const getProfile = useGetProfileByUserId(userId);
   useEffect(
@@ -481,5 +480,9 @@ function RenderConnections() {
     </>
   );
 }
+
+const RenderComments = function () {
+  return <></>;
+};
 
 export default ProfilePage;

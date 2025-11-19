@@ -27,6 +27,7 @@ function DiscussPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const cateId = searchParams.get("cateId");
   const page = searchParams.get("page") ?? "1";
+  const prevCateId = useRef(cateId);
 
   const navigate = useNavigate();
   const getCategories = useGetCategories();
@@ -127,12 +128,13 @@ function DiscussPage() {
 
   useEffect(
     function () {
-      getPosts.refetch();
-      setSearchParams(function (prev) {
-        const newParams = new URLSearchParams(prev);
-        newParams.set("page", 1);
-        return newParams;
-      });
+      if (cateId != prevCateId.current) {
+        setSearchParams((prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set("page", 1);
+          return newParams;
+        });
+      }
     },
     [cateId]
   );
@@ -233,7 +235,7 @@ function DiscussPage() {
 
         {pagination && pagination?.totalPages > 1 && (
           <PaginationInput
-            currentPage={parseInt(page, 10) || 1}
+            currentPage={Number(page)}
             totalPages={pagination?.totalPages || 0}
             onChange={function (page) {
               setSearchParams(function (prev) {
