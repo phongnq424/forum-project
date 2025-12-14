@@ -58,6 +58,14 @@ const DetailPostPage = () => {
   const updateComment = useUpdateComment();
   const rateComment = useRateComment();
 
+  function handleOnAddComment() {
+    addComment.mutate({
+      postId: currentPost.id,
+      content: content,
+      parent: replyTo?.id,
+    });
+  }
+
   useEffect(
     function () {
       if (updatePost.isError) {
@@ -250,6 +258,7 @@ const DetailPostPage = () => {
     }
   };
 
+  const textAreaRef = useRef(null);
   return (
     <>
       <main className="h-(--view-h) w-full overflow-hidden px-(--primary-padding)">
@@ -455,7 +464,7 @@ const DetailPostPage = () => {
 
             {/* Add comment */}
 
-            <div className="flex flex-col items-center bg-primary sticky h-auto mt-auto right-0 left-0 bottom-0 bg-card px-3 py-1">
+            <div className="flex flex-col items-center bg-primary sticky h-auto mt-auto right-0 left-0 bottom-0 px-3 py-1">
               {replyTo && (
                 <div className="flex space-x-2 justify-start self-stretch items-center">
                   <p className="text-sm text-white me-5">
@@ -477,27 +486,35 @@ const DetailPostPage = () => {
                 />
 
                 <textarea
+                  ref={textAreaRef}
                   placeholder="Add your answer"
                   value={content}
                   className="w-full py-2 px-3 max-h-[200px] overflow-y-auto text-[18px] outline-none text-white resize-none rounded-lg bg-white/10 focus:ring-2 focus:ring-proPurple transition-all duration-200 ease-linear"
                   onInput={(e) => {
-                    e.target.style.height = "auto";
-                    e.target.style.height =
-                      Math.min(e.target.scrollHeight, 200) + "px";
+                    e.currentTarget.style.height = "auto";
+                    e.currentTarget.style.height =
+                      Math.min(e.currentTarget.scrollHeight, 200) + "px";
                   }}
-                  rows="1"
+                  rows={1}
                   onChange={(e) => setContent(e.target.value)}
+                  onKeyDown={function (e) {
+                    if (e.key == "Enter" && !content.trim()) {
+                      e.preventDefault();
+                      return;
+                    }
+                    if (e.key == "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleOnAddComment();
+                      if (textAreaRef.current) {
+                        textAreaRef.current.style.height = "auto";
+                      }
+                    }
+                  }}
                 />
                 <button
                   className="px-0 cursor-not-allowed"
                   disabled={!content || content === ""}
-                  onClick={() => {
-                    addComment.mutate({
-                      postId: currentPost.id,
-                      content: content,
-                      parent: replyTo?.id,
-                    });
-                  }}
+                  onClick={() => handleOnAddComment()}
                 >
                   <IoMdSend
                     className={`h-10 w-10 text-proPurple hover:${

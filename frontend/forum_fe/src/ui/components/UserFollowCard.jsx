@@ -1,6 +1,3 @@
-import { FaUserPlus } from "react-icons/fa6";
-import { FaUserMinus } from "react-icons/fa6";
-
 export const UserFollowCard = ({
   name = "Name",
   username = "Username",

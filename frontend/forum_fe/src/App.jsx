@@ -8,8 +8,6 @@ import { useGetMe } from "./api/hooks/ProfileHook";
 import LoadingScreen from "./ui/pages/LoadingScreen";
 
 function App() {
-  console.log("APP RENDER");
-
   const [isLogged, setIsLogged] = useState(
     (localStorage.getItem("token") || "") != ""
   );

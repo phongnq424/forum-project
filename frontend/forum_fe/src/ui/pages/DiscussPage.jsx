@@ -16,6 +16,7 @@ import { useGetCategories } from "../../api/hooks/categoriesHook";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PaginationInput from "../components/PaginationInput";
+import ChatbotPopup from "../components/chatbot/ChatbotPopup.tsx";
 
 const testPosts = [];
 
@@ -169,7 +170,7 @@ function DiscussPage() {
 
   return (
     <div
-      className="px-(--primary-padding) pt-5 w-full min-h-full relative flex flex-col"
+      className="pl-(--primary-padding) pr-50 pt-5 w-full min-h-full relative flex flex-col"
       ref={containerPostsRef}
     >
       {(getPosts.isLoading ||
@@ -255,6 +256,8 @@ function DiscussPage() {
           onSubmit={(submitData) => createPost.mutate(submitData)}
         />
       )}
+
+      <ChatbotPopup />
     </div>
   );
 }
