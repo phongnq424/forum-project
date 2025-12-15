@@ -1,7 +1,9 @@
+import ChallengeList from "@/ui/components/challenge/challengeList.tsx";
+
 function ChallengesPage() {
   return (
     <>
-      <h1>Challenges Page</h1>
+      <ChallengeList />
     </>
   );
 }

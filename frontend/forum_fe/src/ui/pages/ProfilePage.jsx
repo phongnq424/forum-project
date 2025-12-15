@@ -103,6 +103,7 @@ const ProfilePage = () => {
               handleToggleFollow={(id) =>
                 toggleFollow.mutate({ targetUserId: id })
               }
+              handleToggleBlock={(id) => {}}
             />
             <CategoryBar
               categories={categories}
