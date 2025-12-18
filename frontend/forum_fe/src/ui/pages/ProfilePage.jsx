@@ -31,6 +31,7 @@ import {
   useRemoveFollower,
   useToggleFollow,
 } from "../../api/hooks/followHook";
+import { useBlockUser, useGetBlockUser } from "../../api/hooks/blockHook";
 
 const ProfilePageContext = createContext();
 
@@ -84,6 +85,22 @@ const ProfilePage = () => {
     [toggleFollow.isError, toggleFollow.isSuccess, toggleFollow.data]
   );
 
+  const blockUser = useBlockUser();
+  useEffect(
+    function () {
+      if (blockUser.isSuccess) {
+        console.log(blockUser.data);
+        setCurrentProfile(function (prev) {
+          return { ...prev, isBlocked: blockUser.data.blocked };
+        });
+      }
+      if (blockUser.isError) {
+        toastHelper.error(blockUser.error.message);
+      }
+    },
+    [blockUser.isError, blockUser.isSuccess, blockUser.data]
+  );
+
   if (getProfile.isLoading) {
     return <LoadingScreen></LoadingScreen>;
   }
@@ -103,7 +120,9 @@ const ProfilePage = () => {
               handleToggleFollow={(id) =>
                 toggleFollow.mutate({ targetUserId: id })
               }
-              handleToggleBlock={(id) => {}}
+              handleToggleBlock={(id) => {
+                blockUser.mutate({ targetUserId: id });
+              }}
             />
             <CategoryBar
               categories={categories}
@@ -313,6 +332,11 @@ function RenderConnections() {
       name: "Followers",
     },
 
+    BLOCKED: {
+      id: 2,
+      name: "Blocked",
+    },
+
     asArray() {
       return Object.values(this).filter((item) => typeof item != "function");
     },
@@ -335,6 +359,13 @@ function RenderConnections() {
     currentPage,
     selectedTab?.id,
     selectedTab?.id === options.FOLLOWERS.id
+  );
+
+  const getBlocked = useGetBlockUser(
+    profilePageContext.currentUserProfile?.user_id,
+    currentPage,
+    selectedTab?.id,
+    selectedTab?.id === options.BLOCKED.id
   );
 
   const toggleFollow = useToggleFollow();

@@ -15,6 +15,7 @@ const ProfileCard = ({
   isFollowing = false,
   handleToggleFollow = null,
   handleToggleBlock = null,
+  isBlocked,
 }) => {
   const navigate = useNavigate();
   return (
@@ -83,9 +84,13 @@ const ProfileCard = ({
                   onClick={function () {
                     handleToggleBlock?.(user_id);
                   }}
-                  className="min-w-fit mt-5 bg-red-500 w-fit hover:bg-red-500/50 text-lg gap-2 flex px-5 py-1 rounded-xl items-center"
+                  className={`min-w-fit mt-5 text-lg gap-2 flex px-5 py-1 rounded-xl items-center ${
+                    isBlocked
+                      ? "bg-primary w-fit hover:bg-white/10"
+                      : "bg-red-500 w-fit hover:bg-red-400"
+                  }`}
                 >
-                  Block
+                  {isBlocked ? "Unblock" : "Block"}
                 </button>
               </>
             )}
