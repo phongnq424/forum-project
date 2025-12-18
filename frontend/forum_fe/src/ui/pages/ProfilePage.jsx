@@ -105,10 +105,6 @@ const ProfilePage = () => {
     return <LoadingScreen></LoadingScreen>;
   }
 
-  if (!currentProfile) {
-    return <></>;
-  }
-
   return (
     <ProfilePageContext.Provider value={{ currentUserProfile: currentProfile }}>
       <div className="bg-primary px-(--primary-padding) py-[20px] ">

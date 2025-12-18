@@ -78,7 +78,7 @@ export function ProblemDescription({ challenge }: ProblemDescriptionProps) {
 
         {/* Output */}
         <div className="prose prose-invert max-w-none">
-          <h1 className="text-lg font-semibold text-foreground">Input</h1>
+          <h1 className="text-lg font-semibold text-foreground">Output</h1>
           <div className="text-foreground whitespace-pre-wrap leading-relaxed">
             {challenge.outputDescription}
           </div>
