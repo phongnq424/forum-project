@@ -3,7 +3,7 @@ import tar from 'tar-stream'
 import { Writable } from 'stream'
 
 const docker = new Docker()
-const MAX_CONCURRENCY = 4  // số container chạy đồng thời, bạn có thể tăng/giảm
+const MAX_CONCURRENCY = 10  // số container chạy đồng thời, bạn có thể tăng/giảm
 
 export async function runInSandbox(langConfig, code, testcases, timeoutMs = 5000) {
     const results = new Array(testcases.length)

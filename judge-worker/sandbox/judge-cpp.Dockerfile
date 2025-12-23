@@ -1,8 +1,10 @@
-FROM gcc:12-alpine
+FROM gcc:12
 
-RUN apk add --no-cache bash coreutils \
-    && rm -rf /var/cache/apk/* \
-    && adduser -D -h /sandbox judgeuser
+RUN apt-get update && apt-get install -y \
+    coreutils \
+ && rm -rf /var/lib/apt/lists/*
 
-USER judgeuser
 WORKDIR /sandbox
+
+RUN useradd -m judgeuser
+USER judgeuser

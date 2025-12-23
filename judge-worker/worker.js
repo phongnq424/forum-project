@@ -68,8 +68,8 @@ async function processJob(jobData) {
         const r = sandboxResults[i] || { stdout: '', error: 'IE' }
 
         const stdoutStr = (r.stdout ?? '').toString().replace(/\r/g, '')
+        console.log(`[Worker] Testcase ${t.testcaseId}: stdout="${stdoutStr}", stderr="${r.stderr}", error=${r.error}`)
         let result = 'IE', score = 0
-
         if (!t.input && !t.expected_output) result = 'IE'
         else if (r.error === 'CE') result = 'CE'
         else if (r.error === 'TLE') result = 'TLE'
