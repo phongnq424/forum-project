@@ -43,9 +43,9 @@ const PostService = {
         })
     },
 
-    getPostById: async (postId, viewerId = null) => {
+    getPostById: async (postId, { viewerId, blockContext }) => {
         const post = await prisma.post.findUnique({
-            where: { id: postId },
+            where: { id: postId, is_deleted: false },
             include: {
                 User: { select: { id: true, username: true, Profile: { select: { avatar: true } } } },
                 Topic: { select: { id: true, name: true } },
@@ -66,8 +66,8 @@ const PostService = {
 
         if (!post) return null
 
-        if (viewerId && viewerId !== post.User.id) {
-            await BlockService.ensureNotBlocked(viewerId, post.User.id)
+        if (blockContext && blockContext.blockedSet && blockContext.blockedSet.has(post.user_id)) {
+            return null
         }
 
         const commentCount = await prisma.comment.count({ where: { post_id: postId } })
@@ -146,7 +146,10 @@ const PostService = {
 
         const publicIds = existing.Image.map(i => i.public_id).filter(Boolean)
         await prisma.image.deleteMany({ where: { post_id: postId } })
-        await prisma.post.delete({ where: { id: postId } })
+        await prisma.post.update({
+            where: { id: postId },
+            data: { is_deleted: true, deleted_at: new Date() }
+        })
 
         for (const pid of publicIds) {
             await CloudinaryService.delete(pid).catch(() => { })
@@ -155,11 +158,11 @@ const PostService = {
         return
     },
 
-    list: async (query, viewerId = null) => {
+    list: async (query, { viewerId, blockContext }) => {
         const page = parseInt(query.page) || 1
         const limit = parseInt(query.limit) || 10
         const skip = (page - 1) * limit
-        const where = {}
+        const where = { is_deleted: false }
         if (query.topic_id) where.topic_id = query.topic_id
         if (query.user_id) where.user_id = query.user_id
         if (query.category_id) {
@@ -167,15 +170,26 @@ const PostService = {
             where.topic_id = { in: topics.map(t => t.id) }
         }
 
-        if (viewerId) {
-            const blocked = await prisma.block.findMany({
-                where: { blocker_id: viewerId },
-                select: { blocked_id: true }
-            })
-            const blockedSet = new Set(blocked.map(b => b.blocked_id))
-            if (!where.user_id) where.user_id = { notIn: Array.from(blockedSet) }
-        }
+        const blockedIds = blockContext && blockContext.blockedUserIds ? Array.from(blockContext.blockedUserIds) : []
 
+        if (blockedIds.length > 0) {
+            if (where.user_id) {
+                // nếu query chỉ request posts của 1 user cụ thể
+                if (typeof where.user_id === 'string') {
+                    if (blockedIds.includes(where.user_id)) {
+                        return { data: [], pagination: { total: 0, page, limit, totalPages: 0 } }
+                    }
+                } else if (Array.isArray(where.user_id.in)) {
+                    // hợp nhất loại bỏ blockedIds khỏi in-list
+                    where.user_id.in = where.user_id.in.filter(id => !blockedIds.includes(id))
+                    if (where.user_id.in.length === 0) {
+                        return { data: [], pagination: { total: 0, page, limit, totalPages: 0 } }
+                    }
+                }
+            } else {
+                where.user_id = { notIn: blockedIds }
+            }
+        }
         const [posts, total] = await Promise.all([
             prisma.post.findMany({
                 where,
@@ -237,15 +251,16 @@ const PostService = {
         }
     },
 
-    getByUser: async (userIdOwner, query, viewerId = null) => {
-        if (viewerId && viewerId !== userIdOwner) {
-            await BlockService.ensureNotBlocked(viewerId, userIdOwner)
+    getByUser: async (userIdOwner, query, { viewerId, blockContext }) => {
+        if (viewerId && blockContext && blockContext.blockedSet.has(userIdOwner)) {
+            return { data: [], pagination: { total: 0, page: parseInt(query.page) || 1, limit: parseInt(query.limit) || 10, totalPages: 0 } }
         }
+
         const page = parseInt(query.page) || 1
         const limit = parseInt(query.limit) || 10
         const skip = (page - 1) * limit
 
-        const where = { user_id: userIdOwner }
+        const where = { user_id: userIdOwnerm, is_deleted: false }
 
         const [posts, total] = await Promise.all([
             prisma.post.findMany({
@@ -293,17 +308,25 @@ const PostService = {
         }
     },
 
-    searchPosts: async (q, viewerId = null) => {
+    searchPosts: async (q, { viewerId = null, blockContext = null } = {}) => {
         const query = q || ''
+
+        const baseWhere = {
+            is_deleted: false,
+            OR: [
+                { content: { contains: query, mode: 'insensitive' } },
+                { title: { contains: query, mode: 'insensitive' } },
+                { Topic: { name: { contains: query, mode: 'insensitive' } } },
+                { User: { username: { contains: query, mode: 'insensitive' } } }
+            ]
+        }
+
+        const blockedIds = blockContext && blockContext.blockedUserIds ? Array.from(blockContext.blockedUserIds) : []
+
+        const finalWhere = blockedIds.length ? { AND: [baseWhere, { user_id: { notIn: blockedIds } }] } : baseWhere
+
         const posts = await prisma.post.findMany({
-            where: {
-                OR: [
-                    { content: { contains: query, mode: 'insensitive' } },
-                    { title: { contains: query, mode: 'insensitive' } },
-                    { Topic: { name: { contains: query, mode: 'insensitive' } } },
-                    { User: { username: { contains: query, mode: 'insensitive' } } }
-                ]
-            },
+            where: finalWhere,
             take: 50,
             orderBy: { created_at: 'desc' },
             include: {
@@ -314,23 +337,6 @@ const PostService = {
         })
 
         if (posts.length === 0) return []
-        if (viewerId) {
-            const blocked = await prisma.block.findMany({
-                where: {
-                    OR: [
-                        { blocker_id: viewerId },
-                        { blocked_id: viewerId }
-                    ]
-                },
-                select: { blocker_id: true, blocked_id: true }
-            })
-            const blockedSet = new Set()
-            blocked.forEach(b => {
-                if (b.blocker_id === viewerId) blockedSet.add(b.blocked_id)
-                if (b.blocked_id === viewerId) blockedSet.add(b.blocker_id)
-            })
-            posts = posts.filter(p => !blockedSet.has(p.user_id))
-        }
 
         const postIds = posts.map(p => p.id)
 

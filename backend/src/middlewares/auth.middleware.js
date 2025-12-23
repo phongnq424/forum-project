@@ -51,4 +51,11 @@ const verifyTokenOptional = async (req, res, next) => {
     }
 };
 
-module.exports = { verifyToken, verifyTokenOptional };
+const verifyInternalToken = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1]
+    if (!token || token !== process.env.INTERNAL_TOKEN) {
+        return res.status(403).json({ message: 'Forbidden' })
+    }
+    next()
+};
+module.exports = { verifyToken, verifyTokenOptional, verifyInternalToken, checkToken };

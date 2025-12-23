@@ -2,21 +2,26 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const TestcaseService = {
-    createMany: async (challenge_id, testcases) => {
-        const data = testcases.map(t => ({ ...t, challenge_id }));
-        return await prisma.testcase.createMany({ data });
+    create: async (challenge_id, input_path, expected_output_path, score) => {
+        const data = { challenge_id, input_path, expected_output_path };
+        if (typeof score !== 'undefined') data.score = score;
+        return prisma.testcase.create({ data });
     },
 
     listByChallenge: async (challenge_id) => {
-        return await prisma.testcase.findMany({ where: { challenge_id } });
+        return prisma.testcase.findMany({ where: { challenge_id } });
+    },
+
+    listByIds: async (ids) => {
+        return prisma.testcase.findMany({ where: { id: { in: ids } } });
     },
 
     update: async (id, data) => {
-        return await prisma.testcase.update({ where: { id }, data });
+        return prisma.testcase.update({ where: { id }, data });
     },
 
     delete: async (id) => {
-        return await prisma.testcase.delete({ where: { id } });
+        return prisma.testcase.delete({ where: { id } });
     }
 };
 

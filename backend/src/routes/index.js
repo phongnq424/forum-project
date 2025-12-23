@@ -20,6 +20,8 @@ const TestcaseRoutes = require("./testcase.route.js")
 const LeaderboardRoutes = require("./leaderboard.route.js")
 const LanguageRoutes = require("./language.route.js")
 const CommentRatesRoutes = require("./commentRate.route.js")
+const InternalTestcaseRoutes = require("./internal.testcase.route.js")
+const ConversationRoutes = require("./conversation.route.js");
 
 router.use("/auth", authRoutes)
 router.use("/users", userRoutes)
@@ -40,5 +42,7 @@ router.use("/testcases", TestcaseRoutes)
 router.use("/leaderboards", LeaderboardRoutes)
 router.use("/languages", LanguageRoutes)
 router.use("/comment-rates", CommentRatesRoutes)
+router.use("/internal", InternalTestcaseRoutes)
+router.use("/conversations", ConversationRoutes);
 
 module.exports = router;

@@ -5,59 +5,58 @@ const redisQueue = require('../config/redisQueue');
 const SubmissionService = {
     submit: async ({ challenge_id, user_id, code, language_id }) => {
         const submission = await prisma.submission.create({
-            data: { challenge_id, user_id, code, language_id, status: 'pending' }
+            data: { challenge_id, user_id, code, language_id, status: 'PENDING' }
         });
 
         const testcases = await prisma.testcase.findMany({ where: { challenge_id } });
+        const time_limit = (await prisma.challenge.findUnique({ where: { id: challenge_id } })).time_limit;
+        const lang = await prisma.language.findUnique({ where: { id: language_id } });
+        if (!lang) throw new Error('Invalid language');
 
-        for (const t of testcases) {
-            const job = {
-                submissionId: submission.id,
-                testcaseId: t.id,
-                code,
-                language: language_id,
-                input: t.input,
-                expectedOutput: t.expected_output
-            };
-            await redisQueue.lpush('judge_queue', JSON.stringify(job));
-        }
-
+        const job = {
+            submissionId: submission.id,
+            code,
+            time_limit: time_limit,
+            language: lang.code,
+            testcases: testcases.map(t => ({
+                testcaseId: t.id
+            }))
+        };
+        console.log('Enqueuing job:', job);
+        await redisQueue.lpush('judge_queue', JSON.stringify(job));
         return submission;
     },
 
-    updateResult: async ({ submissionId, testcaseId, result, output, stderr }) => {
+    updateResult: async ({ submissionId, score, status }) => {
         const submission = await prisma.submission.findUnique({ where: { id: submissionId } });
         if (!submission) throw new Error('Submission not found');
 
-        // Tạo hoặc update chi tiết điểm của testcase
-        await prisma.submissionTestcase.upsert({
-            where: { submission_id_testcase_id: { submission_id: submissionId, testcase_id: testcaseId } },
-            update: { result, output, stderr },
-            create: { submission_id: submissionId, testcase_id: testcaseId, result, output, stderr }
-        });
-
-        // Tính tổng điểm mới
-        const allResults = await prisma.submissionTestcase.findMany({ where: { submission_id: submissionId } });
-        const totalScore = allResults.reduce((sum, r) => sum + ((r.result === 'AC') ? 1 : 0), 0); // hoặc theo score testcase
-
-        // Update submission
         await prisma.submission.update({
             where: { id: submissionId },
-            data: { status: 'finished', score: totalScore }
+            data: { score, status }
         });
 
-        // Update leaderboard
-        const existing = await prisma.leaderboard.findFirst({ where: { challenge_id: submission.challenge_id, user_id: submission.user_id } });
+        const existing = await prisma.leaderboard.findFirst({
+            where: { challenge_id: submission.challenge_id, user_id: submission.user_id }
+        });
+
         if (!existing) {
             await prisma.leaderboard.create({
-                data: { challenge_id: submission.challenge_id, user_id: submission.user_id, score: totalScore, rank: 0 }
+                data: {
+                    challenge_id: submission.challenge_id,
+                    user_id: submission.user_id,
+                    rank: 0,
+                    score // dùng score từ worker
+                }
             });
-        } else if (totalScore > existing.score) {
+        } else if (score > existing.score) {
             await prisma.leaderboard.update({
                 where: { id: existing.id },
-                data: { score: totalScore }
+                data: { score }
             });
         }
+
+        return { submissionId, score, status };
     },
 
     listByChallenge: async (challenge_id) => {

@@ -3,7 +3,9 @@ const prisma = new PrismaClient()
 
 const BlockService = {
     toggleBlock: async (currentUserId, targetUserId) => {
-        if (currentUserId === targetUserId) throw new Error("Cannot block yourself")
+        if (currentUserId === targetUserId) {
+            throw new Error('Cannot block yourself')
+        }
 
         const existing = await prisma.block.findUnique({
             where: {
@@ -24,30 +26,63 @@ const BlockService = {
                 }
             })
             return { blocked: false }
-        } else {
-            await prisma.block.create({
-                data: {
-                    blocker_id: currentUserId,
-                    blocked_id: targetUserId
-                }
-            })
-            return { blocked: true }
         }
+
+        await prisma.block.create({
+            data: {
+                blocker_id: currentUserId,
+                blocked_id: targetUserId
+            }
+        })
+
+        return { blocked: true }
     },
 
     getBlockedUsers: async (userId, query) => {
         const take = parseInt(query.limit) || 50
-        const skip = parseInt(query.page ? (query.page - 1) * take : 0)
-        const where = { blocked_id: userId }
-        if (query.search) where.blocker = { username: { contains: query.search, mode: 'insensitive' } }
+        const page = parseInt(query.page) || 1
+        const skip = (page - 1) * take
+
+        const where = {
+            blocker_id: userId
+        }
+        if (query.search) {
+            where.Blocked = {
+                username: {
+                    contains: query.search,
+                    mode: 'insensitive'
+                }
+            }
+        }
+
         const blockedUsers = await prisma.block.findMany({
             where,
             skip,
             take,
-            include: { blocker: { select: { id: true, username: true, Profile: { select: { avatar: true } } } } }
+            include: {
+                Blocked: {
+                    select: {
+                        id: true,
+                        username: true,
+                        Profile: {
+                            select: { avatar: true }
+                        }
+                    }
+                }
+            }
         })
+
         const total = await prisma.block.count({ where })
-        return { data: blockedUsers, pagination: { total, page: parseInt(query.page) || 1, limit: take, totalPages: Math.ceil(total / take) } }
+
+        return {
+            data: blockedUsers.map(b => b.Blocked),
+            pagination: {
+                total,
+                page,
+                limit: take,
+                totalPages: Math.ceil(total / take)
+            }
+        }
     },
 
     ensureNotBlocked: async (userA, userB) => {
@@ -61,8 +96,27 @@ const BlockService = {
         })
 
         if (isBlocked) {
-            throw new Error("Blocked interaction")
+            throw new Error('Blocked interaction')
         }
+    },
+
+    getBlockedUserIds: async (userId) => {
+        const blocks = await prisma.block.findMany({
+            where: {
+                OR: [
+                    { blocker_id: userId },
+                    { blocked_id: userId }
+                ]
+            },
+            select: {
+                blocker_id: true,
+                blocked_id: true
+            }
+        })
+
+        return blocks.map(b =>
+            b.blocker_id === userId ? b.blocked_id : b.blocker_id
+        )
     }
 }
 

@@ -2,16 +2,29 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
 const CommentRateService = {
-    // Thêm hoặc cập nhật rating
     rateComment: async (userId, commentId, rating) => {
+        const comment = await prisma.comment.findUnique({
+            where: { id: commentId },
+            select: { is_deleted: true }
+        })
+
+        if (!comment || comment.is_deleted) {
+            throw new Error('Comment not found or deleted')
+        }
+
         const existing = await prisma.comment_Rate.findUnique({
-            where: { user_id_comment_id: { user_id: userId, comment_id: commentId } }
+            where: {
+                user_id_comment_id: {
+                    user_id: userId,
+                    comment_id: commentId
+                }
+            }
         })
 
         if (existing) {
             return prisma.comment_Rate.update({
                 where: { id: existing.id },
-                data: { rating, created_at: new Date() }
+                data: { rating }
             })
         }
 
@@ -22,13 +35,27 @@ const CommentRateService = {
 
     // Lấy rating của một comment theo user
     getUserRating: async (userId, commentId) => {
-        return prisma.comment_Rate.findUnique({
-            where: { user_id_comment_id: { user_id: userId, comment_id: commentId } }
+        return prisma.comment_Rate.findFirst({
+            where: {
+                user_id: userId,
+                comment_id: commentId,
+                Comment: {
+                    is_deleted: false
+                }
+            }
         })
     },
 
     // Lấy tổng, trung bình rating của comment
     getCommentStats: async (commentId) => {
+        const comment = await prisma.comment.findUnique({
+            where: { id: commentId },
+            select: { is_deleted: true }
+        })
+
+        if (!comment || comment.is_deleted) {
+            return { total: 0, count: 0, average: 0 }
+        }
         const rates = await prisma.comment_Rate.findMany({
             where: { comment_id: commentId },
             select: { rating: true }
@@ -44,8 +71,15 @@ const CommentRateService = {
     // Lấy tất cả rating của user
     getUserRatings: async (userId) => {
         return prisma.comment_Rate.findMany({
-            where: { user_id: userId },
-            include: { Comment: true }
+            where: {
+                user_id: userId,
+                Comment: {
+                    is_deleted: false
+                }
+            },
+            include: {
+                Comment: true
+            }
         })
     }
 }
