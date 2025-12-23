@@ -4,7 +4,7 @@ const { verifyToken } = require('../middlewares/auth.middleware');
 
 const router = Router();
 
-router.post('/', verifyToken, ChallengeController.create);
+router.post('/', ChallengeController.create);
 router.get('/', ChallengeController.list);
 router.get('/:id', ChallengeController.getById);
 router.put('/:id', verifyToken, ChallengeController.update);

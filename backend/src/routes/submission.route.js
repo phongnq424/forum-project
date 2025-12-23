@@ -7,5 +7,6 @@ const router = Router();
 router.post('/', verifyToken, SubmissionController.submit);
 router.get('/:id', verifyToken, SubmissionController.getById);
 router.get('/challenge/:challenge_id', SubmissionController.listByChallenge);
+router.post('/result', SubmissionController.receiveResult);
 
 module.exports = router

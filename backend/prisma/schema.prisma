@@ -51,22 +51,42 @@ enum SUBMISSION_STATUS {
   RUNNING
   WA
   ACCEPTED
+  CE
+  MLE
+  TLE
+}
+
+enum NotificationType {
+  POST_COMMENT
+  COMMENT_REPLY
+  POST_REACTION
+  COMMENT_REACTION
+  MENTION
+  MESSAGE
+  FOLLOW
+  POST_BOOKMARK
+  POST_ACTIVITY
+  POST_MODERATION
+  ACHIEVEMENT
+  SYSTEM
 }
 
 /**
  * * MODELS **
  */
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique @db.VarChar(255)
-  password_hash String   @db.VarChar(255)
-  username      String   @unique @db.VarChar(100)
-  created_at    DateTime @default(now())
-  updated_at    DateTime @default(now()) @updatedAt
-  role          ROLE     @default(USER)
+  id            String           @id @default(uuid())
+  email         String           @unique @db.VarChar(255)
+  password_hash String           @db.VarChar(255)
+  username      String           @unique @db.VarChar(100)
+  created_at    DateTime         @default(now())
+  updated_at    DateTime         @default(now()) @updatedAt
+  role          ROLE             @default(USER)
+  is_deleted    Boolean          @default(false)
+  deleted_at    DateTime?
+  status        USER_STATUS_TYPE @default(ACTIVE)
 
   Profile          Profile?
-  UserStatus       UserStatus[]
   Post             Post[]
   PostSaved        PostSaved[]
   Comment          Comment[]
@@ -87,14 +107,6 @@ model User {
   Comment_Rate     Comment_Rate[]
   blocks           Block[]            @relation("blocker")
   blockedBy        Block[]            @relation("blocked")
-}
-
-model UserStatus {
-  id            String           @id @default(uuid())
-  status        USER_STATUS_TYPE
-  lastActive_at DateTime?
-  user_id       String
-  User          User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Profile {
@@ -144,13 +156,15 @@ model Topic {
 }
 
 model Post {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   user_id    String
   topic_id   String
   title      String
   content    String
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @updatedAt
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now()) @updatedAt
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
 
   User       User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
   Topic      Topic        @relation(fields: [topic_id], references: [id], onDelete: Cascade)
@@ -182,13 +196,15 @@ model Image {
 }
 
 model Comment {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   user_id          String
   post_id          String
   parentComment_id String?
   comment_detail   String
-  created_at       DateTime @default(now())
-  updated_at       DateTime @default(now()) @updatedAt
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @default(now()) @updatedAt
+  is_deleted       Boolean   @default(false)
+  deleted_at       DateTime?
 
   User          User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
   Post          Post            @relation(fields: [post_id], references: [id], onDelete: Cascade)
@@ -196,6 +212,9 @@ model Comment {
   childComments Comment[]       @relation("CommentParentChild")
   ReportComment ReportComment[]
   Comment_Rate  Comment_Rate[]
+
+  @@index([post_id, created_at])
+  @@index([parentComment_id])
 }
 
 model Comment_Rate {
@@ -222,7 +241,7 @@ model Reaction {
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
   Post Post @relation(fields: [post_id], references: [id], onDelete: Cascade)
 
-  @@unique([user_id, post_id, type])
+  @@unique([user_id, post_id])
 }
 
 model Follower {
@@ -275,18 +294,22 @@ model ConversationUser {
 }
 
 model Message {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   conversation_id String
   sender_id       String
   content         String?
-  sent_at         DateTime @default(now())
-  updated_at      DateTime @default(now()) @updatedAt
-  is_read         Boolean  @default(false)
+  sent_at         DateTime  @default(now())
+  updated_at      DateTime  @default(now()) @updatedAt
+  is_read         Boolean   @default(false)
+  is_deleted      Boolean   @default(false)
+  deleted_at      DateTime?
 
   Conversation  Conversation    @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
   Sender        User            @relation("sender", fields: [sender_id], references: [id], onDelete: Cascade)
   Attachment    Attachment[]
   ReportMessage ReportMessage[]
+
+  @@index([conversation_id, sent_at])
 }
 
 model Attachment {
@@ -328,10 +351,16 @@ model Language {
 }
 
 model Challenge {
-  id          String   @id @default(uuid())
-  title       String   @db.VarChar(255)
-  description String?
-  created_at  DateTime @default(now())
+  id           String   @id @default(uuid())
+  title        String   @db.VarChar(255)
+  description  String?
+  input        String?  @db.Text
+  output       String?  @db.Text
+  constraints  String?  @db.Text
+  difficulty   String?  @db.VarChar(20)
+  time_limit   Int?
+  memory_limit Int?
+  created_at   DateTime @default(now())
 
   Testcase    Testcase[]
   Submission  Submission[]
@@ -339,11 +368,13 @@ model Challenge {
 }
 
 model Testcase {
-  id              String  @id @default(uuid())
-  challenge_id    String
-  input           String?
-  expected_output String?
-  score           Int?
+  id           String @id @default(uuid())
+  challenge_id String
+
+  score Int?
+
+  input_path           String
+  expected_output_path String
 
   Challenge Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
 }
@@ -376,13 +407,22 @@ model Leaderboard {
 }
 
 model Notification {
-  id      String  @id @default(uuid())
-  user_id String
-  title   String  @db.VarChar(255)
-  message String
-  is_read Boolean @default(false)
+  id         String           @id @default(uuid())
+  user_id    String
+  actor_id   String?
+  type       NotificationType
+  title      String           @db.VarChar(255)
+  ref_id     String?
+  ref_sub_id String?
+  message    String
+  is_read    Boolean          @default(false)
+  created_at DateTime         @default(now())
 
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_read])
+  @@index([user_id, created_at])
+  @@index([user_id, type])
 }
 
 model Report {
@@ -390,6 +430,7 @@ model Report {
   reporter_id String
   reason      String
   created_at  DateTime @default(now())
+  is_deleted  Boolean  @default(false)
 
   Reporter      User            @relation("reporter", fields: [reporter_id], references: [id], onDelete: Cascade)
   ReportUser    ReportUser?

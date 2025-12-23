@@ -49,7 +49,10 @@ const AuthService = {
     checkExistUser: async ({ email, username }) => {
         try {
             const existingUser = await prisma.user.findFirst({
-                where: { OR: [{ email }, { username }] },
+                where: {
+                    is_deleted: false,
+                    OR: [{ email }, { username }]
+                },
             });
             if (existingUser) throw new Error('User already exists');
         } catch (error) {
@@ -99,8 +102,17 @@ const AuthService = {
     login: async (username, password) => {
         try {
             const user = await prisma.user.findFirst({
-                where: { OR: [{ username }, { email: username }] },
-            });
+                where: {
+                    OR: [{ username }, { email: username }],
+                    is_deleted: false
+                }
+            })
+
+            if (user.status === 'BANNED')
+                throw new Error('Your account has been banned')
+            if (user.status !== 'ACTIVE')
+                throw new Error('Your account is not active')
+
             if (!user) throw new Error('Invalid username or password');
             const valid = await bcrypt.compare(password, user.password_hash);
             if (!valid) throw new Error('Invalid username or password');
@@ -122,7 +134,7 @@ const AuthService = {
         try {
             const decoded = jwt.verify(token, SECRET_KEY);
             const ttl = decoded.exp - Math.floor(Date.now() / 1000);
-            if (ttl > 0) await redisClient.set(`blacklist:${token}`, 'true', 'EX', 3600);
+            if (ttl > 0) await redisClient.set(`blacklist:${token}`, 'true', 'EX', ttl);
 
             return { message: 'Logout successful' };
         } catch (error) {
