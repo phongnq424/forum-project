@@ -21,7 +21,6 @@ function Header({ variant = "transparent", className = "" }) {
   const refMenu = useRef();
 
   const appContext = useContext(AppContext);
-  const refOptionsMenu = useRef();
   const logOut = useLogOut();
   useEffect(
     function () {

@@ -1,7 +1,8 @@
 import logoReact from "../../assets/react.svg";
 import Button from "../elements/Button";
-import { FaRegBookmark, FaRegHeart } from "react-icons/fa";
-import { FiMessageCircle, FiShare2 } from "react-icons/fi";
+import { FaBookmark, FaHeart } from "react-icons/fa";
+import { TbMessageCircleFilled } from "react-icons/tb";
+import { IoMdShare } from "react-icons/io";
 
 const PostCard = ({ title, author, image, likes, comments, avatar }) => {
   return (
@@ -35,23 +36,23 @@ const PostCard = ({ title, author, image, likes, comments, avatar }) => {
       <div className="flex items-center justify-between text-muted-foreground">
         <div className="basis-[60%] flex justify-between">
           <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
-            <FaRegHeart className="h-5 w-5" />
+            <FaHeart className="h-5 w-5" />
             <span className="text-sm font-medium">{likes}</span>
           </Button>
 
           <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
-            <FiMessageCircle className="h-5 w-5" />
+            <TbMessageCircleFilled className="h-5 w-5" />
             <span className="text-sm font-medium">{comments}</span>
           </Button>
         </div>
 
         <div className="basis-[20%] flex justify-between">
           <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
-            <FaRegBookmark className="h-5 w-5" />
+            <FaBookmark className="h-5 w-5" />
           </Button>
 
           <Button className="flex items-center gap-2 transition-colors hover:text-proPurple">
-            <FiShare2 className="h-5 w-5" />
+            <IoMdShare className="h-5 w-5" />
           </Button>
         </div>
       </div>

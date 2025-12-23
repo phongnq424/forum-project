@@ -15,8 +15,8 @@ function App() {
   );
 
   const [flagGetCurrentUserAgain, getCurrentUserAgain] = useState(true);
-
-  const getMe = useGetMe(isLogged);
+  const getMe = useGetMe(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const nav = useNavigate();
 
@@ -27,15 +27,23 @@ function App() {
           nav("/create-profile");
         }
       }
+
+      if (getMe.isSuccess) {
+        setCurrentUser(getMe.data);
+      }
     },
-    [getMe.isError]
+    [getMe.isError, getMe.isSuccess, getMe.data]
   );
 
   useEffect(
     function () {
-      getMe.refetch();
+      if (isLogged) {
+        getMe.refetch();
+      } else {
+        setCurrentUser(null);
+      }
     },
-    [flagGetCurrentUserAgain]
+    [flagGetCurrentUserAgain, isLogged]
   );
 
   return (
@@ -43,12 +51,12 @@ function App() {
       value={{
         isLogged,
         setIsLogged,
-        currentUser: isLogged ? getMe.data : null,
+        currentUser: isLogged ? currentUser : null,
         getCurrentUserAgain,
       }}
     >
-      {getMe.isLoading && <LoadingScreen />}
       <div className="bg-primary min-h-screen overflow-y-hidden">
+        {isLogged && getMe.isPending && <LoadingScreen />}
         <ToastContainer />
         <PageRouters />
       </div>

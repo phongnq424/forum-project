@@ -10,9 +10,9 @@ router.post(
   rateLimitMiddleware,
   verifyToken,
   FollowerController.toggleFollow
-);
-router.delete("/remove", verifyToken, FollowerController.removeFollower);
-router.get("/followers/:userId", FollowerController.getFollowers);
-router.get("/following/:userId", FollowerController.getFollowing);
+); //
+router.delete("/remove", verifyToken, FollowerController.removeFollower); //
+router.get("/followers/:userId", FollowerController.getFollowers); //
+router.get("/following/:userId", FollowerController.getFollowing); //
 
 module.exports = router;

@@ -5,7 +5,6 @@ const profileService = {
   getMe: async function () {
     try {
       const response = await axiosClient.get("/profiles/me");
-      console.log(response);
       const result = {
         user_id: response.user_id,
         fullName: response.fullname,
@@ -18,7 +17,8 @@ const profileService = {
         posts: -1,
         comments: -1,
         isOwnProfile: true,
-        isFollowing: false,
+        isFollowing: response.isFollowing,
+        gender: response.gender,
       };
       return result;
     } catch (error) {
@@ -68,7 +68,7 @@ const profileService = {
         posts: -1,
         comments: -1,
         isOwnProfile: false,
-        isFollowing: false,
+        isFollowing: response.isFollowing,
       };
       return result;
     } catch (error) {

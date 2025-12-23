@@ -19,15 +19,22 @@ const CustomDropDown = forwardRef(
     },
     ref
   ) => {
-    console.log(options);
+    console.error(initIndexSelected);
     const [isOpen, setIsOpen] = useState(false);
-    const [selected, setSelected] = useState(options[initIndexSelected]);
+    const [selected, setSelected] = useState();
     const dropdownRef = useRef(null);
     useEffect(
       function () {
         onSelected?.(selected);
       },
       [selected]
+    );
+
+    useEffect(
+      function () {
+        setSelected(options?.[initIndexSelected]);
+      },
+      [options, initIndexSelected]
     );
 
     useEffect(() => {
@@ -40,8 +47,6 @@ const CustomDropDown = forwardRef(
         }
       }
       document.addEventListener("mousedown", handleClickOutside);
-      setSelected(options[initIndexSelected]);
-      onSelected?.(options[initIndexSelected]);
       return () =>
         document.removeEventListener("mousedown", handleClickOutside);
     }, []);
@@ -96,7 +101,7 @@ const CustomDropDown = forwardRef(
                       : "hover:bg-white/10"
                   }`}
                 >
-                  {displayField == null ? option : option[displayField]}
+                  {displayField == null ? option : option?.[displayField]}
                 </div>
               ))}
             </div>
@@ -120,7 +125,7 @@ const CustomDropDown = forwardRef(
                     : "hover:bg-white/10"
                 }`}
               >
-                {displayField == null ? option : option[displayField]}
+                {displayField == null ? option : option?.[displayField]}
               </div>
             ))}
           </div>
@@ -129,22 +134,6 @@ const CustomDropDown = forwardRef(
 
       addPost: (
         <>
-          <div className="relative w-full">
-            {/* Ô input hiện tại */}
-            <input
-              type="text"
-              placeholder=""
-              value={
-                displayField == null || !selected
-                  ? selected
-                  : selected[displayField]
-              }
-              readOnly
-              onClick={() => setIsOpen(!isOpen)}
-              className="p-2 hover:cursor-pointer text-white w-full h-fit bg-primary rounded-xl placeholder:text-muted-foreground text-lg resize-none focus:outline-none"
-            ></input>
-          </div>
-
           {isOpen && (
             <div className="absolute mt-1 w-full bg-primary b text-white rounded-2xl max-h-60 overflow-y-auto z-10">
               {options.map((option, idx) => (

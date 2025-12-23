@@ -129,7 +129,7 @@ function RenderByCategory({ selectedCategory }) {
     case 4:
       return <RenderConnections />;
     default:
-      return <></>;
+      return <RenderComments></RenderComments>;
   }
 }
 

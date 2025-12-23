@@ -14,8 +14,9 @@ import {
   useUpdatePost,
 } from "../../api/hooks/postHook";
 import { MdMoreHoriz } from "react-icons/md";
-import { FaRegBookmark, FaRegHeart } from "react-icons/fa";
-import { FiMessageCircle, FiShare2 } from "react-icons/fi";
+import { FaBookmark, FaHeart } from "react-icons/fa";
+import { TbMessageCircleFilled } from "react-icons/tb";
+import { IoMdShare } from "react-icons/io";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
 import toastHelper from "../../helper/ToastHelper";
 import General from "../../General/General";
@@ -30,6 +31,9 @@ import AppContext from "../Context/AppContext";
 import { IoMdSend } from "react-icons/io";
 import CustomDropDown2 from "../components/CustomDropDown/CustomDropDown2";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
+import StarRating from "../components/StartRating";
+import { useRateComment } from "../../api/hooks/commentRatingHook";
+import CustomDropDown from "../components/CustomDropDown/CustomDropDown";
 
 export const DetailPostPageContext = createContext();
 
@@ -38,9 +42,9 @@ const DetailPostPage = () => {
   const postId = getParams.get("postId");
   const location = useLocation();
   const [currentPost, setCurrentPost] = useState(location?.state?.post);
-  const getPostById = useGetPostById(currentPost.id);
+  const getPostById = useGetPostById(postId);
   const toggleReaction = useToggleReaction(null, null);
-  const getCommentsOfPost = useGetCommentsOfPost(currentPost.id);
+  const getCommentsOfPost = useGetCommentsOfPost(postId);
   const appContext = useContext(AppContext);
   const [replyTo, setReplyTo] = useState(null);
   const addComment = useAddComment();
@@ -52,6 +56,8 @@ const DetailPostPage = () => {
   const [isDialogClosing, setIsDialogClosing] = useState(true);
   const updatePost = useUpdatePost();
   const updateComment = useUpdateComment();
+  const rateComment = useRateComment();
+
   useEffect(
     function () {
       if (updatePost.isError) {
@@ -65,6 +71,21 @@ const DetailPostPage = () => {
     },
     [updatePost.isError, updatePost.isSuccess, updatePost.data]
   );
+
+  useEffect(
+    function () {
+      if (rateComment.isSuccess) {
+        toastHelper.success(
+          rateComment.data.comment_id + " " + rateComment.data.rating
+        );
+      }
+
+      if (rateComment.isError) {
+        toastHelper.error(rateComment.error.message);
+      }
+    },
+    [rateComment.isSuccess, rateComment.isError, rateComment.data]
+  );
   useEffect(
     function () {
       if (savePost.isError) {
@@ -75,6 +96,12 @@ const DetailPostPage = () => {
         toastHelper.success(
           savePost.data.saved ? "Save successfully!" : "Unsave successfully!"
         );
+        setCurrentPost(function (prev) {
+          return {
+            ...prev,
+            isSaved: savePost.data.saved,
+          };
+        });
       }
     },
     [savePost.isSuccess, savePost.isError, savePost.data]
@@ -89,38 +116,12 @@ const DetailPostPage = () => {
     },
   };
 
-  const optionsForCmt = {
-    DELETE: { id: 0, name: "Delete", showFor: [General.showFor.OWN] },
-    EDIT: { id: 1, name: "Edit", showFor: [General.showFor.OWN] },
-    REPORT: { id: 2, name: "Report", showFor: [General.showFor.VIEWER] },
-    asArray() {
-      return Object.values(this).filter((item) => typeof item != "function");
-    },
-  };
-
   const refDropDownForPost = useRef();
-  const commentRefs = useRef({});
-
   function handlePostAction(option) {
     if (option.id === optionsForPost.DELETE.id) {
       deletePost.mutate({ postId });
     } else if (option.id === optionsForPost.EDIT.id) {
       setIsDialogClosing(false);
-    }
-  }
-
-  // Usestate for edit comment
-  const [editingCommentId, setEditingCommentId] = useState(null);
-  const [editingCommentContent, setEditingCommentContent] = useState("");
-
-  function handleCommentAction(option, objectId, commentContent = "") {
-    if (option.id === optionsForCmt.DELETE.id) {
-      deleteComment.mutate({ cmtId: objectId });
-    }
-
-    if (option.id == optionsForCmt.EDIT.id) {
-      setEditingCommentId(objectId);
-      setEditingCommentContent(commentContent);
     }
   }
 
@@ -148,8 +149,31 @@ const DetailPostPage = () => {
 
   useEffect(
     function () {
+      if (getCommentsOfPost.isSuccess) {
+        setCurrentPost(function (prev) {
+          return { ...prev, comments: getCommentsOfPost.data.length };
+        });
+      }
+      if (getCommentsOfPost.isError) {
+      }
+    },
+    [
+      getCommentsOfPost.isSuccess,
+      getCommentsOfPost.isError,
+      getCommentsOfPost.data,
+    ]
+  );
+
+  useEffect(
+    function () {
       if (toggleReaction.isSuccess) {
-        toastHelper.success("Love: " + !toggleReaction.data.removed);
+        //getPostById.refetch();
+        setCurrentPost(function (prev) {
+          return {
+            ...prev,
+            i,
+          };
+        });
       }
       if (toggleReaction.isError) {
         toastHelper.error(toggleReaction.error);
@@ -178,6 +202,7 @@ const DetailPostPage = () => {
     function () {
       if (updateComment.isSuccess) {
         getCommentsOfPost.refetch();
+        toastHelper.success("Update comment successfully!");
       }
       if (updateComment.isError) {
         toastHelper.error(updateComment.error.message);
@@ -204,7 +229,7 @@ const DetailPostPage = () => {
         setCurrentPost(getPostById.data);
       }
     },
-    [getPostById.isSuccess, getPostById.isError]
+    [getPostById.isSuccess, getPostById.isError, getPostById.data]
   );
 
   if (!currentPost) return <></>;
@@ -217,7 +242,7 @@ const DetailPostPage = () => {
     }
   };
 
-  const handleOnClickCommentAuthInfo = function (commentItem) {
+  const onSelectAuthorOfComment = function (commentItem) {
     if (appContext?.currentUser?.user_id != commentItem.userId) {
       navigate(`/profile?id=${commentItem.userId}`);
     } else {
@@ -253,7 +278,7 @@ const DetailPostPage = () => {
           </div>
 
           {/* Right side - Post details and comments */}
-          <div className="relative flex flex-col lg:w-[53%] overflow-y-auto h-(--view-h) bg-white/5">
+          <div className="relative flex flex-col lg:w-[53%] overflow-y-auto overscroll-contain h-(--view-h) bg-white/5">
             {(getCommentsOfPost.isLoading ||
               addComment.isPending ||
               deletePost.isPending) && <LoadingScreen />}
@@ -340,26 +365,28 @@ const DetailPostPage = () => {
               <div className="flex items-center justify-around mb-3 text-white">
                 <div className="flex justify-between basis-[75%]">
                   <button
-                    className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
+                    className={`flex items-center gap-2 transition-colors ${
+                      currentPost.isLiked ? "text-proPurple" : "text-white"
+                    } hover:opacity-50 text-xl`}
                     onClick={() => {
                       onReactionClick?.(General.reactionType.LOVE);
                     }}
                   >
-                    <FaRegHeart className="h-fit w-fit" />
+                    <FaHeart className="h-fit w-fit" />
                     <span className="text-xl font-medium">
-                      {currentPost.likes || -1}
+                      {currentPost?.likes ?? -1}
                     </span>
                   </button>
 
                   <button
-                    className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
+                    className="flex items-center gap-2 transition-colors hover:opacity-50 text-xl"
                     onClick={() => {
                       onCommentClick?.(General.reactionType.LOVE);
                     }}
                   >
-                    <FiMessageCircle className="h-fit w-fit" />
+                    <TbMessageCircleFilled className="h-fit w-fit" />
                     <span className="text-xl font-medium">
-                      {currentPost.comments || -1}
+                      {currentPost?.comments ?? -1}
                     </span>
                   </button>
 
@@ -367,214 +394,60 @@ const DetailPostPage = () => {
                 </div>
                 <div className="flex justify-between basis-[20%]">
                   <button
-                    className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
+                    className={`flex items-center gap-2 transition-colors ${
+                      currentPost.isSaved ? "text-proPurple" : "text-white"
+                    } hover:opacity-50 text-xl`}
                     onClick={() => {
                       onSaveClick?.();
                     }}
                   >
-                    <FaRegBookmark className="h-fit w-fit" />
+                    <FaBookmark className="h-fit w-fit" />
                   </button>
 
                   <button
-                    className="flex items-center gap-2 transition-colors hover:text-proPurple text-xl"
+                    className="flex items-center gap-2 transition-colors hover:backdrop-opacity-50 text-xl"
                     onClick={() => {
                       onShareClick?.(General.reactionType.LOVE);
                     }}
                   >
-                    <FiShare2 className="h-fit w-fit" />
+                    <IoMdShare className="h-fit w-fit" />
                   </button>
                 </div>
               </div>
 
               <div className="mb-2 h-[1px] bg-black404040" />
 
-              {/* Sort comments */}
-              {/* <div className="mb-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-sm font-semibold text-muted-foreground"
-                      >
-                        Most relevant ▼
-                      </Button>
-                    </div> */}
-
-              {/* Comments section */}
-
               {getCommentsOfPost.data?.length > 0 && (
                 <div className="space-y-4 text-white">
                   {getCommentsOfPost.data.map((comment) => {
-                    const renderComment = (commentItem, level = 0) => (
-                      <div
-                        key={commentItem.id}
-                        className={`flex gap-2 ${level > 0 ? "ms-6" : ""}`}
-                      >
-                        <img
-                          className="w-10 h-10 rounded-full object-cover hover:cursor-pointer"
-                          onClick={function (e) {
-                            handleOnClickCommentAuthInfo(commentItem);
-                          }}
-                          src={
-                            commentItem.user?.Profile?.avatar ||
-                            commentItem?.User?.Profile?.avatar
-                          }
-                          alt={
-                            commentItem.user?.username ||
-                            commentItem.User?.username
-                          }
-                        />
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex space-x-1">
-                            {/* Author info */}
-                            <div
-                              className={`bg-black404040 rounded-2xl px-3 py-2 ${
-                                editingCommentId === commentItem.id
-                                  ? "w-full"
-                                  : "inline-block"
-                              }`}
-                            >
-                              <div
-                                className="flex items-center gap-2 mb-0.5 hover:cursor-pointer"
-                                onClick={function (e) {
-                                  handleOnClickCommentAuthInfo(commentItem);
-                                }}
-                              >
-                                <h5 className="font-semibold text-[16px]">
-                                  {commentItem.user?.username ||
-                                    commentItem.User?.username}
-                                </h5>
-                              </div>
-
-                              {/* Neu state editingCmntId === id cua comment nay thi */}
-                              {editingCommentId === commentItem.id ? (
-                                <div className="flex flex-col space-y-2 w-full">
-                                  <textarea
-                                    className="w-full py-2 px-3 max-h-[200px] overflow-y-auto text-[16px] outline-none text-white resize-none rounded-lg bg-white/10 focus:ring-2 focus:ring-proPurple"
-                                    value={editingCommentContent}
-                                    onChange={(e) =>
-                                      setEditingCommentContent(e.target.value)
-                                    }
-                                  />
-                                  <div className="flex gap-2">
-                                    <button
-                                      disabled={editingCommentContent === ""}
-                                      className="px-3 py-1 text-sm bg-proPurple rounded text-white disabled:opacity-50"
-                                      onClick={() => {
-                                        updateComment.mutate({
-                                          id: editingCommentId,
-                                          content: editingCommentContent,
-                                        });
-
-                                        setEditingCommentId(null);
-                                        setEditingCommentContent("");
-                                      }}
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      className="px-3 py-1 text-sm bg-gray-500 rounded text-white"
-                                      onClick={() => {
-                                        setEditingCommentId(null);
-                                        setEditingCommentContent("");
-                                      }}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <p className="text-[14px] break-words break-all whitespace-normal">
-                                  {commentItem.content}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="relative">
-                              <CustomDropDown2
-                                ref={(el) =>
-                                  (commentRefs.current[commentItem.id] = el)
-                                }
-                                onSelect={(option) =>
-                                  handleCommentAction(
-                                    option,
-                                    commentItem.id,
-                                    commentItem.content
-                                  )
-                                }
-                                className="absolute right-0 top-5 z-50"
-                                displayField="name"
-                                options={optionsForCmt
-                                  .asArray()
-                                  .filter((item) => {
-                                    if (
-                                      item.showFor.includes(General.showFor.ALL)
-                                    )
-                                      return true;
-                                    if (
-                                      appContext.currentUser?.user_id ===
-                                      commentItem.user.id
-                                    ) {
-                                      return item.showFor.includes(
-                                        General.showFor.OWN
-                                      );
-                                    } else {
-                                      return item.showFor.includes(
-                                        General.showFor.VIEWER
-                                      );
-                                    }
-                                  })}
-                              />
-
-                              <button
-                                className="hover:bg-white/10 rounded-full p-1"
-                                onClick={() => {
-                                  if (!commentRefs.current[commentItem.id])
-                                    return;
-                                  commentRefs.current[commentItem.id].open();
-                                }}
-                              >
-                                <MdMoreHoriz className="h-5 w-5 text-white" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3 mt-1 px-3">
-                            <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
-                              Rate
-                            </button>
-
-                            {level == 0 && (
-                              <button
-                                className="text-[14px] font-semibold text-muted-foreground hover:underline"
-                                onClick={() => setReplyTo(commentItem)}
-                              >
-                                Reply
-                              </button>
-                            )}
-
-                            {commentItem.childComments?.length > 0 && (
-                              <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
-                                View {commentItem.childComments.length} reply
-                              </button>
-                            )}
-
-                            <span className="text-[14px] text-muted-foreground">
-                              {commentItem.createAt}
-                            </span>
-                          </div>
-
-                          <div className="space-y-1 pt-1.5 text-white">
-                            {commentItem.childComments?.length > 0 &&
-                              commentItem.childComments.map((child) =>
-                                renderComment(child, level + 1)
-                              )}
-                          </div>
-                        </div>
-                      </div>
+                    return (
+                      <RenderComment
+                        key={comment.id}
+                        commentItem={comment}
+                        currentUser={appContext?.currentUser}
+                        onSelectAuthor={function (commentItem) {
+                          onSelectAuthorOfComment(commentItem);
+                        }}
+                        onEditComment={function (commentItem, newContent) {
+                          updateComment.mutate({
+                            cmtId: commentItem.id,
+                            content: newContent,
+                          });
+                        }}
+                        onDeleteComment={function (comment) {
+                          deleteComment.mutate({ cmtId: comment.id });
+                        }}
+                        onReplyTo={function (comment) {
+                          setReplyTo(comment);
+                        }}
+                        onRatingComment={function (commentItem, startNumber) {
+                          rateComment.mutate({
+                            commentId: commentItem.id,
+                            rating: startNumber,
+                          });
+                        }}
+                      />
                     );
-
-                    return renderComment(comment);
                   })}
                 </div>
               )}
@@ -648,6 +521,207 @@ const DetailPostPage = () => {
         )}
       </main>
     </>
+  );
+};
+
+const RenderComment = function ({
+  commentItem,
+  currentUser,
+  level = 0,
+  onSelectAuthor,
+  onDeleteComment,
+  onEditComment,
+  onReplyTo,
+  onRatingComment,
+}) {
+  const refCommentDropDownOptions = useRef();
+  const refRatingStar = useRef();
+  const [isEditing, setIsEditing] = useState(false);
+  const [newContent, setNewContent] = useState(commentItem?.content);
+  const optionsForCmt = {
+    DELETE: { id: 0, name: "Delete", showFor: [General.showFor.OWN] },
+    EDIT: { id: 1, name: "Edit", showFor: [General.showFor.OWN] },
+    REPORT: { id: 2, name: "Report", showFor: [General.showFor.VIEWER] },
+    asArray() {
+      return Object.values(this).filter((item) => typeof item != "function");
+    },
+  };
+
+  function handleOnSelectDropDownOption(option) {
+    switch (option.id) {
+      case optionsForCmt.DELETE.id:
+        onDeleteComment?.(commentItem);
+        break;
+      case optionsForCmt.EDIT.id:
+        setIsEditing(true);
+        break;
+      case optionsForCmt.REPORT.id:
+        break;
+      default:
+        toastHelper.error("FE Error: Option is invalid!");
+    }
+  }
+
+  return (
+    <div
+      key={commentItem.id}
+      className={`flex gap-2 ${level > 0 ? "ms-6" : ""}`}
+    >
+      <img
+        className="w-10 h-10 rounded-full object-cover hover:cursor-pointer"
+        onClick={function (e) {
+          onSelectAuthor?.(commentItem);
+        }}
+        src={
+          commentItem.user?.Profile?.avatar ||
+          commentItem?.User?.Profile?.avatar
+        }
+        alt={commentItem.user?.username || commentItem.User?.username}
+      />
+
+      <div className="flex-1 min-w-0">
+        <div className="flex space-x-1">
+          {/* Author info */}
+          <div
+            className={`bg-black404040 rounded-2xl px-3 py-2 ${
+              isEditing ? "w-full" : "inline-block"
+            }`}
+          >
+            <div
+              className="flex items-center gap-2 mb-0.5 hover:cursor-pointer"
+              onClick={function (e) {
+                onSelectAuthor(commentItem);
+              }}
+            >
+              <h5 className="font-semibold text-[16px]">
+                {commentItem.user?.username || commentItem.User?.username}
+              </h5>
+            </div>
+
+            {/* Neu state editingCmntId === id cua comment nay thi */}
+            {isEditing ? (
+              <div className="flex flex-col space-y-2 w-full">
+                <textarea
+                  className="w-full py-2 px-3 max-h-[200px] overflow-y-auto text-[16px] outline-none text-white resize-none rounded-lg bg-white/10 focus:ring-2 focus:ring-proPurple"
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button
+                    disabled={newContent === ""}
+                    className="px-3 py-1 text-sm bg-proPurple rounded text-white disabled:opacity-30 hover:not-disabled:bg-proPurple/50 disabled:cursor-not-allowed"
+                    onClick={() => {
+                      onEditComment?.(commentItem, newContent);
+                      setIsEditing(false);
+                    }}
+                  >
+                    Save
+                  </button>
+
+                  <button
+                    className="px-3 py-1 text-sm bg-white/10 rounded text-white hover:bg-white/30"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setNewContent(commentItem?.content);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[14px] break-words break-all whitespace-normal">
+                {commentItem?.content}
+              </p>
+            )}
+          </div>
+
+          <div className="relative">
+            <CustomDropDown2
+              ref={refCommentDropDownOptions}
+              onSelect={function (option) {
+                handleOnSelectDropDownOption(option);
+              }}
+              className="absolute right-0 top-5 z-50"
+              displayField="name"
+              options={optionsForCmt.asArray().filter((item) => {
+                if (item.showFor.includes(General.showFor.ALL)) return true;
+                if (currentUser?.user_id === commentItem.user.id) {
+                  return item.showFor.includes(General.showFor.OWN);
+                } else {
+                  return item.showFor.includes(General.showFor.VIEWER);
+                }
+              })}
+            />
+
+            <button
+              className="hover:bg-white/10 rounded-full p-1"
+              onClick={() => {
+                refCommentDropDownOptions.current?.open();
+              }}
+            >
+              <MdMoreHoriz className="h-5 w-5 text-white" />
+            </button>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="flex items-center gap-3 mt-1 px-3">
+            <button
+              className="text-[14px] font-semibold text-muted-foreground hover:underline"
+              onClick={function () {
+                refRatingStar.current?.open();
+              }}
+            >
+              Rate
+            </button>
+
+            {level == 0 && (
+              <button
+                className="text-[14px] font-semibold text-muted-foreground hover:underline"
+                onClick={() => onReplyTo(commentItem)}
+              >
+                Reply
+              </button>
+            )}
+
+            {commentItem.childComments?.length > 0 && (
+              <button className="text-[14px] font-semibold text-muted-foreground hover:underline">
+                View {commentItem.childComments.length} reply
+              </button>
+            )}
+
+            <span className="text-[14px] text-muted-foreground">
+              {commentItem.createAt}
+            </span>
+          </div>
+
+          <StarRating
+            onChange={function (startNumber) {
+              onRatingComment?.(commentItem, startNumber);
+            }}
+            ref={refRatingStar}
+          />
+        </div>
+
+        <div className="space-y-1 pt-1.5 text-white">
+          {commentItem.childComments?.length > 0 &&
+            commentItem.childComments.map((child) => (
+              <RenderComment
+                key={child.id}
+                currentUser={currentUser}
+                commentItem={child}
+                level={level + 1}
+                onSelectAuthor={onSelectAuthor}
+                onDeleteComment={onDeleteComment}
+                onEditComment={onEditComment}
+                onReplyTo={onReplyTo}
+                onRatingComment={onRatingComment}
+              />
+            ))}
+        </div>
+      </div>
+    </div>
   );
 };
 

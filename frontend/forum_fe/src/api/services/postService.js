@@ -58,12 +58,12 @@ const postService = {
         date: new Date(result.created_at).toLocaleDateString(),
         title: result.title,
         description: result.content,
-        likes: -1,
-        comments: -1,
+        comments: result?.commentCount ?? -1,
+        likes: result?.reactionCount ?? -1,
         images: result.Image || [],
         thumbnail: result.Image.length > 0 ? result.Image[0].url : null,
         isLiked: false,
-        isSaved: false,
+        isSaved: result.isSaved ?? false,
         topic: result.Topic,
         user: result.User,
       };
@@ -73,10 +73,13 @@ const postService = {
     }
   },
 
-  getPosts: async function (page, limit) {
+  getPosts: async function (page, cateId) {
     try {
+      if (cateId === "0") {
+        cateId = null;
+      }
       const response = await axiosClient.get("/posts", {
-        params: { page: page || 1, limit: limit },
+        params: { page: page || 1, category_id: cateId },
       });
       const ps = [];
       for (let i = 0; i < response.data.length; i++) {
@@ -89,12 +92,12 @@ const postService = {
           date: new Date(curr.created_at).toLocaleDateString(),
           title: curr.title,
           description: curr.content,
-          likes: -1,
-          comments: -1,
-          images: curr.Image || [],
+          comments: curr?.commentCount ?? -1,
+          likes: curr?.reactionCount ?? -1,
+          images: curr.Image ?? [],
           thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
           isLiked: false,
-          isSaved: false,
+          isSaved: curr.isSaved ?? false,
           topic: curr.Topic,
           user: curr.User,
         });
@@ -116,15 +119,16 @@ const postService = {
         date: new Date(result.created_at).toLocaleDateString(),
         title: result.title,
         description: result.content,
-        likes: -1,
-        comments: -1,
-        images: result.Image || [],
+        comments: result?.commentCount ?? -1,
+        likes: result?.reactionCount ?? -1,
+        images: result.Image ?? [],
         thumbnail: result.Image.length > 0 ? result.Image[0].url : null,
         isLiked: false,
-        isSaved: false,
+        isSaved: result?.isSaved ?? false,
         topic: result.Topic,
         user: result.User,
       };
+
       return response;
     } catch (error) {
       throw General.createError(error);
@@ -150,14 +154,15 @@ const postService = {
     }
   },
 
-  getPostOfUser: async function (userId, page, limit) {
+  getPostOfUser: async function (userId, page) {
     try {
       const response = await axiosClient.get(`/posts/user/${userId}`, {
-        params: { page: page || 1, limit: limit },
+        params: { page: page || 1 },
       });
       const ps = [];
       for (let i = 0; i < response.data.length; i++) {
         const curr = response.data[i];
+        console.log(curr);
         ps.push({
           id: curr.id,
           author: curr.User?.username || "",
@@ -165,12 +170,12 @@ const postService = {
           date: new Date(curr.created_at).toLocaleDateString(),
           title: curr.title,
           description: curr.content,
-          likes: -1,
-          comments: -1,
+          comments: curr?.commentCount ?? -1,
+          likes: curr?.reactionCount ?? -1,
           images: curr.Image || [],
           thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
           isLiked: false,
-          isSaved: false,
+          isSaved: curr.isSaved ?? false,
           topic: curr.Topic,
           user: curr.User,
         });
@@ -201,12 +206,12 @@ const postService = {
           date: new Date(curr.created_at).toLocaleDateString(),
           title: curr.title,
           description: curr.content,
-          likes: -1,
-          comments: -1,
+          comments: curr?.commentCount ?? -1,
+          likes: curr?.reactionCount ?? -1,
           images: curr.Image || [],
           thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
-          isLiked: false,
-          isSaved: false,
+          isLiked: curr?.isLiked ?? false,
+          isSaved: curr?.isSaved ?? false,
           topic: curr.Topic,
           user: curr.User,
         });

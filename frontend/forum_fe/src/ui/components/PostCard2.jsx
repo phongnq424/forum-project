@@ -1,5 +1,7 @@
-import { FaRegBookmark, FaRegHeart } from "react-icons/fa";
-import { FiMessageCircle, FiShare2 } from "react-icons/fi";
+import { FaBookmark, FaHeart } from "react-icons/fa";
+import { TbMessageCircleFilled } from "react-icons/tb";
+import { IoMdShare } from "react-icons/io";
+
 import Button from "../elements/Button";
 import General from "../../General/General";
 const PostCard2 = ({
@@ -70,7 +72,7 @@ const PostCard2 = ({
                 }}
                 is
               >
-                <FaRegHeart className="h-5 w-5" />
+                <FaHeart className="h-5 w-5" />
                 <span className="text-sm font-medium">{likes}</span>
               </Button>
 
@@ -79,7 +81,7 @@ const PostCard2 = ({
                 isStopPropagation={true}
                 onClick={() => onCommentClick?.()}
               >
-                <FiMessageCircle className="h-5 w-5" />
+                <TbMessageCircleFilled className="h-5 w-5" />
                 <span className="text-sm font-medium">{comments}</span>
               </Button>
 
@@ -93,7 +95,7 @@ const PostCard2 = ({
                 isStopPropagation={true}
                 onClick={(e) => onSaveClick?.(e)}
               >
-                <FaRegBookmark className="h-5 w-5" />
+                <FaBookmark className="h-5 w-5" />
               </Button>
 
               <Button
@@ -103,7 +105,7 @@ const PostCard2 = ({
                 isStopPropagation={true}
                 onClick={() => onShareClick?.()}
               >
-                <FiShare2 className="h-5 w-5" />
+                <IoMdShare className="h-5 w-5" />
               </Button>
             </div>
           </div>

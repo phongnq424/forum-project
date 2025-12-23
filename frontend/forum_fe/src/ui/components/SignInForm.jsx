@@ -22,9 +22,10 @@ function SignInForm() {
     function (response) {
       toastHelper.success(response.message);
       appContext.setIsLogged(true);
-      localStorage.setItem("token", response.token);
+
       navigate("/");
     },
+
     function (error) {
       toastHelper.error(error.message);
     }
@@ -47,9 +48,12 @@ function SignInForm() {
     login.mutate(data);
   }
 
+  if (login.isPending) {
+    return <LoadingScreen />;
+  }
+
   return (
     <div className="w-full max-w-2xl mx-auto my-8 py-4 px-8 bg-white/10 rounded-3xl shadow-lg text-white flex flex-col items-center">
-      {login.isPending && <LoadingScreen />}
       <h1 className="text-[30px] font-bold text-white text-center">
         Welcome back!
       </h1>
