@@ -1,107 +1,115 @@
-// worker.js
 import 'dotenv/config'
 import Redis from 'ioredis'
 import axios from 'axios'
-import { languages } from './utils/languages.js'
-import { compareOutputs } from './utils/compares.js'
+import { languages } from './utils/language.js'
+import { compareOutputs } from './utils/compare.js'
 import { runInSandbox } from './utils/docker.js'
 
 const redis = new Redis(process.env.REDIS_URL)
 const TIMEOUT = parseInt(process.env.SANDBOX_TIMEOUT) || 5
-const BACKEND_URL = `${process.env.BACKEND_API_URL}/submissions/result`
+const BACKEND_API = process.env.BACKEND_API_URL
+const BACKEND_RESULT_URL = `${BACKEND_API}/submissions/result`
+const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN
 
 console.log('Judge worker started...')
 
-// Xử lý 1 job
+async function fetchTestcaseById(id) {
+    try {
+        const url = `${BACKEND_API}/internal/testcases`
+        const resp = await axios.get(url, {
+            params: { ids: id },
+            headers: { Authorization: `Bearer ${INTERNAL_TOKEN}` },
+            timeout: 5000
+        })
+        const testcases = resp.data.testcases || []
+        if (!testcases.length) console.warn(`[Worker] No testcase returned for id ${id}`)
+        return testcases[0] || null
+    } catch (err) {
+        console.error(`[Worker] Error fetching testcase ${id}:`, err && (err.message || err.toString()))
+        return null
+    }
+}
+
+function normalizeCase(t) {
+    return {
+        testcaseId: t.testcaseId,
+        input: (t.input ?? '').toString().replace(/\r/g, ''),
+        expected_output: (t.expected_output ?? '').toString().replace(/\r/g, ''),
+        score: typeof t.score === 'number' ? t.score : 1
+    }
+}
+
 async function processJob(jobData) {
     let job
-    try {
-        job = JSON.parse(jobData)
-    } catch (e) {
-        console.error('Invalid job JSON:', jobData)
-        return
-    }
+    try { job = JSON.parse(jobData) } catch { return console.error('[Worker] Invalid job JSON') }
+
+    console.log(`[Worker] Processing submissionId=${job.submissionId}, language=${job.language}`)
 
     const langConfig = languages[job.language]
-    if (!langConfig) {
-        await sendResult(job, 'IE', 'Unsupported language', '')
-        return
+    if (!langConfig) { await sendResult(job.submissionId, 0, 'IE', []); return }
+
+    const testcases = []
+    for (const t of job.testcases) {
+        const fetched = await fetchTestcaseById(t.testcaseId)
+        if (fetched) testcases.push(normalizeCase(fetched))
+    }
+    if (!testcases.length) { await sendResult(job.submissionId, 0, 'IE', []); return }
+
+    console.log(`[Worker] Running ${testcases.length} testcases for submission ${job.submissionId}`)
+
+    const timeoutPerTestcase = job.time_limit ?? (TIMEOUT * 1000)
+    const testcaseResults = []
+    let totalScore = 0
+
+    const sandboxResults = await runInSandbox(langConfig, job.code, testcases, timeoutPerTestcase)
+
+    for (let i = 0; i < testcases.length; i++) {
+        const t = testcases[i]
+        const r = sandboxResults[i] || { stdout: '', error: 'IE' }
+
+        const stdoutStr = (r.stdout ?? '').toString().replace(/\r/g, '')
+        console.log(`[Worker] Testcase ${t.testcaseId}: stdout="${stdoutStr}", stderr="${r.stderr}", error=${r.error}`)
+        let result = 'IE', score = 0
+        if (!t.input && !t.expected_output) result = 'IE'
+        else if (r.error === 'CE') result = 'CE'
+        else if (r.error === 'TLE') result = 'TLE'
+        else if (r.error === 'MLE') result = 'MLE'
+        else if (compareOutputs(stdoutStr.trim(), t.expected_output.trim())) {
+            result = 'AC'
+            score = t.score
+            totalScore += score
+        } else result = 'WA'
+
+        testcaseResults.push({ testcaseId: t.testcaseId, result, score })
     }
 
-    // Chạy code
-    const sandboxResult = await runInSandbox(langConfig, job.code, job.input, TIMEOUT)
+    let finalStatus = 'ACCEPTED'
+    if (testcaseResults.some(t => t.result === 'CE')) finalStatus = 'CE'
+    else if (testcaseResults.some(t => t.result === 'TLE')) finalStatus = 'TLE'
+    else if (testcaseResults.some(t => t.result === 'MLE')) finalStatus = 'MLE'
+    else if (testcaseResults.every(t => t.result === 'IE')) finalStatus = 'IE'
+    else if (testcaseResults.some(t => t.result !== 'AC')) finalStatus = 'WA'
 
-    // Xác định kết quả
-    let result = 'IE'
-    let output = sandboxResult.stdout || ''
-
-    if (sandboxResult.error === 'CE') {
-        result = 'CE'
-        output = sandboxResult.stderr
-    } else if (sandboxResult.error === 'TLE') {
-        result = 'TLE'
-    } else if (sandboxResult.error === 'MLE') {
-        result = 'MLE'
-    } else if (compareOutputs(sandboxResult.stdout, job.expectedOutput)) {
-        result = 'AC'
-    } else {
-        result = 'WA'
-    }
-
-    // Gửi kết quả (có retry)
-    await sendResult(job, result, output, sandboxResult.stderr)
+    await sendResult(job.submissionId, totalScore, finalStatus, testcaseResults)
 }
 
-// Gửi kết quả về backend (retry 3 lần)
-async function sendResult(job, verdict, output, stderr = '') {
-    const payload = {
-        submissionId: job.submissionId,
-        testcaseId: job.testcaseId,
-        result: verdict,
-        output,
-        stderr,
-    }
-
+async function sendResult(submissionId, totalScore, finalStatus, testcaseResults) {
+    const payload = { submissionId, score: totalScore, status: finalStatus, testcases: testcaseResults }
     for (let i = 0; i < 3; i++) {
-        try {
-            await axios.post(BACKEND_URL, payload, { timeout: 5000 })
-            console.log(`Submission ${job.submissionId}, Test ${job.testcaseId}: ${verdict}`)
-            return
-        } catch (e) {
-            console.warn(`Retry ${i + 1}/3 gửi kết quả...`, e.message)
-            if (i === 2) {
-                console.error('Gửi kết quả thất bại sau 3 lần:', payload)
-                // TODO: lưu vào dead-letter queue
-            } else {
-                await new Promise(res => setTimeout(res, 1000 * (i + 1)))
-            }
-        }
+        try { await axios.post(BACKEND_RESULT_URL, payload, { timeout: 5000 }); return }
+        catch { if (i < 2) await new Promise(r => setTimeout(r, 1000 * (i + 1))) }
     }
 }
 
-// Main loop: dùng BRPOP (blocking)
 async function main() {
-    console.log('Waiting for jobs in judge_queue...')
-
     while (true) {
         try {
-            // BRPOP: block đến khi có job
             const result = await redis.brpop('judge_queue', 0)
-            const jobData = result[1] // [queue_name, data]
-
-            // Xử lý async, không block queue
-            processJob(jobData).catch(err => {
-                console.error('Unhandled error in processJob:', err)
-            })
-
-        } catch (err) {
-            console.error('Redis error:', err)
-            await new Promise(res => setTimeout(res, 5000)) // reconnect
+            processJob(result[1]).catch(err => console.error('[Worker] Error:', err))
+        } catch {
+            await new Promise(r => setTimeout(r, 5000))
         }
     }
 }
 
-main().catch(err => {
-    console.error('Worker crashed:', err)
-    process.exit(1)
-})
+main().catch(err => { console.error('[Worker] Crashed:', err); process.exit(1) })
