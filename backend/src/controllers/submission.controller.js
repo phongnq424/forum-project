@@ -3,7 +3,8 @@ const { SubmissionService } = require('../services/submission.service');
 const SubmissionController = {
     submit: async (req, res) => {
         try {
-            const { challenge_id, user_id, code, language_id } = req.body;
+            const { challenge_id, code, language_id } = req.body;
+            const user_id = req.user.id;
             if (!challenge_id || !user_id || !code || !language_id) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
@@ -18,12 +19,14 @@ const SubmissionController = {
 
     receiveResult: async (req, res) => {
         try {
-            const { submissionId, testcaseId, result, output, stderr } = req.body;
-            if (!submissionId || !testcaseId || !result) {
+            const { submissionId, score, status } = req.body;
+
+            if (!submissionId || score === undefined || !status) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
 
-            await SubmissionService.updateResult({ submissionId, testcaseId, result, output, stderr });
+            await SubmissionService.updateResult({ submissionId, score, status });
+
             res.status(200).json({ message: 'Result saved' });
         } catch (err) {
             console.error(err);

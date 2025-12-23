@@ -4,7 +4,7 @@ const ReactionController = {
     toggle: async (req, res) => {
         try {
             const userId = req.user.id
-            const { postId, type } = req.query  // dùng query cho GET toggle
+            const { postId, type } = req.query
             const result = await ReactionService.toggleReaction(userId, postId, type)
             res.status(200).json(result)
         } catch (e) {
