@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const { NotificationService } = require("./notification.service");
 
 const FollowerService = {
   toggleFollow: async (currentUserId, targetUserId) => {
@@ -25,12 +26,22 @@ const FollowerService = {
         },
       });
       return { followed: false };
-    } else {
+    }
+    else {
       await prisma.follower.create({
         data: {
           follow_id: currentUserId,
           followed_id: targetUserId,
         },
+      });
+
+      await NotificationService.create({
+        user_id: targetUserId,
+        actor_id: currentUserId,
+        type: 'FOLLOW',
+        title: 'Người theo dõi mới',
+        message: 'đã theo dõi bạn',
+        ref_id: currentUserId
       });
       return { followed: true };
     }

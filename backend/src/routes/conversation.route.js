@@ -10,7 +10,7 @@ const router = Router()
 router.post('/chat', rateLimitMiddleware, verifyToken, ChatController.createChat)
 router.get('/chat/me', verifyToken, ChatController.listChats)
 router.get('/chat/:conversationId/messages', verifyToken, ChatController.getMessages)
-router.post('/chat/:conversationId/message', rateLimitMiddleware, verifyToken, ChatController.sendMessage)
+router.post('/chat/messages', rateLimitMiddleware, verifyToken, ChatController.sendMessage)
 
 // GROUP
 router.post('/group', rateLimitMiddleware, verifyToken, GroupController.createGroup)

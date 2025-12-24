@@ -39,12 +39,23 @@ const ChallengeService = {
     },
 
     update: async (id, data) => {
-        return await prisma.challenge.update({ where: { id }, data });
+        try {
+            return await prisma.challenge.update({ where: { id }, data });
+        } catch (err) {
+            if (err.code === 'P2025') return null; // record not found
+            throw err;
+        }
     },
 
     delete: async (id) => {
-        return await prisma.challenge.delete({ where: { id } });
+        try {
+            return await prisma.challenge.delete({ where: { id } });
+        } catch (err) {
+            if (err.code === 'P2025') return null;
+            throw err;
+        }
     }
+
 };
 
 module.exports = { ChallengeService };

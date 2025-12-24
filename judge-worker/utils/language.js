@@ -5,7 +5,7 @@ export const languages = {
         compileCmd: ['g++', 'code.cpp', '-o', 'main', '-O2', '-static'],
         runCmd: ['./main'],
     },
-    python: {
+    py: {
         image: process.env.DOCKER_IMAGE_PYTHON || 'sandbox-python',
         filename: 'code.py',
         compileCmd: null,

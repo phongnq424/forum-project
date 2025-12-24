@@ -1,44 +1,48 @@
 const express = require("express");
 const router = express.Router();
 
-const authRoutes = require("./auth.route.js");
-const userRoutes = require("./user.route.js");
-const profileRoutes = require("./profile.route.js");
-const postRoutes = require("./post.route.js");
-const categoryRoutes = require("./category.route.js");
-const interestedTopicRoutes = require("./interestedTopic.route.js");
-const TopicRoutes = require("./topic.route.js");
-const CommentRoutes = require("./comment.route.js");
-const ReactionRoutes = require("./reaction.route.js");
-const FollowerRoutes = require("./follower.route.js");
-const PostSavedRoutes = require("./postSaved.route.js");
-const AlRoutes = require("./ai.route.js");
-const BlockRoutes = require("./block.route.js");
-const ChallengeRoutes = require("./challenge.route.js");
-const SubmissionRoutes = require("./submission.route.js");
-const TestcaseRoutes = require("./testcase.route.js");
-const LeaderboardRoutes = require("./leaderboard.route.js");
-const LanguageRoutes = require("./language.route.js");
-const CommentRatesRoutes = require("./commentRate.route.js");
+const authRoutes = require("./auth.route.js")
+const userRoutes = require("./user.route.js")
+const profileRoutes = require("./profile.route.js")
+const postRoutes = require("./post.route.js")
+const categoryRoutes = require("./category.route.js")
+const interestedTopicRoutes = require("./interestedTopic.route.js")
+const TopicRoutes = require("./topic.route.js")
+const CommentRoutes = require("./comment.route.js")
+const ReactionRoutes = require("./reaction.route.js")
+const FollowerRoutes = require("./follower.route.js")
+const PostSavedRoutes = require("./postSaved.route.js")
+const AlRoutes = require("./ai.route.js")
+const BlockRoutes = require("./block.route.js")
+const ChallengeRoutes = require("./challenge.route.js")
+const SubmissionRoutes = require("./submission.route.js")
+const TestcaseRoutes = require("./testcase.route.js")
+const LeaderboardRoutes = require("./leaderboard.route.js")
+const LanguageRoutes = require("./language.route.js")
+const CommentRatesRoutes = require("./commentRate.route.js")
+const InternalTestcaseRoutes = require("./internal.testcase.route.js")
+const ConversationRoutes = require("./conversation.route.js");
 
-router.use("/auth", authRoutes);
-router.use("/users", userRoutes);
-router.use("/profiles", profileRoutes);
-router.use("/posts", postRoutes);
-router.use("/categories", categoryRoutes);
-router.use("/interested-topics", interestedTopicRoutes);
-router.use("/topics", TopicRoutes);
-router.use("/comments", CommentRoutes);
-router.use("/reactions", ReactionRoutes);
-router.use("/followers", FollowerRoutes);
-router.use("/post-saved", PostSavedRoutes);
-router.use("/ai", AlRoutes);
-router.use("/blocks", BlockRoutes);
-router.use("/challenges", ChallengeRoutes);
-router.use("/submissions", SubmissionRoutes);
-router.use("/testcases", TestcaseRoutes);
-router.use("/leaderboards", LeaderboardRoutes);
-router.use("/languages", LanguageRoutes);
-router.use("/comment-rates", CommentRatesRoutes);
+router.use("/auth", authRoutes)
+router.use("/users", userRoutes)
+router.use("/profiles", profileRoutes)
+router.use("/posts", postRoutes)
+router.use("/categories", categoryRoutes)
+router.use("/interested-topics", interestedTopicRoutes)
+router.use("/topics", TopicRoutes)
+router.use("/comments", CommentRoutes)
+router.use("/reactions", ReactionRoutes)
+router.use("/followers", FollowerRoutes)
+router.use("/post-saved", PostSavedRoutes)
+router.use("/ai", AlRoutes)
+router.use("/blocks", BlockRoutes)
+router.use("/challenges", ChallengeRoutes)
+router.use("/submissions", SubmissionRoutes)
+router.use("/testcases", TestcaseRoutes)
+router.use("/leaderboards", LeaderboardRoutes)
+router.use("/languages", LanguageRoutes)
+router.use("/comment-rates", CommentRatesRoutes)
+router.use("/internal", InternalTestcaseRoutes)
+router.use("/conversations", ConversationRoutes);
 
 module.exports = router;

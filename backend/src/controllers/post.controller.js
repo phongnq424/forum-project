@@ -1,6 +1,7 @@
 const { PostService } = require('../services/post.service')
 const { upload } = require('../middlewares/upload.middleware')
 const { validateFiles } = require('../validators/file.validator')
+const { buildBlockContext } = require('../contexts/block.context')
 
 const PostController = {
     createPost: [
@@ -31,7 +32,8 @@ const PostController = {
     getPost: async (req, res) => {
         try {
             const viewerId = req.user?.id || null
-            const post = await PostService.getPostById(req.params.id, viewerId)
+            const blockContext = await buildBlockContext(viewerId)
+            const post = await PostService.getPostById(req.params.id, { viewerId, blockContext })
             if (!post) return res.status(404).json({ message: 'Post not found' })
             return res.status(200).json(post)
         } catch (e) {
@@ -88,7 +90,12 @@ const PostController = {
     list: async (req, res) => {
         try {
             const viewerId = req.user?.id || null
-            const result = await PostService.list(req.query, viewerId)
+            const blockContext = await buildBlockContext(viewerId)
+
+            const result = await PostService.list(req.query, {
+                viewerId,
+                blockContext
+            })
             return res.status(200).json(result)
         } catch (e) {
             return res.status(500).json({ message: e.message })
@@ -99,7 +106,12 @@ const PostController = {
         try {
             const ownerId = req.params.userId
             const viewerId = req.user?.id || null
-            const result = await PostService.getByUser(ownerId, req.query, viewerId)
+            const blockContext = await buildBlockContext(viewerId)
+            const result = await PostService.getByUser(
+                ownerId,
+                req.query,
+                { viewerId, blockContext }
+            )
             return res.status(200).json(result)
         } catch (e) {
             return res.status(500).json({ message: e.message })
@@ -110,7 +122,12 @@ const PostController = {
         try {
             const q = req.query.q || ''
             const viewerId = req.user?.id || null
-            const results = await PostService.searchPosts(q, viewerId)
+            const blockContext = await buildBlockContext(viewerId)
+
+            const results = await PostService.searchPosts(q, {
+                viewerId,
+                blockContext
+            })
             return res.status(200).json(results)
         } catch (e) {
             return res.status(500).json({ message: e.message })
