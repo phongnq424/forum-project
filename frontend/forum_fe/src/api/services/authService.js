@@ -1,5 +1,5 @@
 import General from "../../General/General";
-import toastHelper from "../../helper/ToastHelper";
+import tokenHelper from "../../helper/TokenHelper";
 import axiosClient from "../AxiosClient";
 
 const authService = {
@@ -8,16 +8,10 @@ const authService = {
       const res = await axiosClient.post("/auth/register", data);
       return res;
     } catch (error) {
-      throw General.createError(error);
-    }
-  },
 
-  verifyOTP: async function (data) {
-    try {
-      const res = await axiosClient.post("/auth/verify-otp", data);
-      return res;
-    } catch (error) {
-      throw General.createError(error);
+      const err = General.createError(error);
+      console.error("Login error:", err);
+      throw err;
     }
   },
 
@@ -37,10 +31,12 @@ const authService = {
         password: data.password,
       };
       const response = await axiosClient.post("/auth/login", request);
-      localStorage.setItem("token", response.token);
+      tokenHelper.setToken(response.token);
       return response;
     } catch (error) {
-      throw General.createError(error);
+      const err = General.createError(error);
+      console.error("Login error:", err);
+      throw err;
     }
   },
 
@@ -61,7 +57,7 @@ const authService = {
       var token = localStorage.getItem("token");
       const request = { token };
       const result = await axiosClient.post("/auth/logout", request);
-      localStorage.removeItem("token");
+      tokenHelper.removeToken();
       return result;
     } catch (error) {
       throw General.createError(error);

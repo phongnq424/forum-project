@@ -6,10 +6,11 @@ import AppContext from "./ui/Context/AppContext";
 import { useEffect, useState } from "react";
 import { useGetMe } from "./api/hooks/ProfileHook";
 import LoadingScreen from "./ui/pages/LoadingScreen";
+import tokenHelper from "./helper/TokenHelper";
 
 function App() {
   const [isLogged, setIsLogged] = useState(
-    (localStorage.getItem("token") || "") != ""
+    (tokenHelper.getToken() || "") != ""
   );
 
   const [flagGetCurrentUserAgain, getCurrentUserAgain] = useState(true);
