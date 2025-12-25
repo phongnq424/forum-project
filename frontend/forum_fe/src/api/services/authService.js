@@ -8,7 +8,6 @@ const authService = {
       const res = await axiosClient.post("/auth/register", data);
       return res;
     } catch (error) {
-
       const err = General.createError(error);
       console.error("Login error:", err);
       throw err;
@@ -31,7 +30,7 @@ const authService = {
         password: data.password,
       };
       const response = await axiosClient.post("/auth/login", request);
-      tokenHelper.setToken(response.token);
+      tokenHelper.saveToken(response.token);
       return response;
     } catch (error) {
       const err = General.createError(error);
@@ -54,7 +53,7 @@ const authService = {
 
   logOut: async function () {
     try {
-      var token = localStorage.getItem("token");
+      var token = tokenHelper.getToken();
       const request = { token };
       const result = await axiosClient.post("/auth/logout", request);
       tokenHelper.removeToken();

@@ -2,7 +2,7 @@ import { Search, MoreHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-interface Conversation {
+export interface Conversation {
   id: string;
   name: string;
   avatar: string;
@@ -11,7 +11,7 @@ interface Conversation {
   unread: boolean;
 }
 
-interface ConversationListProps {
+export interface ConversationListProps {
   conversations: Conversation[];
   activeId: string;
   onSelect: (id: string) => void;

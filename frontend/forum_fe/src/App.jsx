@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useGetMe } from "./api/hooks/ProfileHook";
 import LoadingScreen from "./ui/pages/LoadingScreen";
 import tokenHelper from "./helper/TokenHelper";
+import { connectSocket, disconnectSocket } from "./socket";
 
 function App() {
   const [isLogged, setIsLogged] = useState(
@@ -44,6 +45,14 @@ function App() {
     },
     [flagGetCurrentUserAgain, isLogged]
   );
+
+  useEffect(() => {
+    connectSocket();
+
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
 
   return (
     <AppContext.Provider
