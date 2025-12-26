@@ -2,11 +2,12 @@ const { Router } = require('express')
 const { NotificationController } = require('../controllers/notification.controller')
 const { verifyToken } = require('../middlewares/auth.middleware')
 const { rateLimitMiddleware } = require('../middlewares/rateLimit.middleware')
+const { cache } = require("../middlewares/cache.middleware");
 
 const router = Router()
 
-router.get('/', verifyToken, NotificationController.list)
-router.get('/unread-count', verifyToken, NotificationController.unreadCount)
+router.get('/', verifyToken, cache, NotificationController.list)
+router.get('/unread-count', verifyToken, cache, NotificationController.unreadCount)
 router.patch('/:id/read', rateLimitMiddleware, verifyToken, NotificationController.markRead)
 router.patch('/read-all', rateLimitMiddleware, verifyToken, NotificationController.markAllRead)
 

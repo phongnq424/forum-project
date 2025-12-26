@@ -6,6 +6,18 @@ const FollowerService = {
   toggleFollow: async (currentUserId, targetUserId) => {
     if (currentUserId === targetUserId)
       throw new Error("Cannot follow yourself");
+    const blocked = await prisma.block.findFirst({
+      where: {
+        OR: [
+          { blocker_id: currentUserId, blocked_id: targetUserId },
+          { blocker_id: targetUserId, blocked_id: currentUserId }
+        ]
+      }
+    })
+
+    if (blocked) {
+      throw new Error("Cannot follow due to block")
+    }
 
     const existing = await prisma.follower.findUnique({
       where: {

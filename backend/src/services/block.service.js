@@ -28,12 +28,28 @@ const BlockService = {
             return { blocked: false }
         }
 
-        await prisma.block.create({
-            data: {
-                blocker_id: currentUserId,
-                blocked_id: targetUserId
-            }
-        })
+        await prisma.$transaction([
+            prisma.block.create({
+                data: {
+                    blocker_id: currentUserId,
+                    blocked_id: targetUserId
+                }
+            }),
+            prisma.follower.deleteMany({
+                where: {
+                    OR: [
+                        {
+                            follow_id: currentUserId,
+                            followed_id: targetUserId
+                        },
+                        {
+                            follow_id: targetUserId,
+                            followed_id: currentUserId
+                        }
+                    ]
+                }
+            })
+        ])
 
         return { blocked: true }
     },
