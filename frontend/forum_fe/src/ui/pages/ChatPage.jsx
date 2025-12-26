@@ -60,7 +60,7 @@ function ChatPage() {
             content: returnedMessage.content,
             isYours:
               returnedMessage.Sender.id == appContext?.currentUser?.user_id,
-            time: returnedMessage.time,
+            time: new Date(returnedMessage.sent_at).toLocaleString(),
             status: returnedMessage.is_read ? "read" : "sent",
           };
         }
@@ -97,7 +97,7 @@ function ChatPage() {
       id: "",
       content: content,
       isYours: true,
-      time: null,
+      time: "Sending...",
       status: "sending",
     };
 
@@ -113,6 +113,7 @@ function ChatPage() {
               return {
                 ...msg,
                 status: "failed",
+                time: "Failed",
               };
             }
             return msg;
@@ -179,7 +180,7 @@ function ChatPage() {
               id: msg.id,
               content: msg.content,
               isYours: msg.Sender.id == appContext?.currentUser?.user_id,
-              time: msg.time,
+              time: new Date(msg.sent_at).toLocaleString(),
               status: msg.is_read ? "read" : "sent",
             };
           })

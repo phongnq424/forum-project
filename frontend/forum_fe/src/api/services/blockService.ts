@@ -21,8 +21,19 @@ const blockService = {
           page: page,
         },
       });
-      console.log(response);
-      return null;
+      //
+      const blockedUsers = response.data.map(function (bl: any, i: number) {
+        return {
+          blockedInfoId: bl?.id,
+          otherId: bl?.follow_id,
+          meId: bl?.follower?.id,
+          otherUsername: bl?.username,
+          otherProfile: bl?.follower?.Profile,
+          isBlocked: true,
+        };
+      });
+      //
+      return blockedUsers;
     } catch (error: any) {
       console.error(General.createError(error));
       throw General.createError(error);

@@ -367,6 +367,7 @@ function RenderConnections() {
   const toggleFollow = useToggleFollow();
   const appContext = useContext(AppContext);
   const removeFollower = useRemoveFollower();
+  const blockUser = useBlockUser();
   useEffect(
     function () {
       if (toggleFollow.isSuccess) {
@@ -402,8 +403,8 @@ function RenderConnections() {
   useEffect(
     function () {
       if (getFollower.isSuccess) {
-        setPagination(getFollower.data.pagination);
-        setUsers(getFollower.data.data);
+        setPagination(getFollower.data?.pagination);
+        setUsers(getFollower.data?.data);
       }
 
       if (getFollower.isError) {
@@ -411,6 +412,21 @@ function RenderConnections() {
       }
     },
     [getFollower.isSuccess, getFollower.isError, getFollower.data]
+  );
+
+  useEffect(
+    function () {
+      if (getBlocked.isSuccess) {
+        console.log(getBlocked.data);
+
+        setUsers(getBlocked.data);
+      }
+
+      if (getBlocked.isError) {
+        toastHelper.error(getBlocked.error.message);
+      }
+    },
+    [getBlocked.isSuccess, getBlocked.isError, getBlocked.data]
   );
 
   useEffect(
@@ -428,6 +444,23 @@ function RenderConnections() {
       }
     },
     [removeFollower.isError, removeFollower.isSuccess, removeFollower.data]
+  );
+
+  useEffect(
+    function () {
+      if (blockUser.isSuccess) {
+        return prev.map(function (item) {
+          console.log(blockUser.data);
+          // return toggleFollow.data.followedId === item.otherId
+          //   ? { ...item, isFollowing: toggleFollow.data.followed }
+          //   : { ...item };
+        });
+      }
+      if (blockUser.isError) {
+        toastHelper.error(blockUser.error.message);
+      }
+    },
+    [blockUser.isError, blockUser.isSuccess, blockUser.data]
   );
 
   const navigate = useNavigate();
@@ -465,12 +498,13 @@ function RenderConnections() {
       {users?.length >= 1 && (
         <div className="grid grid-cols-2 gap-4 py-10">
           {users.map(function (item, index) {
+            console.log(item);
             const info = {
-              username: item.otherUsername,
-              avatarUrl: item.otherProfile.avatar,
-              userId: item.otherId,
-              isFollowing: item.isFollowing,
-              isFollowMe: item.isFollowMe,
+              // username: item.otherUsername,
+              // avatarUrl: item.otherProfile.avatar,
+              // userId: item.otherId,
+              // isFollowing: item.isFollowing,
+              // isFollowMe: item.isFollowMe,
             };
             return (
               <UserFollowCard
@@ -492,6 +526,9 @@ function RenderConnections() {
                 }}
                 onRemoveClick={function (userId) {
                   removeFollower.mutate({ followerId: userId });
+                }}
+                onBlockClick={function (userId) {
+                  blockUser.mutate({ targetUserId: userId });
                 }}
               />
             );

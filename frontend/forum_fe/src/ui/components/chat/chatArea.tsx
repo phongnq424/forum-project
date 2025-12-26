@@ -114,13 +114,14 @@ const ChatArea = ({
             )}
             <div
               className={cn(
-                "max-w-md px-4 py-3 rounded-2xl",
+                "max-w-md px-4 pt-3 pb-1 rounded-2xl",
                 message.isYours
                   ? "bg-proPurple text-white rounded-br-md"
                   : "bg-proPurple text-white rounded-bl-md"
               )}
             >
               <p className="text-sm leading-relaxed">{message.content}</p>
+              <p className="text-[10px] text-white/40">{message.time}</p>
             </div>
             {message.isYours && (
               <div className="text-proPurple">

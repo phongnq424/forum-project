@@ -16,7 +16,7 @@ export const useGetBlockUser = function (
   isEnable = true
 ) {
   return useQuery({
-    queryKey: ["followers", userId, page, tabId],
+    queryKey: ["blocked-users", userId, page, tabId],
     queryFn: function (context: any) {
       return blockService.getBlockedUsers(
         context.queryKey[1],

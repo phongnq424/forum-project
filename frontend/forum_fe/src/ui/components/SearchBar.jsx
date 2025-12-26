@@ -5,9 +5,7 @@ import { useState } from "react";
 
 const SearchBar = ({ onChanged, onSearch }) => {
   if (!onChanged) {
-    onChanged = (value) => {
-      console.log(value);
-    };
+    onChanged = (value) => {};
   }
   const options = [
     {
