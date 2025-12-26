@@ -96,7 +96,16 @@ async function processJob(jobData) {
 async function sendResult(submissionId, totalScore, finalStatus, testcaseResults) {
     const payload = { submissionId, score: totalScore, status: finalStatus, testcases: testcaseResults }
     for (let i = 0; i < 3; i++) {
-        try { await axios.post(BACKEND_RESULT_URL, payload, { timeout: 5000 }); return }
+        try {
+            await axios.post(
+                BACKEND_RESULT_URL,
+                payload,
+                {
+                    timeout: 5000,
+                    headers: { Authorization: `Bearer ${INTERNAL_TOKEN}` }
+                }
+            ); return
+        }
         catch { if (i < 2) await new Promise(r => setTimeout(r, 1000 * (i + 1))) }
     }
 }
