@@ -51,6 +51,26 @@ const SubmissionController = {
         } catch (err) {
             res.status(500).json({ message: err.message });
         }
+    },
+
+    listByUser: async (req, res) => {
+        try {
+            const user_id = req.user.id;
+            const subs = await SubmissionService.listByUser(user_id);
+            res.json(subs);
+        } catch (err) {
+            res.status(500).json({ message: err.message });
+        }
+    },
+    listByUserAndChallenge: async (req, res) => {
+        try {
+            const user_id = req.user.id;
+            const challenge_id = req.params.challenge_id;
+            const subs = await SubmissionService.listByUserAndChallenge(user_id, challenge_id);
+            res.json(subs);
+        } catch (err) {
+            res.status(500).json({ message: err.message });
+        }
     }
 };
 

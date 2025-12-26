@@ -107,13 +107,12 @@ const AuthService = {
                     is_deleted: false
                 }
             })
-
+            if (!user) throw new Error('Invalid username or password');
             if (user.status === 'BANNED')
                 throw new Error('Your account has been banned')
             if (user.status !== 'ACTIVE')
                 throw new Error('Your account is not active')
 
-            if (!user) throw new Error('Invalid username or password');
             const valid = await bcrypt.compare(password, user.password_hash);
             if (!valid) throw new Error('Invalid username or password');
 

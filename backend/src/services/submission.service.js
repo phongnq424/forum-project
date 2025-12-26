@@ -62,17 +62,125 @@ const SubmissionService = {
     listByChallenge: async (challenge_id) => {
         return await prisma.submission.findMany({
             where: { challenge_id },
-            include: { User: true, Language: true },
-            orderBy: { submitted_at: 'desc' }
-        });
+            orderBy: { submitted_at: 'desc' },
+            include: {
+                User: {
+                    select: {
+                        id: true,
+                        email: true,
+                        username: true,
+                        Profile: {
+                            select: {
+                                fullname: true,
+                                avatar: true
+                            }
+                        }
+                    }
+                },
+                Language: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true
+                    }
+                }
+            }
+        })
+    },
+    listByUser: async (user_id) => {
+        return await prisma.submission.findMany({
+            where: { user_id },
+            orderBy: { submitted_at: 'desc' },
+            include: {
+                Challenge: {
+                    select: {
+                        id: true,
+                        title: true,
+                        time_limit: true
+                    }
+                },
+                Language: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true
+                    }
+                }
+            }
+        })
+    },
+
+    listByUserAndChallenge: async (user_id, challenge_id) => {
+        return await prisma.submission.findMany({
+            where: { user_id, challenge_id },
+            orderBy: { submitted_at: 'desc' },
+            include: {
+                User: {
+                    select: {
+                        id: true,
+                        email: true,
+                        username: true,
+                        Profile: {
+                            select: {
+                                fullname: true,
+                                avatar: true
+                            }
+                        }
+                    }
+                },
+                Challenge: {
+                    select: {
+                        id: true,
+                        title: true,
+                        time_limit: true
+                    }
+                },
+                Language: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true
+                    }
+                }
+            }
+        })
     },
 
     getById: async (id) => {
         return await prisma.submission.findUnique({
             where: { id },
-            include: { Challenge: true, User: true, Language: true }
-        });
+            include: {
+                Challenge: {
+                    select: {
+                        id: true,
+                        title: true,
+                        time_limit: true
+                    }
+                },
+                User: {
+                    select: {
+                        id: true,
+                        email: true,
+                        username: true,
+                        Profile: {
+                            select: {
+                                fullname: true,
+                                avatar: true
+                            }
+                        }
+                    }
+                },
+                Language: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true
+                    }
+                }
+            }
+        })
     }
+
 };
 
 module.exports = { SubmissionService };
