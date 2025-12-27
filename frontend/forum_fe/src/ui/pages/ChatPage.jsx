@@ -13,9 +13,6 @@ import {
   useSendMessage,
 } from "@/api/hooks/chatHook.ts";
 import LoadingScreen from "./LoadingScreen.jsx";
-import { is } from "zod/v4/locales";
-import { set } from "date-fns";
-
 function timeAgo(dateString) {
   const now = new Date();
   const past = new Date(dateString);
@@ -44,29 +41,30 @@ function ChatPage() {
   const onNewMessage = function (arg) {
     console.log("New message received from socket:", arg);
     const returnedMessage = arg;
-    setMessages((prev) =>
-      prev.map((msg, i) => {
-        if (
-          msg.status === "sending" &&
-          msg.content === returnedMessage.content
-        ) {
-          return {
-            sender: {
-              id: returnedMessage.Sender.id,
-              username: returnedMessage.Sender.username,
-              avatar: returnedMessage.Sender.Profile.avatar,
-            },
-            id: returnedMessage.id,
-            content: returnedMessage.content,
-            isYours:
-              returnedMessage.Sender.id == appContext?.currentUser?.user_id,
-            time: new Date(returnedMessage.sent_at).toLocaleString(),
-            status: returnedMessage.is_read ? "read" : "sent",
-          };
-        }
-        return msg;
-      })
-    );
+
+    if (returnedMessage.conversationId) {
+      return;
+    }
+
+    if (!(returnedMessage.Sender?.id === appContext?.currentUser?.user_id)) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: {
+            id: returnedMessage.Sender?.id,
+            username: returnedMessage.Sender?.username,
+            avatar: returnedMessage.Sender?.Profile?.avatar,
+          },
+          id: returnedMessage.id,
+          content: returnedMessage.content,
+          isYours:
+            returnedMessage.Sender?.id === appContext?.currentUser?.user_id,
+          time: new Date(returnedMessage.sent_at).toLocaleString(),
+          status: returnedMessage.is_read ? "read" : "sent",
+        },
+      ]);
+      return;
+    }
   };
 
   useEffect(function () {
@@ -85,7 +83,7 @@ function ChatPage() {
 
   const handleSendMessage = function (content) {
     sendMessage.mutate({
-      toUserId: activeConversation?.peer.id || "",
+      toUserId: activeConversation?.peer?.id || "",
       content: content,
     });
     const newMessage = {
@@ -106,10 +104,32 @@ function ChatPage() {
 
   useEffect(
     function () {
+      if (sendMessage.isSuccess) {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (
+              msg.status === "sending" &&
+              msg.content === sendMessage.data.message.content
+            ) {
+              return {
+                ...msg,
+                status: "sent",
+                time: new Date(
+                  sendMessage.data.message.sent_at
+                ).toLocaleString(),
+              };
+            }
+            return msg;
+          })
+        );
+      }
       if (sendMessage.isError) {
         setMessages((prev) =>
           prev.map((msg) => {
-            if (msg.status === "sending") {
+            if (
+              msg.status === "sending" &&
+              msg.content === sendMessage.data.content
+            ) {
               return {
                 ...msg,
                 status: "failed",
@@ -143,12 +163,12 @@ function ChatPage() {
         setMyConversations(
           getConversations.data.map(function (con, i) {
             return {
-              id: con.conversationId,
-              name: con.name || con.peer.username,
-              avatar: con.avatar,
-              lastMessage: con.latestMsg.content,
-              time: timeAgo(con.latestMsg.sent_at),
-              unread: !con.is_read,
+              id: con?.conversationId,
+              name: con?.name || con?.peer?.username,
+              avatar: con?.avatar,
+              lastMessage: con?.latestMsg?.content,
+              time: timeAgo(con?.latestMsg?.sent_at),
+              unread: !con?.is_read,
             };
           })
         );
@@ -193,7 +213,7 @@ function ChatPage() {
     [getMessages.data, getMessages.isSuccess, getMessages.isError]
   );
 
-  if (getConversations.isLoading || getMessages.isLoading) {
+  if (getConversations.isLoading) {
     return <LoadingScreen />;
   }
 
@@ -203,24 +223,35 @@ function ChatPage() {
         <ConversationList
           conversations={myConversations}
           activeId={activeConversation?.conversationId || ""}
-          onSelect={setActiveConversation}
-        />
-        <ChatArea
-          contactName={
-            activeConversation?.name ??
-            activeConversation?.peer?.username ??
-            "Unknown"
+          onSelect={(id) =>
+            setActiveConversation(
+              getConversations.data.find((c) => c.conversationId === id) ??
+                getConversations.data[0]
+            )
           }
-          contactAvatar={activeConversation?.avatar}
-          messages={messages}
-          isBlocked={isBlocked}
-          onUnblock={() => setIsBlocked(false)}
-          onHandleSendMessage={handleSendMessage}
         />
-        <ProfilePanel
-          name="Mohamed Salah"
-          avatar="https://i.pravatar.cc/150?img=12"
-        />
+
+        {getMessages.isLoading && <LoadingScreen />}
+        {!getMessages.isLoading && (
+          <>
+            <ChatArea
+              contactName={
+                activeConversation?.name ??
+                activeConversation?.peer?.username ??
+                "Unknown"
+              }
+              contactAvatar={activeConversation?.avatar}
+              messages={messages}
+              isBlocked={isBlocked}
+              onUnblock={() => setIsBlocked(false)}
+              onHandleSendMessage={handleSendMessage}
+            />
+            <ProfilePanel
+              name="Mohamed Salah"
+              avatar="https://i.pravatar.cc/150?img=12"
+            />
+          </>
+        )}
       </div>
     </div>
   );

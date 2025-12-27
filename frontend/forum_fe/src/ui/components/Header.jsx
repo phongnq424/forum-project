@@ -4,13 +4,10 @@ import NavigationBar from "./NavigationBar";
 import { useContext, useEffect, useRef, useState } from "react";
 import Button from "../elements/Button";
 import AppContext from "../Context/AppContext";
-import CustomDropDown from "./CustomDropDown/CustomDropDown";
 import General from "../../General/General";
 import CustomDropDown3 from "./CustomDropDown/CustomDropDown3";
-import { fa } from "zod/v4/locales";
 import { useLogOut } from "../../api/hooks/AuthenticationHook";
 import { toast } from "react-toastify";
-import toastHelper from "../../helper/ToastHelper";
 
 function Header({ variant = "transparent", className = "" }) {
   const variants = {

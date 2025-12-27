@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  use,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import CategoryBar from "../components/CategoryBar";
 import ProfileCard from "../components/ProfileCard";
 import { BsPostcard } from "react-icons/bs";
@@ -13,7 +20,9 @@ import {
   useSavePost,
 } from "../../api/hooks/postHook";
 
-import { useGetMe, useGetProfileByUserId } from "../../api/hooks/ProfileHook";
+import { useCreateChat } from "../../api/hooks/chatHook";
+
+import { useGetProfileByUserId } from "../../api/hooks/ProfileHook";
 import LoadingScreen from "./LoadingScreen";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -31,7 +40,7 @@ import {
   useRemoveFollower,
   useToggleFollow,
 } from "../../api/hooks/followHook";
-import { useBlockUser, useGetBlockUser } from "../../api/hooks/blockHook";
+import { useBlockUser } from "../../api/hooks/blockHook";
 
 const ProfilePageContext = createContext();
 
@@ -39,9 +48,29 @@ const ProfilePage = () => {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
   const toggleFollow = useToggleFollow();
+  const createChat = useCreateChat();
 
   const userId = query.get("id") || "";
   const [currentProfile, setCurrentProfile] = useState(null);
+  const navigate = useNavigate();
+
+  function handleClickChat(userId) {
+    createChat.mutate({ toUserId: userId });
+  }
+
+  useEffect(
+    function () {
+      if (createChat.isSuccess) {
+        navigate("/chat", {
+          state: { conversationId: createChat.data.id },
+        });
+      }
+      if (createChat.isError) {
+        toastHelper.error(createChat.error.message);
+      }
+    },
+    [createChat.isSuccess, createChat.isError, createChat.data]
+  );
 
   const categories = [
     { id: 1, name: "Posts", icon: <BsPostcard className="text-[24px]" /> },
@@ -101,7 +130,7 @@ const ProfilePage = () => {
     [blockUser.isError, blockUser.isSuccess, blockUser.data]
   );
 
-  if (getProfile.isLoading) {
+  if (getProfile.isLoading || createChat.isPending) {
     return <LoadingScreen></LoadingScreen>;
   }
 
@@ -119,6 +148,7 @@ const ProfilePage = () => {
               handleToggleBlock={(id) => {
                 blockUser.mutate({ targetUserId: id });
               }}
+              handleClickChat={(userId) => handleClickChat(userId)}
             />
             <CategoryBar
               categories={categories}
@@ -171,7 +201,7 @@ function RenderPosts() {
   useEffect(
     function () {
       if (getPostOfUser.isError) {
-        toastHelper.error(getMyPosts.error.message);
+        toastHelper.error(getPostOfUser.error.message);
       }
 
       if (getPostOfUser.isSuccess) {
@@ -328,11 +358,6 @@ function RenderConnections() {
       name: "Followers",
     },
 
-    BLOCKED: {
-      id: 2,
-      name: "Blocked",
-    },
-
     asArray() {
       return Object.values(this).filter((item) => typeof item != "function");
     },
@@ -357,17 +382,10 @@ function RenderConnections() {
     selectedTab?.id === options.FOLLOWERS.id
   );
 
-  const getBlocked = useGetBlockUser(
-    profilePageContext.currentUserProfile?.user_id,
-    currentPage,
-    selectedTab?.id,
-    selectedTab?.id === options.BLOCKED.id
-  );
-
   const toggleFollow = useToggleFollow();
   const appContext = useContext(AppContext);
   const removeFollower = useRemoveFollower();
-  const blockUser = useBlockUser();
+
   useEffect(
     function () {
       if (toggleFollow.isSuccess) {
@@ -416,21 +434,6 @@ function RenderConnections() {
 
   useEffect(
     function () {
-      if (getBlocked.isSuccess) {
-        console.log(getBlocked.data);
-
-        setUsers(getBlocked.data);
-      }
-
-      if (getBlocked.isError) {
-        toastHelper.error(getBlocked.error.message);
-      }
-    },
-    [getBlocked.isSuccess, getBlocked.isError, getBlocked.data]
-  );
-
-  useEffect(
-    function () {
       if (removeFollower.isSuccess) {
         setUsers(function (prev) {
           return prev.filter(
@@ -444,23 +447,6 @@ function RenderConnections() {
       }
     },
     [removeFollower.isError, removeFollower.isSuccess, removeFollower.data]
-  );
-
-  useEffect(
-    function () {
-      if (blockUser.isSuccess) {
-        return prev.map(function (item) {
-          console.log(blockUser.data);
-          // return toggleFollow.data.followedId === item.otherId
-          //   ? { ...item, isFollowing: toggleFollow.data.followed }
-          //   : { ...item };
-        });
-      }
-      if (blockUser.isError) {
-        toastHelper.error(blockUser.error.message);
-      }
-    },
-    [blockUser.isError, blockUser.isSuccess, blockUser.data]
   );
 
   const navigate = useNavigate();
@@ -489,23 +475,23 @@ function RenderConnections() {
 
       {users?.length < 1 && (
         <p className="text-white text-center text-2xl py-10">
-          {selectedTab?.id === options.FOLLOWERS.id
-            ? "No follower available"
-            : "No following available"}
+          {selectedTab?.id === options.FOLLOWERS.id && "No follower available"}
+          {selectedTab?.id === options.FOLLOWING.id && "No following available"}
         </p>
       )}
 
       {users?.length >= 1 && (
         <div className="grid grid-cols-2 gap-4 py-10">
           {users.map(function (item, index) {
-            console.log(item);
             const info = {
-              // username: item.otherUsername,
-              // avatarUrl: item.otherProfile.avatar,
-              // userId: item.otherId,
-              // isFollowing: item.isFollowing,
-              // isFollowMe: item.isFollowMe,
+              username: item.otherUsername,
+              avatarUrl: item.otherProfile.avatar,
+              userId: item.otherId,
+              isFollowing: item.isFollowing,
+              isFollowMe: item.isFollowMe,
+              isBlocked: item.isBlocked,
             };
+
             return (
               <UserFollowCard
                 key={index}

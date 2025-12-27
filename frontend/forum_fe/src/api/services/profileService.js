@@ -5,6 +5,7 @@ import axiosClient from "../AxiosClient";
 const profileService = {
   getMe: async function () {
     try {
+      console.log(new Date().toLocaleString());
       const response = await axiosClient.get("/profiles/me");
       const result = {
         user_id: response.user_id,
@@ -21,6 +22,7 @@ const profileService = {
         isFollowing: response.isFollowing,
         gender: response.gender,
       };
+      console.log("KQ:", result);
       return result;
     } catch (error) {
       throw General.createError(error);
@@ -73,6 +75,17 @@ const profileService = {
         isBlocked: response?.isBlock ?? false,
       };
       return result;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
+  searchUsers: async function (query) {
+    try {
+      const response = await axiosClient.get("/profiles/search/all", {
+        params: { q: query },
+      });
+      return response;
     } catch (error) {
       throw General.createError(error);
     }

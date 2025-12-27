@@ -22,7 +22,7 @@ function SignInForm() {
     function (response) {
       toastHelper.success(response.message);
       appContext.setIsLogged(true);
-
+      appContext.setToken(response.token);
       navigate("/");
     },
 

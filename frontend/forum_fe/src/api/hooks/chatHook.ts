@@ -15,6 +15,7 @@ export function useGetMessages(conversationId: string) {
     queryFn: (context) =>
       chatService.getMessages(context.queryKey[1] as string),
     enabled: !!conversationId,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -68,6 +69,14 @@ export function useSendMessage() {
       content: string;
     }) {
       return chatService.sendMessage(toUserId, content);
+    },
+  });
+}
+
+export function useCreateChat() {
+  return useMutation({
+    mutationFn: function ({ toUserId }: { toUserId: string }) {
+      return chatService.createChat(toUserId);
     },
   });
 }

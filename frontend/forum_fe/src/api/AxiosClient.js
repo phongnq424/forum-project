@@ -13,7 +13,15 @@ axiosClient.interceptors.request.use(function (config) {
   const token = tokenHelper.getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization;
   }
+
+  console.log("➡️ Request:", {
+    url: config.url,
+    method: config.method,
+    authorization: config.headers.Authorization,
+  });
   return config;
 });
 

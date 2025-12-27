@@ -4,6 +4,18 @@ import axiosClient from "../AxiosClient";
 const chatService = {
   /* ================= CHAT 1-1 ================= */
 
+  createChat: async function (toUserId: string) {
+    try {
+      const request = {
+        userId: toUserId,
+      };
+      const response = await axiosClient.post("conversations/chat", request);
+      return response;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
   getMyChats: async function () {
     try {
       const response = await axiosClient.get("conversations/chat/me");

@@ -30,6 +30,7 @@ const authService = {
         password: data.password,
       };
       const response = await axiosClient.post("/auth/login", request);
+
       tokenHelper.saveToken(response.token);
       return response;
     } catch (error) {

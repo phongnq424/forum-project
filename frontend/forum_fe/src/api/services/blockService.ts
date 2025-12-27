@@ -16,24 +16,28 @@ const blockService = {
 
   getBlockedUsers: async function (userId: string, page: number) {
     try {
-      const response = await axiosClient.get(`/blocks/blocked/${userId}`, {
+      const response = await axiosClient.get(`/blocks/blocked`, {
         params: {
           page: page,
         },
       });
+
       //
       const blockedUsers = response.data.map(function (bl: any, i: number) {
         return {
-          blockedInfoId: bl?.id,
-          otherId: bl?.follow_id,
-          meId: bl?.follower?.id,
+          blockedInfoId: "",
+          otherId: bl?.id,
+          meId: "",
           otherUsername: bl?.username,
-          otherProfile: bl?.follower?.Profile,
+          otherProfile: bl?.Profile,
           isBlocked: true,
         };
       });
       //
-      return blockedUsers;
+      return {
+        data: blockedUsers,
+        pagination: (response as any).pagination,
+      };
     } catch (error: any) {
       console.error(General.createError(error));
       throw General.createError(error);

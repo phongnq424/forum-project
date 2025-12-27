@@ -14,8 +14,10 @@ function App() {
     (tokenHelper.getToken() || "") != ""
   );
 
+  const [token, setToken] = useState(tokenHelper.getToken() || "");
+
   const [flagGetCurrentUserAgain, getCurrentUserAgain] = useState(true);
-  const getMe = useGetMe(false);
+  const getMe = useGetMe(token, isLogged);
   const [currentUser, setCurrentUser] = useState(null);
 
   const nav = useNavigate();
@@ -38,7 +40,6 @@ function App() {
   useEffect(
     function () {
       if (isLogged) {
-        getMe.refetch();
       } else {
         setCurrentUser(null);
       }
@@ -61,6 +62,7 @@ function App() {
         setIsLogged,
         currentUser: isLogged ? currentUser : null,
         getCurrentUserAgain,
+        setToken,
       }}
     >
       <div className="bg-primary min-h-screen overflow-y-hidden">

@@ -15,6 +15,7 @@ const ProfileCard = ({
   isFollowing = false,
   handleToggleFollow = null,
   handleToggleBlock = null,
+  handleClickChat = null,
   isBlocked,
 }) => {
   const navigate = useNavigate();
@@ -78,6 +79,15 @@ const ProfileCard = ({
                   }`}
                 >
                   {isFollowing ? "Following" : "Follow"}
+                </button>
+
+                <button
+                  onClick={function () {
+                    handleClickChat?.(user_id);
+                  }}
+                  className={`min-w-fit mt-5 text-lg gap-2 flex px-5 py-1 rounded-xl items-center bg-proPurple`}
+                >
+                  Chat
                 </button>
 
                 <button
