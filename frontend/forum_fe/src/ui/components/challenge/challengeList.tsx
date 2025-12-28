@@ -4,7 +4,31 @@ import { ChallengeCard } from "./challengeCard";
 import { challenges } from "./mockData";
 import type { Difficulty, Status } from "./mockData";
 
-export default function ChallengeList() {
+export interface Challenge {
+  id: number | string;
+  title: string;
+  slug: string;
+  difficulty: Difficulty;
+  createAt: Date;
+
+  acceptanceRate: number;
+  status: Status;
+  description: string;
+  inputDescription: string;
+  outputDescription: string;
+  constraints: string[];
+  examples: {
+    input: string;
+    output: string;
+    explanation?: string;
+  }[];
+}
+
+export type ChallengeListProps = {
+  challenges: Challenge[];
+};
+
+export default function ChallengeList({ challenges }: ChallengeListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] =
     useState<Difficulty | null>(null);
@@ -41,7 +65,7 @@ export default function ChallengeList() {
 
   return (
     <>
-      <div className="min-h-(--view-h) bg-transparent px-(--primary-padding)">
+      <div className="flex-1">
         <main className="container py-8">
           {/* Stats Header */}
           <div className="mb-8">
@@ -86,7 +110,7 @@ export default function ChallengeList() {
             </aside> */}
 
             {/* Challenge List */}
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 grid grid-cols-2 gap-3">
               {filteredChallenges.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   No challenges match your filters.

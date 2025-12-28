@@ -15,7 +15,7 @@ export function DifficultyBadge({ difficulty }: DifficultyBadgeProps) {
   const variant = variantMap[difficulty.toLowerCase()] || "easy";
 
   return (
-    <Badge className="border-none" variant={variant}>
+    <Badge className="border-none text-sm" variant={variant}>
       {difficulty}
     </Badge>
   );

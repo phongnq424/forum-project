@@ -2,26 +2,6 @@ export type Difficulty = "Easy" | "Medium" | "Hard";
 export type Status = "Solved" | "Attempted" | "Not Started";
 export type Language = "cpp" | "java" | "python" | "javascript";
 
-export interface Challenge {
-  id: number | string;
-  title: string;
-  slug: string;
-  difficulty: Difficulty;
-  createAt: Date;
-
-  acceptanceRate: number;
-  status: Status;
-  description: string;
-  inputDescription: string;
-  outputDescription: string;
-  constraints: string[];
-  examples: {
-    input: string;
-    output: string;
-    explanation?: string;
-  }[];
-}
-
 export interface TestCase {
   id: number;
   input: string;

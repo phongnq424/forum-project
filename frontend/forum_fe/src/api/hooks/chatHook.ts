@@ -114,3 +114,10 @@ export function useGetGroups(isEnable: boolean = true) {
     enabled: isEnable,
   });
 }
+
+export function useLeaveGroup() {
+  return useMutation({
+    mutationFn: ({ conversationId }: { conversationId: string }) =>
+      chatService.leaveGroup(conversationId),
+  });
+}

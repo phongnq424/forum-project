@@ -4,7 +4,7 @@ import HeroPage from "../ui/pages/HeroPage";
 import DiscussPage from "../ui/pages/DiscussPage";
 import ContactPage from "../ui/pages/ContactPage";
 import ChatPage from "../ui/pages/ChatPage";
-import ChallengesPage from "../ui/pages/ChallengesPage";
+import ChallengesPage from "../ui/pages/ChallengesPage.tsx";
 import SignInPage from "../ui/pages/SignInPage";
 import SignUpPage from "../ui/pages/SignUpPage";
 import VerifyOTPPage from "../ui/pages/VerifyOTPPage";

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyBadge } from "@/ui/components/challenge/difficultyBadge";
 import { StatusIcon } from "@/ui/components/challenge/statusIcon";
-import type { Challenge } from "./mockData";
+import type { Challenge } from "./challengeList";
 import { cn } from "@/lib/utils";
 
 interface ChallengeCardProps {
@@ -22,26 +22,22 @@ export function ChallengeCard({ challenge, index }: ChallengeCardProps) {
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="flex items-center gap-4">
-        {/* Status Icon */}
-        <StatusIcon status={challenge.status} />
-
         {/* Main Content */}
-        <div className="flex-1 min-w-0 flex flex-col space-y-2">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-white/70 text-sm">#{challenge.id}</span>
-            <h3 className="text-white font-medium truncate">
-              {challenge.title}
-            </h3>
-          </div>
-
-          <h3 className="text-white/50 font-medium text-[12px]">
-            {challenge.createAt.toLocaleDateString()}
+        <div className="flex flex-col items-center gap-3 mb-2 justify-between flex-1">
+          <p className="text-white/70 text-sm">#{challenge.id}</p>
+          <h3 className="text-white font-medium truncate text-xl overflow-hidden ">
+            {challenge.title}
           </h3>
         </div>
 
         {/* Right Side: Difficulty & Acceptance */}
-        <div className="flex items-center gap-4 shrink-0">
-          <DifficultyBadge difficulty={challenge.difficulty} />
+        <div className="flex flex-col items-center gap-3 mb-2 justify-between basis-[20%]">
+          <div className="flex items-center gap-4 shrink-0">
+            <DifficultyBadge difficulty={challenge.difficulty} />
+          </div>
+          <h3 className="text-white/50 font-medium text-sm flex justify-center">
+            {challenge.createAt.toLocaleDateString()}
+          </h3>
         </div>
       </div>
     </Link>

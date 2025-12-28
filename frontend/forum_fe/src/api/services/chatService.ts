@@ -85,7 +85,9 @@ const chatService = {
 
   leaveGroup: async function (conversationId: string) {
     try {
-      const response = await axiosClient.post(`/group/${conversationId}/leave`);
+      const response = await axiosClient.post(
+        `conversations/group/${conversationId}/leave`
+      );
       return response;
     } catch (error) {
       throw General.createError(error);

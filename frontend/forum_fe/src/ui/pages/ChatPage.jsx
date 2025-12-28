@@ -141,10 +141,7 @@ function ChatPage() {
       if (sendMessage.isSuccess) {
         setMessages((prev) =>
           prev.map((msg) => {
-            if (
-              msg.status === "sending" &&
-              msg.content === sendMessage.data.message.content
-            ) {
+            if (msg.status === "sending") {
               return {
                 ...msg,
                 status: "sent",
@@ -160,10 +157,7 @@ function ChatPage() {
       if (sendMessage.isError) {
         setMessages((prev) =>
           prev.map((msg) => {
-            if (
-              msg.status === "sending" &&
-              msg.content === sendMessage.data.content
-            ) {
+            if (msg.status === "sending") {
               return {
                 ...msg,
                 status: "failed",
@@ -318,8 +312,23 @@ function ChatPage() {
               onHandleSendMessage={handleSendMessage}
             />
             <ProfilePanel
-              name="Mohamed Salah"
-              avatar="https://i.pravatar.cc/150?img=12"
+              name={
+                typeConversation === General.typesConversation.CHATS.name
+                  ? activeConversation?.peer?.username
+                  : typeConversation === General.typesConversation.GROUPS.name
+                  ? activeConversation?.name
+                  : ""
+              }
+              avatar={
+                typeConversation === General.typesConversation.CHATS.name
+                  ? activeConversation?.avatar
+                  : typeConversation === General.typesConversation.GROUPS.name
+                  ? activeConversation?.avatar
+                  : ""
+              }
+              type={typeConversation}
+              userId={activeConversation?.peer?.id}
+              conversationId={activeConversation?.conversationId}
             />
           </>
         )}
