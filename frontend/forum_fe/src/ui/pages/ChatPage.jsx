@@ -3,6 +3,7 @@ import ConversationList from "@/ui/components/chat/conversationList.tsx";
 import ChatArea from "@/ui/components/chat/chatArea.tsx";
 import ProfilePanel from "@/ui/components/chat/profilePanel.tsx";
 import AppContext from "../Context/AppContext";
+import toastHelper from "../../helper/ToastHelper.jsx";
 import {
   useGetConversations,
   useGetMessages,
@@ -11,8 +12,10 @@ import {
   useOnReceiveNewMessage,
   useOffReceiveNewMessage,
   useSendMessage,
+  useGetGroups,
 } from "@/api/hooks/chatHook.ts";
 import LoadingScreen from "./LoadingScreen.jsx";
+import General from "../../General/General.js";
 function timeAgo(dateString) {
   const now = new Date();
   const past = new Date(dateString);
@@ -24,19 +27,30 @@ function timeAgo(dateString) {
   return `${Math.floor(diff / 86400)}d`;
 }
 
+const types = General.typesConversation.asArray();
+
 function ChatPage() {
+  const [typeConversation, setTypeConversation] = useState(types[0].name);
   const [activeConversation, setActiveConversation] = useState(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [myConversations, setMyConversations] = useState([]);
   const [messages, setMessages] = useState([]);
-  const getConversations = useGetConversations();
-  const getMessages = useGetMessages(activeConversation?.conversationId || "");
+  const getConversations = useGetConversations(
+    typeConversation === General.typesConversation.CHATS.name
+  );
+  const getMessages = useGetMessages(
+    activeConversation?.conversationId || "",
+    typeConversation
+  );
   const joinChat = useJoinChat();
   const leaveChat = useLeaveChat();
   const onReceiveNewMessage = useOnReceiveNewMessage();
   const offReceiveNewMessage = useOffReceiveNewMessage();
   const sendMessage = useSendMessage();
   const appContext = useContext(AppContext);
+  const getGroups = useGetGroups(
+    typeConversation === General.typesConversation.GROUPS.name
+  );
 
   const onNewMessage = function (arg) {
     console.log("New message received from socket:", arg);
@@ -67,6 +81,18 @@ function ChatPage() {
     }
   };
 
+  useEffect(
+    function () {
+      if (getGroups.isSuccess) {
+        console.log(getGroups.data);
+      }
+      if (getGroups.isError) {
+        toastHelper.error(getGroups.error.message);
+      }
+    },
+    [getGroups.isSuccess, getGroups.isError, getGroups.data]
+  );
+
   useEffect(function () {
     console.warn(
       "Test:\n",
@@ -82,9 +108,17 @@ function ChatPage() {
   });
 
   const handleSendMessage = function (content) {
+    let to = "";
+    if (typeConversation === General.typesConversation.CHATS.name) {
+      to = activeConversation?.peer?.id || "";
+    } else if (typeConversation === General.typesConversation.GROUPS.name) {
+      to = activeConversation?.conversationId;
+    }
+
     sendMessage.mutate({
-      toUserId: activeConversation?.peer?.id || "",
+      toUserId: to,
       content: content,
+      type: typeConversation,
     });
     const newMessage = {
       sender: {
@@ -168,7 +202,7 @@ function ChatPage() {
               avatar: con?.avatar,
               lastMessage: con?.latestMsg?.content,
               time: timeAgo(con?.latestMsg?.sent_at),
-              unread: !con?.is_read,
+              unread: con?.unreadCount > 0,
             };
           })
         );
@@ -184,6 +218,31 @@ function ChatPage() {
       getConversations.isSuccess,
       getConversations.isError,
     ]
+  );
+
+  useEffect(
+    function () {
+      if (getGroups.isSuccess) {
+        setMyConversations(
+          getGroups.data.map(function (con, i) {
+            return {
+              id: con?.conversationId,
+              name: con?.name || con?.peer?.username,
+              avatar: con?.avatar,
+              lastMessage: con?.latestMsg?.content,
+              time: timeAgo(con?.latestMsg?.sent_at),
+              unread: con?.unreadCount > 0,
+            };
+          })
+        );
+
+        setActiveConversation(getGroups.data[0] || null);
+      }
+      if (getGroups.isError) {
+        console.error("Error fetching conversations:", getGroups.error);
+      }
+    },
+    [getGroups.data, getGroups.isSuccess, getGroups.isError]
   );
 
   useEffect(
@@ -223,12 +282,24 @@ function ChatPage() {
         <ConversationList
           conversations={myConversations}
           activeId={activeConversation?.conversationId || ""}
-          onSelect={(id) =>
-            setActiveConversation(
-              getConversations.data.find((c) => c.conversationId === id) ??
-                getConversations.data[0]
-            )
-          }
+          onSelect={(id) => {
+            if (typeConversation === General.typesConversation.CHATS.name) {
+              setActiveConversation(
+                getConversations.data?.find((c) => c.conversationId === id) ??
+                  getConversations.data[0]
+              );
+            } else if (
+              typeConversation === General.typesConversation.GROUPS.name
+            ) {
+              setActiveConversation(
+                getGroups.data?.find((c) => c.conversationId === id) ??
+                  getGroups.data[0]
+              );
+            }
+          }}
+          typeConversation={typeConversation}
+          setTypeConversation={setTypeConversation}
+          types={types}
         />
 
         {getMessages.isLoading && <LoadingScreen />}

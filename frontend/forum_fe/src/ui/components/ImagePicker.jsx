@@ -5,7 +5,6 @@ export default function ImagePicker({
   onChange,
   variant,
   defaultImageURL = "",
-  outRef,
 }) {
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(defaultImageURL);

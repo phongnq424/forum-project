@@ -77,6 +77,14 @@ const General = {
     },
   },
 
+  typesConversation: {
+    CHATS: { name: "Chats" },
+    GROUPS: { name: "Groups" },
+    asArray: function (): { name: string }[] {
+      return Object.values(this).filter((i) => typeof i !== "function");
+    },
+  },
+
   showFor: {
     ALL: "all" as const,
     OWN: "own" as const,
