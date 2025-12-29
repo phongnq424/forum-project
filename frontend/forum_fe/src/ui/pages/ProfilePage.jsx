@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  use,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import CategoryBar from "../components/CategoryBar";
 import ProfileCard from "../components/ProfileCard";
 import { BsPostcard } from "react-icons/bs";
@@ -13,10 +20,12 @@ import {
   useSavePost,
 } from "../../api/hooks/postHook";
 
-import { useGetMe, useGetProfileByUserId } from "../../api/hooks/ProfileHook";
+import { useCreateChat } from "../../api/hooks/chatHook";
+
+import { useGetProfileByUserId } from "../../api/hooks/ProfileHook";
 import LoadingScreen from "./LoadingScreen";
 import { useToggleReaction } from "../../api/hooks/reactionHook";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import toastHelper from "../../helper/ToastHelper";
 import { AddPostDialog } from "../dialogs/AddPostDialog";
 import AppContext from "../Context/AppContext";
@@ -31,6 +40,7 @@ import {
   useRemoveFollower,
   useToggleFollow,
 } from "../../api/hooks/followHook";
+import { useBlockUser } from "../../api/hooks/blockHook";
 
 const ProfilePageContext = createContext();
 
@@ -38,9 +48,29 @@ const ProfilePage = () => {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
   const toggleFollow = useToggleFollow();
+  const createChat = useCreateChat();
 
   const userId = query.get("id") || "";
   const [currentProfile, setCurrentProfile] = useState(null);
+  const navigate = useNavigate();
+
+  function handleClickChat(userId) {
+    createChat.mutate({ toUserId: userId });
+  }
+
+  useEffect(
+    function () {
+      if (createChat.isSuccess) {
+        navigate("/chat", {
+          state: { conversationId: createChat.data.id },
+        });
+      }
+      if (createChat.isError) {
+        toastHelper.error(createChat.error.message);
+      }
+    },
+    [createChat.isSuccess, createChat.isError, createChat.data]
+  );
 
   const categories = [
     { id: 1, name: "Posts", icon: <BsPostcard className="text-[24px]" /> },
@@ -61,7 +91,6 @@ const ProfilePage = () => {
       icon: <FaUserFriends className="text-[24px]" />,
     },
   ];
-
   const [selectedCategory, setSelectedCategory] = useState();
   const getProfile = useGetProfileByUserId(userId);
   useEffect(
@@ -85,12 +114,24 @@ const ProfilePage = () => {
     [toggleFollow.isError, toggleFollow.isSuccess, toggleFollow.data]
   );
 
-  if (getProfile.isLoading) {
-    return <LoadingScreen></LoadingScreen>;
-  }
+  const blockUser = useBlockUser();
+  useEffect(
+    function () {
+      if (blockUser.isSuccess) {
+        console.log(blockUser.data);
+        setCurrentProfile(function (prev) {
+          return { ...prev, isBlocked: blockUser.data.blocked };
+        });
+      }
+      if (blockUser.isError) {
+        toastHelper.error(blockUser.error.message);
+      }
+    },
+    [blockUser.isError, blockUser.isSuccess, blockUser.data]
+  );
 
-  if (!currentProfile) {
-    return <></>;
+  if (getProfile.isLoading || createChat.isPending) {
+    return <LoadingScreen></LoadingScreen>;
   }
 
   return (
@@ -104,6 +145,10 @@ const ProfilePage = () => {
               handleToggleFollow={(id) =>
                 toggleFollow.mutate({ targetUserId: id })
               }
+              handleToggleBlock={(id) => {
+                blockUser.mutate({ targetUserId: id });
+              }}
+              handleClickChat={(userId) => handleClickChat(userId)}
             />
             <CategoryBar
               categories={categories}
@@ -156,7 +201,7 @@ function RenderPosts() {
   useEffect(
     function () {
       if (getPostOfUser.isError) {
-        toastHelper.error(getMyPosts.error.message);
+        toastHelper.error(getPostOfUser.error.message);
       }
 
       if (getPostOfUser.isSuccess) {
@@ -340,6 +385,7 @@ function RenderConnections() {
   const toggleFollow = useToggleFollow();
   const appContext = useContext(AppContext);
   const removeFollower = useRemoveFollower();
+
   useEffect(
     function () {
       if (toggleFollow.isSuccess) {
@@ -375,8 +421,8 @@ function RenderConnections() {
   useEffect(
     function () {
       if (getFollower.isSuccess) {
-        setPagination(getFollower.data.pagination);
-        setUsers(getFollower.data.data);
+        setPagination(getFollower.data?.pagination);
+        setUsers(getFollower.data?.data);
       }
 
       if (getFollower.isError) {
@@ -429,9 +475,8 @@ function RenderConnections() {
 
       {users?.length < 1 && (
         <p className="text-white text-center text-2xl py-10">
-          {selectedTab?.id === options.FOLLOWERS.id
-            ? "No follower available"
-            : "No following available"}
+          {selectedTab?.id === options.FOLLOWERS.id && "No follower available"}
+          {selectedTab?.id === options.FOLLOWING.id && "No following available"}
         </p>
       )}
 
@@ -444,7 +489,9 @@ function RenderConnections() {
               userId: item.otherId,
               isFollowing: item.isFollowing,
               isFollowMe: item.isFollowMe,
+              isBlocked: item.isBlocked,
             };
+
             return (
               <UserFollowCard
                 key={index}
@@ -466,6 +513,9 @@ function RenderConnections() {
                 onRemoveClick={function (userId) {
                   removeFollower.mutate({ followerId: userId });
                 }}
+                onBlockClick={function (userId) {
+                  blockUser.mutate({ targetUserId: userId });
+                }}
               />
             );
           })}
@@ -481,5 +531,9 @@ function RenderConnections() {
     </>
   );
 }
+
+const RenderComments = function () {
+  return <></>;
+};
 
 export default ProfilePage;

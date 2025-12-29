@@ -1,9 +1,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import profileService from "../services/profileService";
 
-export function useGetMe(isEnable = true) {
+export function useGetMe(token, isEnable = true) {
   return useQuery({
-    queryKey: ["profile", "me"],
+    queryKey: ["profile", "me", token],
     queryFn: () => {
       return profileService.getMe();
     },
@@ -30,6 +30,18 @@ export function useGetProfileByUserId(userId, isEnable = true) {
       }
     },
     enabled: isEnable,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useSearchUsers(query, isEnable = true) {
+  return useQuery({
+    queryKey: ["profile", "search", query],
+
+    queryFn: (context) => {
+      return profileService.searchUsers(context.queryKey[2]);
+    },
+    enabled: isEnable && query.trim() !== "",
     refetchOnWindowFocus: false,
   });
 }
