@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Play, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,8 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { type Language, languageLabels, defaultCode } from "./mockData";
+import { type Language } from "./mockData";
 import { cn } from "@/lib/utils";
+import { useGetLanguages } from "@/api/hooks/languageHook";
 
 interface CodeEditorProps {
   onRun: () => void;
@@ -16,41 +17,58 @@ interface CodeEditorProps {
 }
 
 export function CodeEditor({ onRun, onSubmit }: CodeEditorProps) {
-  const [language, setLanguage] = useState<Language>("javascript");
-  const [code, setCode] = useState(defaultCode[language]);
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>();
+  const [languages, setLanguages] = useState<Language[]>([]);
+  const [code, setCode] = useState("");
 
   const handleLanguageChange = (newLanguage: Language) => {
-    setLanguage(newLanguage);
-    setCode(defaultCode[newLanguage]);
+    setSelectedLanguage(newLanguage);
   };
+  const getLanguages = useGetLanguages();
+
+  useEffect(
+    function () {
+      if (getLanguages.isSuccess) {
+        console.log("OK", getLanguages.data);
+        setLanguages(getLanguages.data);
+        setSelectedLanguage(getLanguages.data[0]);
+      }
+    },
+    [getLanguages.data, getLanguages.isError, getLanguages.isSuccess]
+  );
 
   const lines = code.split("\n");
 
   return (
-    <div className="h-full flex flex-col bg-editor-bg rounded-lg border border-editor-border overflow-hidden">
+    <div className="h-full flex flex-col bg-white/20 rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-editor-border bg-card">
+      <div className="flex items-center justify-between px-4 py-3 bg-black">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              {languageLabels[language]}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 bg-black hover:bg-black hover:text-white"
+            >
+              {selectedLanguage?.name}
               <ChevronDown className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="bg-popover border-border"
+            className="bg-black p-0 border-none"
           >
-            {(Object.keys(languageLabels) as Language[]).map((lang) => (
+            {languages?.map((lang) => (
               <DropdownMenuItem
-                key={lang}
+                key={lang.id}
                 onClick={() => handleLanguageChange(lang)}
                 className={cn(
                   "cursor-pointer",
-                  language === lang && "bg-accent"
+                  "text-white",
+                  "focus:bg-proPurple"
                 )}
               >
-                {languageLabels[lang]}
+                {lang.name}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

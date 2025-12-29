@@ -1,28 +1,7 @@
 import { useState, useMemo } from "react";
 import { FilterPanel } from "./filterPanel";
 import { ChallengeCard } from "./challengeCard";
-import { challenges } from "./mockData";
-import type { Difficulty, Status } from "./mockData";
-
-export interface Challenge {
-  id: number | string;
-  title: string;
-  slug: string;
-  difficulty: Difficulty;
-  createAt: Date;
-
-  acceptanceRate: number;
-  status: Status;
-  description: string;
-  inputDescription: string;
-  outputDescription: string;
-  constraints: string[];
-  examples: {
-    input: string;
-    output: string;
-    explanation?: string;
-  }[];
-}
+import type { Challenge, Difficulty, Status } from "./mockData";
 
 export type ChallengeListProps = {
   challenges: Challenge[];

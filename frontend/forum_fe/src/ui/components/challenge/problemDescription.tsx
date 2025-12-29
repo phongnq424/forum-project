@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { DifficultyBadge } from "./difficultyBadge";
 import type { Challenge } from "./mockData";
+import { Cpu, Hourglass } from "lucide-react";
 
 interface ProblemDescriptionProps {
   challenge: Challenge;
@@ -11,8 +12,8 @@ export function ProblemDescription({ challenge }: ProblemDescriptionProps) {
     <div className="h-full overflow-auto p-6 space-y-6">
       {/* Header */}
       <div className="space-y-3">
-        <div className="flex items-center gap-3 text-2xl">
-          <span className="text-muted-foreground">#{challenge.id}</span>
+        <div className="flex flex-col items-start gap-3 text-2xl">
+          <p className="text-muted-foreground text-sm">#{challenge.id}</p>
           <h1 className=" font-bold text-foreground">{challenge.title}</h1>
         </div>
 
@@ -27,45 +28,6 @@ export function ProblemDescription({ challenge }: ProblemDescriptionProps) {
           {challenge.description}
         </div>
       </div>
-
-      {/* Examples */}
-      {/* <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Examples</h2>
-        {challenge.examples.map((example, index) => (
-          <div
-            key={index}
-            className="p-4 bg-muted rounded-lg border border-border space-y-3"
-          >
-            <div className="text-sm font-medium text-muted-foreground">
-              Example {index + 1}
-            </div>
-            <div className="space-y-2">
-              <div>
-                <span className="text-sm font-medium text-foreground">
-                  Input:{" "}
-                </span>
-                <code className="font-mono text-sm text-primary bg-background px-2 py-1 rounded">
-                  {example.input}
-                </code>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-foreground">
-                  Output:{" "}
-                </span>
-                <code className="font-mono text-sm text-primary bg-background px-2 py-1 rounded">
-                  {example.output}
-                </code>
-              </div>
-              {example.explanation && (
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">Explanation: </span>
-                  {example.explanation}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div> */}
 
       <div className="p-4 bg-white/10 rounded-2xl flex flex-col space-y-4">
         {/* Input */}
@@ -88,7 +50,7 @@ export function ProblemDescription({ challenge }: ProblemDescriptionProps) {
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Constraints</h2>
           <ul className="list-disc list-inside space-y-1">
-            {challenge.constraints.map((constraint, index) => (
+            {challenge.constraints.split(/[,;\n]+/).map((constraint, index) => (
               <li key={index} className="text-muted-foreground">
                 <code className="font-mono text-sm text-foreground">
                   {constraint}
@@ -96,6 +58,22 @@ export function ProblemDescription({ challenge }: ProblemDescriptionProps) {
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* Limitation */}
+
+        <div className="space-x-3 flex items-center">
+          <h2 className="text-lg font-semibold text-foreground">Limitation</h2>
+          <div className="flex space-x-4 flex-1">
+            <div className="flex-1 h-10 bg-black rounded-xl px-2 py-1 flex items-center justify-center space-x-2">
+              <Cpu></Cpu>
+              <p className="text-sm"> {challenge.mem_limitation} MB</p>
+            </div>
+            <div className="flex-1 h-10 bg-black rounded-xl px-2 py-1 flex items-center justify-center space-x-2">
+              <Hourglass></Hourglass>
+              <p className="text-sm"> {challenge.time_limitation} ms</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

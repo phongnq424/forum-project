@@ -41,8 +41,10 @@ function ChallengesPage() {
             description: c.description,
             inputDescription: c.input,
             outputDescription: c.output,
-            constraints: c.constraint,
+            constraints: c.constraints,
             examples: [],
+            time_limitation: c.time_limit,
+            mem_limitation: c.memory_limit,
           };
         })}
       />

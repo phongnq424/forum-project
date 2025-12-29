@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -10,16 +9,47 @@ import { Button } from "@/components/ui/button";
 import { ProblemDescription } from "@/ui/components/challenge//problemDescription";
 import { CodeEditor } from "@/ui/components/challenge/codeEditor";
 import { SubmitModal } from "@/ui/components/challenge/submitModel";
-import {
-  challenges,
-  sampleSubmission,
-} from "@/ui/components/challenge/mockData";
+import { type Challenge } from "@/ui/components/challenge/mockData";
+import { useGetChallengeById } from "@/api/hooks/challengeHook";
+
+import toastHelper from "../../helper/ToastHelper";
 
 export default function DetailChallengePage() {
   const { id } = useParams<{ id: string }>();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [submission, setSubmission] = useState(sampleSubmission);
-  const challenge = challenges.find((c) => c.id == id);
+  const getChallengeById = useGetChallengeById(id ?? "");
+
+  const [challenge, setChallenge] = useState<Challenge>();
+  useEffect(
+    function () {
+      if (getChallengeById.isSuccess) {
+        setChallenge({
+          id: (getChallengeById.data as any).id,
+          title: (getChallengeById.data as any).title,
+          slug: "",
+          difficulty: (getChallengeById.data as any).difficulty,
+          createAt: new Date((getChallengeById.data as any).created_at),
+          acceptanceRate: 0,
+          status: "Solved",
+          description: (getChallengeById.data as any).description,
+          inputDescription: (getChallengeById.data as any).input,
+          outputDescription: (getChallengeById.data as any).output,
+          constraints: (getChallengeById.data as any).constraints,
+          examples: [],
+          time_limitation: (getChallengeById.data as any).time_limit,
+          mem_limitation: (getChallengeById.data as any).memory_limit,
+        });
+      }
+      if (getChallengeById.error) {
+        toastHelper.error(getChallengeById.error.message);
+      }
+    },
+    [
+      getChallengeById.data,
+      getChallengeById.isSuccess,
+      getChallengeById.isError,
+    ]
+  );
 
   if (!challenge) {
     return (
@@ -39,21 +69,6 @@ export default function DetailChallengePage() {
   };
 
   const handleSubmit = () => {
-    // Randomly select a status for demo
-    const statuses = [
-      "Accepted",
-      "Wrong Answer",
-      "Runtime Error",
-      "Time Limit Exceeded",
-    ] as const;
-    const randomStatus =
-      statuses[Math.floor(Math.random() * statuses.length)] ?? "Wrong Answer";
-
-    setSubmission({
-      ...sampleSubmission,
-      status: randomStatus,
-      challengeId: challenge.id,
-    });
     setIsModalOpen(true);
   };
 
@@ -82,11 +97,11 @@ export default function DetailChallengePage() {
         </div>
 
         {/* Submit Modal */}
-        <SubmitModal
+        {/* <SubmitModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           submission={submission}
-        />
+        /> */}
       </div>
     </>
   );

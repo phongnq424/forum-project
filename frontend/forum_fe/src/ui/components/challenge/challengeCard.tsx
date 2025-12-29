@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { DifficultyBadge } from "@/ui/components/challenge/difficultyBadge";
 import { StatusIcon } from "@/ui/components/challenge/statusIcon";
-import type { Challenge } from "./challengeList";
+import type { Challenge } from "./mockData";
 import { cn } from "@/lib/utils";
 
 interface ChallengeCardProps {

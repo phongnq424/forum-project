@@ -3,7 +3,7 @@ import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { type Difficulty, type Status, tags } from "./mockData";
+import { type Difficulty, type Status } from "./mockData";
 
 interface FilterPanelProps {
   searchQuery: string;
