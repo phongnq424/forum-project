@@ -40,9 +40,9 @@ const submissionService = {
   },
 
   // GET /submissions/user/:user_id
-  listByUser: async (): Promise<any> => {
+  listByUser: async (user_id: string): Promise<any> => {
     try {
-      const res = await axiosClient.get(`/submissions/user`);
+      const res = await axiosClient.get(`/submissions/user/${user_id}`);
       return res;
     } catch (error) {
       throw General.createError(error);
@@ -50,10 +50,13 @@ const submissionService = {
   },
 
   // GET /submissions/user/:user_id/challenge/:challenge_id
-  listByUserAndChallenge: async (challengeId: string): Promise<any> => {
+  listByUserAndChallenge: async (
+    challengeId: string,
+    user_id: string
+  ): Promise<any> => {
     try {
       const res = await axiosClient.get(
-        `/submissions/user/challenge/${challengeId}`
+        `/submissions/user/${user_id}/challenge/${challengeId}`
       );
 
       return res;

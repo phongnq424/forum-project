@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ResizablePanelGroup,
@@ -12,20 +12,24 @@ import { SubmitModal } from "@/ui/components/challenge/submitModel";
 import { type Challenge } from "@/ui/components/challenge/mockData";
 import { useGetChallengeById } from "@/api/hooks/challengeHook";
 import LoadingScreen from "../pages/LoadingScreen";
-
 import toastHelper from "../../helper/ToastHelper";
 import {
   useGetMySubmissionsByChallenge,
   useSubmitCode,
 } from "@/api/hooks/submissionHook";
 import SubmissionCard from "../components/challenge/submissionCard";
+import AppContext from "../Context/AppContext.jsx";
 
 export default function DetailChallengeSubmissionPage() {
   const { id } = useParams<{ id: string }>();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const getChallengeById = useGetChallengeById(id ?? "");
   const submitCode = useSubmitCode();
-  const getMySubmissionByChallenge = useGetMySubmissionsByChallenge(id ?? "");
+  const appContext = useContext(AppContext) as any;
+  const getMySubmissionByChallenge = useGetMySubmissionsByChallenge(
+    id ?? "",
+    appContext?.currentUser?.user_id
+  );
 
   const [challenge, setChallenge] = useState<Challenge>();
   useEffect(
@@ -132,6 +136,8 @@ export default function DetailChallengeSubmissionPage() {
                         status={s.status}
                         score={s.score}
                         onClick={(id) => alert(id)}
+                        code={""}
+                        languageName={""}
                       ></SubmissionCard>
                     );
                   })}

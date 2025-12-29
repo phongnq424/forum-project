@@ -19,9 +19,14 @@ router.get(
   cache,
   SubmissionController.listByChallenge
 );
-router.get("/user", verifyToken, cache, SubmissionController.listByUser);
 router.get(
-  "/user/challenge/:challenge_id",
+  "/user/:user_id",
+  verifyToken,
+  cache,
+  SubmissionController.listByUser
+);
+router.get(
+  "/user/:user_id/challenge/:challenge_id",
   verifyToken,
   cache,
   SubmissionController.listByUserAndChallenge

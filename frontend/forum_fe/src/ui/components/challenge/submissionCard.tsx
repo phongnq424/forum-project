@@ -7,6 +7,8 @@ interface SubmissionCardProps {
   submittedAt: string;
   status: SubmissionStatus;
   score: number;
+  code: string;
+  languageName: string;
   onClick: (submissionId: string) => void;
 }
 

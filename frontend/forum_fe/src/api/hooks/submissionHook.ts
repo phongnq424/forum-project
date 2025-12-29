@@ -16,13 +16,18 @@ export function useSubmitCode() {
   });
 }
 
-export function useGetMySubmissionsByChallenge(challenge_id: string) {
+export function useGetMySubmissionsByChallenge(
+  challenge_id: string,
+  user_id: string
+) {
   return useQuery({
-    queryKey: ["submissions", "user", challenge_id],
+    queryKey: ["submissions", "user", challenge_id, user_id],
     queryFn: (context) => {
       return submissionService.listByUserAndChallenge(
-        context.queryKey[2] ?? ""
+        context.queryKey[2] ?? "",
+        context.queryKey[3] ?? ""
       );
     },
+    enabled: !!challenge_id && !!user_id,
   });
 }
