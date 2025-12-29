@@ -12,11 +12,10 @@ import { cn } from "@/lib/utils";
 import { useGetLanguages } from "@/api/hooks/languageHook";
 
 interface CodeEditorProps {
-  onRun: () => void;
-  onSubmit: () => void;
+  onSubmit: (code: string, languageId: string) => void;
 }
 
-export function CodeEditor({ onRun, onSubmit }: CodeEditorProps) {
+export function CodeEditor({ onSubmit }: CodeEditorProps) {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [code, setCode] = useState("");
@@ -29,7 +28,6 @@ export function CodeEditor({ onRun, onSubmit }: CodeEditorProps) {
   useEffect(
     function () {
       if (getLanguages.isSuccess) {
-        console.log("OK", getLanguages.data);
         setLanguages(getLanguages.data);
         setSelectedLanguage(getLanguages.data[0]);
       }
@@ -48,7 +46,7 @@ export function CodeEditor({ onRun, onSubmit }: CodeEditorProps) {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 bg-black hover:bg-black hover:text-white"
+              className="gap-2 bg-white/30 hover:bg-white/30 hover:text-white border-none"
             >
               {selectedLanguage?.name}
               <ChevronDown className="w-4 h-4" />
@@ -79,7 +77,7 @@ export function CodeEditor({ onRun, onSubmit }: CodeEditorProps) {
             variant="default"
             size="sm"
             className="bg-proPurple"
-            onClick={onSubmit}
+            onClick={() => onSubmit(code, selectedLanguage?.id ?? "")}
           >
             <Send className="w-4 h-4 mr-2" />
             Submit
@@ -107,6 +105,25 @@ export function CodeEditor({ onRun, onSubmit }: CodeEditorProps) {
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Tab") {
+                  e.preventDefault();
+
+                  const textarea = e.currentTarget;
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+
+                  const newValue =
+                    code.substring(0, start) + "\t" + code.substring(end);
+
+                  setCode(newValue);
+
+                  // đợi React update xong rồi set lại caret
+                  requestAnimationFrame(() => {
+                    textarea.selectionStart = textarea.selectionEnd = start + 1;
+                  });
+                }
+              }}
               className={cn(
                 "absolute inset-0 w-full h-full p-4 font-mono text-sm leading-6",
                 "bg-transparent text-foreground resize-none outline-none",

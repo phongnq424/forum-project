@@ -17,11 +17,6 @@ axiosClient.interceptors.request.use(function (config) {
     delete config.headers.Authorization;
   }
 
-  console.log("➡️ Request:", {
-    url: config.url,
-    method: config.method,
-    authorization: config.headers.Authorization,
-  });
   return config;
 });
 

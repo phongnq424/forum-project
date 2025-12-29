@@ -11,13 +11,21 @@ import { CodeEditor } from "@/ui/components/challenge/codeEditor";
 import { SubmitModal } from "@/ui/components/challenge/submitModel";
 import { type Challenge } from "@/ui/components/challenge/mockData";
 import { useGetChallengeById } from "@/api/hooks/challengeHook";
+import LoadingScreen from "../pages/LoadingScreen";
 
 import toastHelper from "../../helper/ToastHelper";
+import {
+  useGetMySubmissionsByChallenge,
+  useSubmitCode,
+} from "@/api/hooks/submissionHook";
+import SubmissionCard from "../components/challenge/submissionCard";
 
-export default function DetailChallengePage() {
+export default function DetailChallengeSubmissionPage() {
   const { id } = useParams<{ id: string }>();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const getChallengeById = useGetChallengeById(id ?? "");
+  const submitCode = useSubmitCode();
+  const getMySubmissionByChallenge = useGetMySubmissionsByChallenge(id ?? "");
 
   const [challenge, setChallenge] = useState<Challenge>();
   useEffect(
@@ -51,6 +59,30 @@ export default function DetailChallengePage() {
     ]
   );
 
+  useEffect(
+    function () {
+      if (submitCode.isSuccess) {
+        console.log("Submission Response", submitCode.data);
+      }
+
+      if (submitCode.isError) {
+      }
+    },
+    [submitCode.data, submitCode.isSuccess, submitCode.isError]
+  );
+
+  useEffect(
+    function () {
+      if (getMySubmissionByChallenge.isSuccess) {
+      }
+    },
+    [
+      getMySubmissionByChallenge.data,
+      getMySubmissionByChallenge.isError,
+      getMySubmissionByChallenge.isSuccess,
+    ]
+  );
+
   if (!challenge) {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center">
@@ -63,25 +95,47 @@ export default function DetailChallengePage() {
     );
   }
 
-  const handleRun = () => {
-    console.log("Running code...");
-    // Mock run functionality
-  };
+  if (submitCode.isPending) {
+    return <LoadingScreen />;
+  }
 
-  const handleSubmit = () => {
+  const handleSubmit = (code: string, languageId: string) => {
+    submitCode.mutate({
+      challengeId: id ?? "",
+      code: code,
+      languageId: languageId,
+    });
     setIsModalOpen(true);
   };
 
   return (
     <>
-      <div className="h-(--view-h) flex flex-col bg-transparent px-(--primary-padding)">
+      <div className="h-(--view-h) flex flex-col space-y-10 bg-transparent px-(--primary-padding)">
         {/* Split Pane */}
         <div className="flex-1 overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Problem Description Panel */}
             <ResizablePanel defaultSize={45} minSize={30}>
-              <div className="h-full bg-transparent border-r border-border">
+              <div className="h-full bg-transparent flex flex-col space-y-1 pr-5 overflow-auto">
                 <ProblemDescription challenge={challenge} />
+                <h1 className="font-bold text-xl">Your Submissions</h1>
+                <div className="flex flex-col space-y-4 py-5 px-20 bg-white/10 rounded-xl">
+                  {getMySubmissionByChallenge.data?.map(function (
+                    s: any,
+                    i: number
+                  ) {
+                    return (
+                      <SubmissionCard
+                        key={s.id}
+                        id={s.id}
+                        submittedAt={new Date(s.submitted_at).toLocaleString()}
+                        status={s.status}
+                        score={s.score}
+                        onClick={(id) => alert(id)}
+                      ></SubmissionCard>
+                    );
+                  })}
+                </div>
               </div>
             </ResizablePanel>
 
@@ -90,7 +144,7 @@ export default function DetailChallengePage() {
             {/* Code Editor Panel */}
             <ResizablePanel defaultSize={55} minSize={35}>
               <div className="h-full p-4">
-                <CodeEditor onRun={handleRun} onSubmit={handleSubmit} />
+                <CodeEditor onSubmit={handleSubmit} />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>

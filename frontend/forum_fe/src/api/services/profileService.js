@@ -5,7 +5,6 @@ import axiosClient from "../AxiosClient";
 const profileService = {
   getMe: async function () {
     try {
-      console.log(new Date().toLocaleString());
       const response = await axiosClient.get("/profiles/me");
       const result = {
         user_id: response.user_id,
@@ -22,7 +21,7 @@ const profileService = {
         isFollowing: response.isFollowing,
         gender: response.gender,
       };
-      console.log("KQ:", result);
+
       return result;
     } catch (error) {
       throw General.createError(error);

@@ -16,7 +16,7 @@ import ProfilePage from "../ui/pages/ProfilePage";
 import UpdateProfilePage from "../ui/pages/UpdateProfilePage";
 import Footer from "../ui/components/Footer";
 import ScrollToTop from "../ui/components/ScrollToTop";
-import DetailChallengePage from "../ui/pages/DetailChallengePage.tsx";
+import DetailChallengeSubmissionPage from "../ui/pages/DetailChallengeSubmissionPage.tsx";
 
 function Layout() {
   const appContext = useContext(AppContext);
@@ -51,7 +51,10 @@ function PageRouters() {
           <Route path="/post-detail" element={<DetailPostPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/update-profile" element={<CreateProfilePage />} />
-          <Route path="/challenges/:id" element={<DetailChallengePage />} />
+          <Route
+            path="/challenges/:id/submission"
+            element={<DetailChallengeSubmissionPage />}
+          />
         </Route>
       </Routes>
     </>
