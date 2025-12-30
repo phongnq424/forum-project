@@ -20,6 +20,7 @@ const profileService = {
         isOwnProfile: true,
         isFollowing: response.isFollowing,
         gender: response.gender,
+        role: response.User.role,
       };
 
       return result;

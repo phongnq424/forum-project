@@ -5,7 +5,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { Button } from "@/components/ui/button";
+
 import { ProblemDescription } from "@/ui/components/challenge//problemDescription";
 import { CodeEditor } from "@/ui/components/challenge/codeEditor";
 import { SubmitModal } from "@/ui/components/challenge/submitModel";
@@ -30,6 +30,7 @@ export default function DetailChallengeSubmissionPage() {
     id ?? "",
     appContext?.currentUser?.user_id
   );
+  const [selectedSubmission, setSelectedSubmission] = useState<any>();
 
   const [challenge, setChallenge] = useState<Challenge>();
   useEffect(
@@ -66,10 +67,11 @@ export default function DetailChallengeSubmissionPage() {
   useEffect(
     function () {
       if (submitCode.isSuccess) {
-        console.log("Submission Response", submitCode.data);
+        toastHelper.success("Submit successfully! Check the result later!");
       }
 
       if (submitCode.isError) {
+        toastHelper.success(submitCode.error.message);
       }
     },
     [submitCode.data, submitCode.isSuccess, submitCode.isError]
@@ -99,28 +101,24 @@ export default function DetailChallengeSubmissionPage() {
     );
   }
 
-  if (submitCode.isPending) {
-    return <LoadingScreen />;
-  }
-
   const handleSubmit = (code: string, languageId: string) => {
     submitCode.mutate({
       challengeId: id ?? "",
       code: code,
       languageId: languageId,
     });
-    setIsModalOpen(true);
   };
 
   return (
     <>
-      <div className="h-(--view-h) flex flex-col space-y-10 bg-transparent px-(--primary-padding)">
+      <div className="h-(--view-h) flex flex-col space-y-10 bg-transparent px-(--primary-padding) py-3">
+        {submitCode.isPending && <LoadingScreen />}
         {/* Split Pane */}
         <div className="flex-1 overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Problem Description Panel */}
             <ResizablePanel defaultSize={45} minSize={30}>
-              <div className="h-full bg-transparent flex flex-col space-y-1 pr-5 overflow-auto">
+              <div className="h-full bg-transparent flex flex-col space-y-3 pr-5 overflow-auto">
                 <ProblemDescription challenge={challenge} />
                 <h1 className="font-bold text-xl">Your Submissions</h1>
                 <div className="flex flex-col space-y-4 py-5 px-20 bg-white/10 rounded-xl">
@@ -135,9 +133,12 @@ export default function DetailChallengeSubmissionPage() {
                         submittedAt={new Date(s.submitted_at).toLocaleString()}
                         status={s.status}
                         score={s.score}
-                        onClick={(id) => alert(id)}
-                        code={""}
-                        languageName={""}
+                        onClick={(data) => {
+                          setSelectedSubmission(data);
+                          setIsModalOpen(true);
+                        }}
+                        code={s.code}
+                        languageName={s.Language.name}
                       ></SubmissionCard>
                     );
                   })}
@@ -157,11 +158,11 @@ export default function DetailChallengeSubmissionPage() {
         </div>
 
         {/* Submit Modal */}
-        {/* <SubmitModal
+        <SubmitModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          submission={submission}
-        /> */}
+          data={selectedSubmission}
+        />
       </div>
     </>
   );

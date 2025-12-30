@@ -90,6 +90,11 @@ const General = {
     OWN: "own" as const,
     VIEWER: "viewer" as const,
   },
+
+  accountRoles: {
+    ADMIN: "ADMIN",
+    USER: "USER",
+  },
 };
 
 export default General;

@@ -5,8 +5,11 @@ export interface ChallengeRequest {
   title: string;
   description: string;
   difficulty?: string;
-  startDate?: string;
-  endDate?: string;
+  constraints: string;
+  input: string;
+  output: string;
+  time_limit: number;
+  memory_limit: number;
 }
 
 const challengeService = {
@@ -16,6 +19,7 @@ const challengeService = {
   createChallenge: async function (request: ChallengeRequest) {
     try {
       const response = await axiosClient.post("/challenges", request);
+
       return response;
     } catch (error) {
       throw General.createError(error);

@@ -46,30 +46,6 @@ export default function ChallengeList({ challenges }: ChallengeListProps) {
     <>
       <div className="flex-1">
         <main className="container py-8">
-          {/* Stats Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Coding Challenges
-            </h1>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>
-                <span className="font-semibold text-foreground">
-                  {stats.total}
-                </span>{" "}
-                problems
-              </span>
-              <span>•</span>
-              <span className="text-easy">
-                <span className="font-semibold">{stats.solved}</span> solved
-              </span>
-              <span>•</span>
-              <span className="text-medium">
-                <span className="font-semibold">{stats.attempted}</span>{" "}
-                attempted
-              </span>
-            </div>
-          </div>
-
           {/* Main Content */}
           <div className="flex gap-6">
             {/* Filter Panel */}

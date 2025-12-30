@@ -34,6 +34,7 @@ export interface Challenge {
   }[];
   time_limitation: number;
   mem_limitation: number;
+  testcase?: any[];
 }
 
 export interface Submission {
