@@ -3,107 +3,102 @@ import tar from 'tar-stream'
 import { Writable } from 'stream'
 
 const docker = new Docker()
-const MAX_CONCURRENCY = 10  // số container chạy đồng thời, bạn có thể tăng/giảm
 
-export async function runInSandbox(langConfig, code, testcases, timeoutMs = 5000) {
-    const results = new Array(testcases.length)
+export async function runInSandbox(langConfig, code, testcases, timeoutMs = 2000) {
+    const results = []
+    let container = null
 
-    const tasks = testcases.map((t, idx) => async () => {
-        let container
-        try {
-            container = await docker.createContainer({
-                Image: langConfig.image,
-                WorkingDir: '/sandbox',
-                User: 'judgeuser',
-                Cmd: ['sh', '-c', 'sleep 300'],
-                Tty: false,
-                HostConfig: {
-                    NetworkMode: 'none',
-                    Memory: 512 * 1024 * 1024,
-                    MemorySwap: 512 * 1024 * 1024,
-                    NanoCpus: 500_000_000,
-                    PidsLimit: 64
-                }
-            })
-
-            await container.start()
-
-            const pack = tar.pack()
-            pack.entry({ name: langConfig.filename }, code)
-            pack.finalize()
-            await container.putArchive(pack, { path: '/sandbox' })
-
-            if (langConfig.compileCmd) {
-                const compileRes = await exec(container, langConfig.compileCmd, null, 30000)
-                if (compileRes.exitCode !== 0) {
-                    results[idx] = { stdout: '', stderr: compileRes.stderr, error: 'CE' }
-                    await container.remove({ force: true })
-                    return
-                }
+    try {
+        container = await docker.createContainer({
+            Image: langConfig.image,
+            WorkingDir: '/sandbox',
+            User: 'judgeuser',
+            Cmd: ['sh', '-c', 'sleep 300'],
+            HostConfig: {
+                NetworkMode: 'none',
+                Memory: 256 * 1024 * 1024,
+                MemorySwap: 256 * 1024 * 1024,
+                NanoCpus: 1000000000,
+                PidsLimit: 64
             }
+        })
+        await container.start()
 
-            const runCmd = langConfig.runCmd
-            const res = await exec(container, ['sh', '-c', `timeout ${Math.ceil(timeoutMs / 1000)}s ${runCmd.join(' ')}`], t.input ?? '', timeoutMs)
+        const pack = tar.pack()
+        pack.entry({ name: langConfig.filename }, code)
+        pack.finalize()
+        await container.putArchive(pack, { path: '/sandbox' })
 
-            if (res.timeout) results[idx] = { stdout: '', stderr: '', error: 'TLE' }
-            else if (res.exitCode !== 0) results[idx] = { stdout: res.stdout, stderr: res.stderr, error: 'RE' }
-            else results[idx] = { stdout: res.stdout, stderr: res.stderr, error: null }
-
-        } catch (e) {
-            results[idx] = { stdout: '', stderr: e.message, error: 'IE' }
-        } finally {
-            if (container) try { await container.remove({ force: true }) } catch { }
-        }
-    })
-
-    // Chạy song song với concurrency limit
-    const pool = []
-    for (const task of tasks) {
-        const p = task()
-        pool.push(p)
-        if (pool.length >= MAX_CONCURRENCY) {
-            await Promise.race(pool)
-            // loại những promise đã hoàn thành khỏi pool
-            for (let i = pool.length - 1; i >= 0; i--) {
-                if (pool[i].isFulfilled || pool[i].isRejected) pool.splice(i, 1)
+        if (langConfig.compileCmd) {
+            const cRes = await execInside(container, langConfig.compileCmd, null, 10000)
+            if (cRes.exitCode !== 0) {
+                return testcases.map(() => ({ stdout: '', stderr: cRes.stderr, error: 'CE' }))
             }
         }
+
+        for (const t of testcases) {
+            const res = await execInside(container, langConfig.runCmd, t.input, timeoutMs)
+
+            let error = null
+            if (res.timeout) error = 'TLE'
+            // Docker Exit Code 137 thường là OOM Killer (MLE)
+            else if (res.exitCode === 137) error = 'MLE'
+            else if (res.exitCode !== 0) error = 'RE'
+
+            results.push({ stdout: res.stdout, stderr: res.stderr, error })
+        }
+    } catch (e) {
+        throw e
+    } finally {
+        if (container) await container.remove({ force: true }).catch(() => { })
     }
-    await Promise.all(pool)
     return results
 }
 
-async function exec(container, cmd, stdin, timeoutMs) {
+async function execInside(container, cmd, stdin, timeoutMs) {
     const execObj = await container.exec({
         Cmd: cmd,
-        AttachStdin: stdin !== null,
+        AttachStdin: !!stdin,
         AttachStdout: true,
-        AttachStderr: true,
-        Tty: false
+        AttachStderr: true
     })
 
-    const stream = await execObj.start({ hijack: true, stdin: stdin !== null })
+    const stream = await execObj.start({ hijack: true, stdin: !!stdin })
+
     let stdout = '', stderr = ''
+    const outStream = new Writable({ write(chunk, _, cb) { stdout += chunk.toString(); cb() } })
+    const errStream = new Writable({ write(chunk, _, cb) { stderr += chunk.toString(); cb() } })
 
-    const out = new Writable({ write(chunk, _, cb) { stdout += chunk.toString(); cb() } })
-    const err = new Writable({ write(chunk, _, cb) { stderr += chunk.toString(); cb() } })
+    container.modem.demuxStream(stream, outStream, errStream)
 
-    docker.modem.demuxStream(stream, out, err)
-
-    if (stdin !== null) { stream.write(stdin); stream.end() }
-
-    let timeout = false
-    let timer
-    if (timeoutMs) {
-        timer = setTimeout(async () => {
-            timeout = true
-            try { await container.kill('SIGKILL') } catch { }
-        }, timeoutMs)
+    if (stdin) {
+        stream.write(stdin + '\n')
+        stream.end()
     }
 
-    await new Promise(res => stream.on('end', res))
-    if (timer) clearTimeout(timer)
+    let isTimeout = false
+    const result = await Promise.race([
+        // Promise 1: Đợi lệnh chạy xong
+        new Promise((resolve) => {
+            stream.on('end', async () => {
+                const inspect = await execObj.inspect()
+                resolve({ exitCode: inspect.ExitCode })
+            })
+        }),
+        // Promise 2: Đứt đuôi khi quá giờ
+        new Promise((resolve) => {
+            setTimeout(() => {
+                isTimeout = true
+                stream.destroy()
+                resolve({ exitCode: 124 }) // Mã lỗi timeout chuẩn Linux
+            }, timeoutMs)
+        })
+    ])
 
-    const inspect = await execObj.inspect()
-    return { stdout: stdout.trim(), stderr: stderr.trim(), exitCode: inspect.ExitCode ?? -1, timeout }
+    return {
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        exitCode: result.exitCode,
+        timeout: isTimeout
+    }
 }

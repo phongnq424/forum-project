@@ -13,21 +13,18 @@ const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN
 
 console.log('Judge worker started...')
 
-async function fetchTestcaseById(id) {
-    try {
-        const url = `${BACKEND_API}/internal/testcases`
-        const resp = await axios.get(url, {
-            params: { ids: id },
-            headers: { Authorization: `Bearer ${INTERNAL_TOKEN}` },
-            timeout: 5000
-        })
-        const testcases = resp.data.testcases || []
-        if (!testcases.length) console.warn(`[Worker] No testcase returned for id ${id}`)
-        return testcases[0] || null
-    } catch (err) {
-        console.error(`[Worker] Error fetching testcase ${id}:`, err && (err.message || err.toString()))
-        return null
-    }
+async function fetchAllTestcases(job) {
+    const ids = job.testcases.map(t => t.testcaseId).join(',')
+
+    const res = await axios.get(
+        `${BACKEND_API}/internal/testcases`,
+        {
+            params: { ids },
+            headers: { Authorization: `Bearer ${INTERNAL_TOKEN}` }
+        }
+    )
+
+    return res.data.testcases.map(normalizeCase)
 }
 
 function normalizeCase(t) {
@@ -48,12 +45,11 @@ async function processJob(jobData) {
     const langConfig = languages[job.language]
     if (!langConfig) { await sendResult(job.submissionId, 0, 'IE', []); return }
 
-    const testcases = []
-    for (const t of job.testcases) {
-        const fetched = await fetchTestcaseById(t.testcaseId)
-        if (fetched) testcases.push(normalizeCase(fetched))
+    const testcases = await fetchAllTestcases(job)
+    if (!testcases.length) {
+        await sendResult(job.submissionId, 0, 'IE', [])
+        return
     }
-    if (!testcases.length) { await sendResult(job.submissionId, 0, 'IE', []); return }
 
     console.log(`[Worker] Running ${testcases.length} testcases for submission ${job.submissionId}`)
 
@@ -97,16 +93,21 @@ async function sendResult(submissionId, totalScore, finalStatus, testcaseResults
     const payload = { submissionId, score: totalScore, status: finalStatus, testcases: testcaseResults }
     for (let i = 0; i < 3; i++) {
         try {
-            await axios.post(
+            const res = await axios.post(
                 BACKEND_RESULT_URL,
                 payload,
                 {
                     timeout: 5000,
                     headers: { Authorization: `Bearer ${INTERNAL_TOKEN}` }
                 }
-            ); return
+            )
+            console.log('SEND RESULT OK', res.status)
+            return true
         }
-        catch { if (i < 2) await new Promise(r => setTimeout(r, 1000 * (i + 1))) }
+        catch (err) {
+            console.error('SEND RESULT FAIL', i + 1, err.response?.status || err.code)
+            if (i < 2) await new Promise(r => setTimeout(r, 1000 * (i + 1)))
+        }
     }
 }
 
@@ -114,7 +115,9 @@ async function main() {
     while (true) {
         try {
             const result = await redis.brpop('judge_queue', 0)
-            processJob(result[1]).catch(err => console.error('[Worker] Error:', err))
+            if (result) {
+                await processJob(result[1]).catch(err => console.error('[Worker] Error:', err))
+            }
         } catch {
             await new Promise(r => setTimeout(r, 5000))
         }
