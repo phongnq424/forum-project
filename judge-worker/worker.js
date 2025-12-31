@@ -141,9 +141,11 @@ async function main() {
   while (true) {
     try {
       const result = await redis.brpop("judge_queue", 0);
-      processJob(result[1]).catch((err) =>
-        console.error("[Worker] Error:", err)
-      );
+      if (result) {
+        await processJob(result[1]).catch((err) =>
+          console.error("[Worker] Error:", err)
+        );
+      }
     } catch {
       await new Promise((r) => setTimeout(r, 5000));
     }
