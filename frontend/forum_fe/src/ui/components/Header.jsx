@@ -7,6 +7,7 @@ import AppContext from "../Context/AppContext";
 import General from "../../General/General";
 import CustomDropDown3 from "./CustomDropDown/CustomDropDown3";
 import { useLogOut } from "../../api/hooks/AuthenticationHook";
+import ChangePasswordDialog from "../components/changePassword/changePasswordDialog";
 import { toast } from "react-toastify";
 
 function Header({ variant = "transparent", className = "" }) {
@@ -16,6 +17,8 @@ function Header({ variant = "transparent", className = "" }) {
   };
 
   const refMenu = useRef();
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] =
+    useState(false);
 
   const appContext = useContext(AppContext);
   const logOut = useLogOut();
@@ -40,10 +43,8 @@ function Header({ variant = "transparent", className = "" }) {
       navigate("/profile");
     } else if (option.id === General.menuOptions.EDIT_PROFILE.id) {
       navigate("/update-profile");
-    }
-
-    if (option === General.menuOptions.SEE_PROFILE) {
-      navigate("/profile");
+    } else if (option.id === General.menuOptions.CHANGE_PASSWORD.id) {
+      setChangePasswordDialogOpen(true);
     }
   };
 
@@ -59,6 +60,10 @@ function Header({ variant = "transparent", className = "" }) {
 
   return (
     <div className={style}>
+      <ChangePasswordDialog
+        open={changePasswordDialogOpen}
+        setOpen={setChangePasswordDialogOpen}
+      />
       <Button type="NavLink" className="my-2.5" to="/">
         <img src={logo_forum} alt="Logo_Forum" />
       </Button>
