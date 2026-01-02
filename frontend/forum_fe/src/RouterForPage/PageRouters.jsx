@@ -18,6 +18,7 @@ import Footer from "../ui/components/Footer";
 import ScrollToTop from "../ui/components/ScrollToTop";
 import DetailChallengeSubmissionPage from "../ui/pages/DetailChallengeSubmissionPage.tsx";
 import DetailChallengePage from "../ui/pages/DetailChallengePage.tsx";
+import AdminPage from "../ui/pages/AdminPage.tsx";
 
 function Layout() {
   const appContext = useContext(AppContext);
@@ -57,6 +58,7 @@ function PageRouters() {
             path="/challenges/:id/submission"
             element={<DetailChallengeSubmissionPage />}
           />
+          <Route path="/admin" element={<AdminPage />} />
         </Route>
       </Routes>
     </>

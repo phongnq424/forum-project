@@ -41,7 +41,7 @@ import {
   useRemoveFollower,
   useToggleFollow,
 } from "../../api/hooks/followHook";
-import { useBlockUser } from "../../api/hooks/blockHook";
+import { useBlockUser, useGetBlockUser } from "../../api/hooks/blockHook";
 
 const ProfilePageContext = createContext();
 
@@ -408,6 +408,11 @@ function RenderConnections() {
       name: "Followers",
     },
 
+    BLOCK: {
+      id: 2,
+      name: "Block",
+    },
+
     asArray() {
       return Object.values(this).filter((item) => typeof item != "function");
     },
@@ -435,6 +440,12 @@ function RenderConnections() {
   const toggleFollow = useToggleFollow();
   const appContext = useContext(AppContext);
   const removeFollower = useRemoveFollower();
+  const getBlockedUser = useGetBlockUser(
+    appContext?.currentUser.userId,
+    currentPage,
+    selectedTab?.id,
+    selectedTab?.id === options.BLOCK.id
+  );
 
   useEffect(
     function () {
@@ -499,6 +510,20 @@ function RenderConnections() {
     [removeFollower.isError, removeFollower.isSuccess, removeFollower.data]
   );
 
+  useEffect(
+    function () {
+      if (getBlockedUser.isSuccess) {
+        setPagination(getBlockedUser.data.pagination);
+        setUsers(getBlockedUser.data.data);
+      }
+
+      if (getBlockedUser.isError) {
+        toastHelper.error(getBlockedUser.error.message);
+      }
+    },
+    [getBlockedUser.isSuccess, getBlockedUser.isError, getBlockedUser.data]
+  );
+
   const navigate = useNavigate();
 
   return (
@@ -527,50 +552,54 @@ function RenderConnections() {
         <p className="text-white text-center text-2xl py-10">
           {selectedTab?.id === options.FOLLOWERS.id && "No follower available"}
           {selectedTab?.id === options.FOLLOWING.id && "No following available"}
+          {selectedTab?.id === options.BLOCK.id && "No blocked user available"}
         </p>
       )}
 
-      {users?.length >= 1 && (
-        <div className="grid grid-cols-2 gap-4 py-10">
-          {users.map(function (item, index) {
-            const info = {
-              username: item.otherUsername,
-              avatarUrl: item.otherProfile.avatar,
-              userId: item.otherId,
-              isFollowing: item.isFollowing,
-              isFollowMe: item.isFollowMe,
-              isBlocked: item.isBlocked,
-            };
+      {(selectedTab?.id === options.FOLLOWERS.id ||
+        selectedTab?.id === options.FOLLOWING.id ||
+        selectedTab?.id === options.BLOCK.id) &&
+        users?.length >= 1 && (
+          <div className="grid grid-cols-2 gap-4 py-10">
+            {users.map(function (item, index) {
+              const info = {
+                username: item.otherUsername,
+                avatarUrl: item.otherProfile.avatar,
+                userId: item.otherId,
+                isFollowing: item.isFollowing,
+                isFollowMe: item.isFollowMe,
+                isBlocked: item.isBlocked,
+              };
 
-            return (
-              <UserFollowCard
-                key={index}
-                {...info}
-                isShowButtons={
-                  appContext.currentUser?.user_id ===
-                  profilePageContext.currentUserProfile?.user_id
-                }
-                onFollowClick={function (userId) {
-                  toggleFollow.mutate({ targetUserId: userId });
-                }}
-                onChoose={function (userId) {
-                  if (appContext?.currentUser?.user_id != userId) {
-                    navigate(`/profile?id=${userId}`);
-                  } else {
-                    navigate(`/profile`);
+              return (
+                <UserFollowCard
+                  key={index}
+                  {...info}
+                  isShowButtons={
+                    appContext.currentUser?.user_id ===
+                    profilePageContext.currentUserProfile?.user_id
                   }
-                }}
-                onRemoveClick={function (userId) {
-                  removeFollower.mutate({ followerId: userId });
-                }}
-                onBlockClick={function (userId) {
-                  blockUser.mutate({ targetUserId: userId });
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
+                  onFollowClick={function (userId) {
+                    toggleFollow.mutate({ targetUserId: userId });
+                  }}
+                  onChoose={function (userId) {
+                    if (appContext?.currentUser?.user_id != userId) {
+                      navigate(`/profile?id=${userId}`);
+                    } else {
+                      navigate(`/profile`);
+                    }
+                  }}
+                  onRemoveClick={function (userId) {
+                    removeFollower.mutate({ followerId: userId });
+                  }}
+                  onBlockClick={function (userId) {
+                    blockUser.mutate({ targetUserId: userId });
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
 
       {pagination && pagination?.totalPages <= 1 && (
         <PaginationInput
@@ -581,6 +610,10 @@ function RenderConnections() {
     </>
   );
 }
+
+const RenderFollower = function () {
+  return <></>;
+};
 
 const RenderComments = function () {
   return <></>;
