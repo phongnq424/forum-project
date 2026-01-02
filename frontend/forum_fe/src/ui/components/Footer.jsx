@@ -5,7 +5,7 @@ import Button from "../elements/Button";
 
 const Footer = () => {
   return (
-    <footer className="border-t border-border/50 bg-background py-12 px-(--primary-padding) text-white/70 flex justify-between">
+    <footer className="border-t border-border/50 bg-transparent py-12 px-(--primary-padding) text-white/70 flex justify-between">
       {/* Brand */}
       <div className="basis-[32%]">
         <div className="mb-4 flex items-center gap-2">
@@ -19,7 +19,7 @@ const Footer = () => {
 
       {/* Our Services */}
       <div className="basis-[16%]">
-        <h3 className="mb-4 text-sm font-bold uppercase text-foreground">
+        <h3 className="mb-4 text-sm font-bold uppercase text-white">
           Our Services
         </h3>
         <ul className="space-y-2 text-sm text-muted-foreground">
@@ -40,7 +40,7 @@ const Footer = () => {
 
       {/* Our Resources */}
       <div className="basis-[16%]">
-        <h3 className="mb-4 text-sm font-bold uppercase text-foreground">
+        <h3 className="mb-4 text-sm font-bold uppercase text-white">
           Our Resources
         </h3>
         <ul className="space-y-2 text-sm text-muted-foreground">
@@ -58,7 +58,7 @@ const Footer = () => {
 
       {/* About Us */}
       <div className="basis-[16%]">
-        <h3 className="mb-4 text-sm font-bold uppercase text-foreground">
+        <h3 className="mb-4 text-sm font-bold uppercase text-white">
           About Us
         </h3>
         <ul className="space-y-2 text-sm text-muted-foreground">

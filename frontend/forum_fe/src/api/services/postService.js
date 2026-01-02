@@ -75,7 +75,7 @@ const postService = {
 
   getPosts: async function (page, cateId) {
     try {
-      if (cateId === "0") {
+      if (cateId === "all") {
         cateId = null;
       }
       const response = await axiosClient.get("/posts", {
@@ -192,7 +192,7 @@ const postService = {
       const response = await axiosClient.get(`/posts/search`, {
         params: {
           q: searchKey,
-          cate: categoryId,
+          category_id: categoryId != "all" ? categoryId : null,
         },
       });
       const ps = [];
@@ -217,6 +217,39 @@ const postService = {
         });
       }
       console.log("thành công");
+      return { data: ps, pagination: response.pagination };
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
+  getPostsSaved: async function (page) {
+    try {
+      const response = await axiosClient.get("/post-saved", {
+        params: { page: page || 1 },
+      });
+      const ps = [];
+      for (let i = 0; i < response.data.length; i++) {
+        const curr = response.data[i];
+
+        ps.push({
+          id: curr.id,
+          author: curr.User.username,
+          authorImg: curr.User.Profile.avatar,
+          date: new Date(curr.created_at).toLocaleDateString(),
+          title: curr.title,
+          description: curr.content,
+          comments: curr?.commentCount ?? -1,
+          likes: curr?.reactionCount ?? -1,
+          images: curr.Image ?? [],
+          thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
+          isLiked: false,
+          isSaved: curr.isSaved ?? false,
+          topic: curr.Topic,
+          user: curr.User,
+        });
+      }
+      console.log(ps, response.pagination);
       return { data: ps, pagination: response.pagination };
     } catch (error) {
       throw General.createError(error);

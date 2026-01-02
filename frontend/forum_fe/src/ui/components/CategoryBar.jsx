@@ -29,7 +29,10 @@ const CategoryBar = ({
           {categories.map((category) => (
             <button
               key={category.id}
-              onClick={() => setSelectedItem(category)}
+              onClick={function () {
+                setSelectedItem(category);
+                onChanged?.(selectedItem);
+              }}
               className={`text-white h-fit px-3 py-2 flex ${
                 textSize ? `text-${textSize}` : ""
               } items-center justify-center whitespace-nowrap rounded-md font-medium transition-colors duration-100 gap-2.5 ${

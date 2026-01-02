@@ -43,7 +43,7 @@ export function useDeletePost() {
   });
 }
 
-export function useGetPostsOfUser(userId, page, limit) {
+export function useGetPostsOfUser(userId, page, limit, enabled = true) {
   return useQuery({
     queryKey: ["post_of_user", userId, page, limit],
     queryFn: (context) =>
@@ -53,6 +53,7 @@ export function useGetPostsOfUser(userId, page, limit) {
         context.queryKey[3]
       ),
     refetchOnWindowFocus: false,
+    enabled: !!userId && enabled,
   });
 }
 
@@ -74,5 +75,14 @@ export function useGetPostBySearchKey(searchKey, selectedCategoryId) {
       );
     },
     enabled: searchKey != "",
+  });
+}
+
+export function useGetPostsSaved(page, enabled = true) {
+  return useQuery({
+    queryKey: ["post_save", page],
+    queryFn: (context) => postService.getPostsSaved(context.queryKey[1]),
+    refetchOnWindowFocus: false,
+    enabled: enabled,
   });
 }
