@@ -14,6 +14,9 @@ const ProfileCard = ({
   isOwnProfile = false,
   isFollowing = false,
   handleToggleFollow = null,
+  handleToggleBlock = null,
+  handleClickChat = null,
+  isBlocked,
 }) => {
   const navigate = useNavigate();
   return (
@@ -75,16 +78,29 @@ const ProfileCard = ({
                       : "bg-proPurple w-fit hover:bg-proPurple/50"
                   }`}
                 >
-                  <FaPen className="h-5 w-5" />
                   {isFollowing ? "Following" : "Follow"}
                 </button>
 
                 <button
-                  onClick={function () {}}
-                  className="min-w-fit mt-5 bg-red-500 w-fit hover:bg-red-500/50 text-lg gap-2 flex px-5 py-1 rounded-xl items-center"
+                  onClick={function () {
+                    handleClickChat?.(user_id);
+                  }}
+                  className={`min-w-fit mt-5 text-lg gap-2 flex px-5 py-1 rounded-xl items-center bg-proPurple`}
                 >
-                  <FaPen className="h-5 w-5" />
-                  Block
+                  Chat
+                </button>
+
+                <button
+                  onClick={function () {
+                    handleToggleBlock?.(user_id);
+                  }}
+                  className={`min-w-fit mt-5 text-lg gap-2 flex px-5 py-1 rounded-xl items-center ${
+                    isBlocked
+                      ? "bg-primary w-fit hover:bg-white/10"
+                      : "bg-red-500 w-fit hover:bg-red-400"
+                  }`}
+                >
+                  {isBlocked ? "Unblock" : "Block"}
                 </button>
               </>
             )}

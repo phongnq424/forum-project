@@ -6,16 +6,18 @@ import AppContext from "./ui/Context/AppContext";
 import { useEffect, useState } from "react";
 import { useGetMe } from "./api/hooks/ProfileHook";
 import LoadingScreen from "./ui/pages/LoadingScreen";
+import tokenHelper from "./helper/TokenHelper";
+import { connectSocket, disconnectSocket } from "./socket";
 
 function App() {
-  console.log("APP RENDER");
-
   const [isLogged, setIsLogged] = useState(
-    (localStorage.getItem("token") || "") != ""
+    (tokenHelper.getToken() || "") != ""
   );
 
+  const [token, setToken] = useState(tokenHelper.getToken() || "");
+
   const [flagGetCurrentUserAgain, getCurrentUserAgain] = useState(true);
-  const getMe = useGetMe(false);
+  const getMe = useGetMe(token, isLogged);
   const [currentUser, setCurrentUser] = useState(null);
 
   const nav = useNavigate();
@@ -38,13 +40,20 @@ function App() {
   useEffect(
     function () {
       if (isLogged) {
-        getMe.refetch();
       } else {
         setCurrentUser(null);
       }
     },
     [flagGetCurrentUserAgain, isLogged]
   );
+
+  useEffect(() => {
+    connectSocket();
+
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
 
   return (
     <AppContext.Provider
@@ -53,6 +62,7 @@ function App() {
         setIsLogged,
         currentUser: isLogged ? currentUser : null,
         getCurrentUserAgain,
+        setToken,
       }}
     >
       <div className="bg-primary min-h-screen overflow-y-hidden">

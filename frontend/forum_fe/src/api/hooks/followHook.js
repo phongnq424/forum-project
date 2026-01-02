@@ -12,8 +12,7 @@ export const useGetFollowingByUserId = function (
     queryFn: function (context) {
       return followService.getFollowingByUserId(
         context.queryKey[1],
-        context.queryKey[2],
-        context.queryKey[3]
+        context.queryKey[2]
       );
     },
     enabled: userId != "" && isEnable,
@@ -31,8 +30,7 @@ export const useGetFollowersByUserId = function (
     queryFn: function (context) {
       return followService.getFollowersByUserId(
         context.queryKey[1],
-        context.queryKey[2],
-        context.queryKey[3]
+        context.queryKey[2]
       );
     },
     enabled: userId != "" && isEnable,

@@ -1,3 +1,4 @@
+import { isBlock } from "typescript";
 import General from "../../General/General";
 import axiosClient from "../AxiosClient";
 
@@ -19,7 +20,9 @@ const profileService = {
         isOwnProfile: true,
         isFollowing: response.isFollowing,
         gender: response.gender,
+        role: response.User.role,
       };
+
       return result;
     } catch (error) {
       throw General.createError(error);
@@ -69,8 +72,20 @@ const profileService = {
         comments: -1,
         isOwnProfile: false,
         isFollowing: response.isFollowing,
+        isBlocked: response?.isBlock ?? false,
       };
       return result;
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
+
+  searchUsers: async function (query) {
+    try {
+      const response = await axiosClient.get("/profiles/search/all", {
+        params: { q: query },
+      });
+      return response;
     } catch (error) {
       throw General.createError(error);
     }

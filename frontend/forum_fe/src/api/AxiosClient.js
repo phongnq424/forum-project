@@ -1,17 +1,22 @@
 import axios from "axios";
+import tokenHelper from "../helper/TokenHelper";
+/// <reference types="vite/client" />
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.BARE_URL || "http://localhost:3000/api",
+  baseURL: import.meta.env.SERVER_BARE_URL || "http://localhost:3000/api",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
 axiosClient.interceptors.request.use(function (config) {
-  const token = localStorage.getItem("token");
+  const token = tokenHelper.getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization;
   }
+
   return config;
 });
 
@@ -25,7 +30,7 @@ axiosClient.interceptors.response.use(
     const loginUrl =
       import.meta.env.BARE_URL || "http://localhost:3000/api" + "/auth/login";
     if (statusCode === 401 && responseURL != loginUrl) {
-      localStorage.removeItem("token");
+      tokenHelper.removeToken();
       (error.response.status = 401),
         (error.response.data.error = "Please Log in to continue!");
     }
