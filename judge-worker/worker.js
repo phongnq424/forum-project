@@ -20,7 +20,8 @@ async function fetchAllTestcases(job) {
         `${BACKEND_API}/internal/testcases`,
         {
             params: { ids },
-            headers: { Authorization: `Bearer ${INTERNAL_TOKEN}` }
+            headers: { Authorization: `Bearer ${INTERNAL_TOKEN}` },
+            timeout: 10000
         }
     )
 
