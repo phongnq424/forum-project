@@ -329,6 +329,7 @@ model AlMessage {
   user_id String
   content String
   sent_at DateTime @default(now())
+  role    String   @default("user")
 
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
@@ -479,14 +480,6 @@ model ReportReply {
   created_at DateTime @default(now())
 
   Report Report @relation(fields: [report_id], references: [id], onDelete: Cascade)
-}
-
-model AlScenario {
-  id            String   @id @default(uuid())
-  title         String   @db.VarChar(255)
-  description   String?
-  system_prompt String
-  created_at    DateTime @default(now())
 }
 
 model ActivityLogs {

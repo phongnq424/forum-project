@@ -2,12 +2,6 @@
 version: '3.8'
 
 services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    command: redis-server --save "" --appendonly no
-
   sandbox-cpp:
     build:
       context: .
@@ -24,7 +18,6 @@ services:
     build: .
     env_file: .env
     depends_on:
-      - redis
       - sandbox-cpp
       - sandbox-python
     restart: unless-stopped
