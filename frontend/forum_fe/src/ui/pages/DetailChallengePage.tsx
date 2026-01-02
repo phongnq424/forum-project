@@ -1,6 +1,9 @@
-import { useGetChallengeById } from "@/api/hooks/challengeHook";
+import {
+  useDeleteChallenge,
+  useGetChallengeById,
+} from "@/api/hooks/challengeHook";
 import { useContext, useEffect, useState } from "react";
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink, useNavigate, useParams } from "react-router-dom";
 import type { Challenge } from "../components/challenge/mockData";
 import toastHelper from "../../helper/ToastHelper";
 import { ProblemDescription } from "../components/challenge/problemDescription";
@@ -9,6 +12,7 @@ import { LeaderboardItem } from "../components/leaderboard/leaderboardItem";
 import AppContext from "../Context/AppContext.jsx";
 import General from "@/General/General";
 import { useUploadTestcase } from "@/api/hooks/testcaseHook";
+import UploadFileDialog from "../components/challenge/uploadTestcaseDialog";
 
 const DetailChallengePage = function () {
   const { id } = useParams<{ id: string }>();
@@ -16,9 +20,11 @@ const DetailChallengePage = function () {
   const [challenge, setChallenge] = useState<Challenge>();
   const getLeaderboardByChallengeId = useGetLeaderBoardByChallengeId(id ?? "");
   const appContext = useContext(AppContext) as any;
-  const [zipFile, setZipFile] = useState<File | null>(null);
   const uploadTestcase = useUploadTestcase();
-
+  const deleteChallenge = useDeleteChallenge();
+  const navigate = useNavigate();
+  const [uploadTestcaseDialogOpen, setUploadTestcaseDialogOpen] =
+    useState(false);
   useEffect(
     function () {
       if (uploadTestcase.isSuccess) {
@@ -50,7 +56,7 @@ const DetailChallengePage = function () {
           examples: [],
           time_limitation: (getChallengeById.data as any)?.time_limit,
           mem_limitation: (getChallengeById.data as any)?.memory_limit,
-          testcase: (getLeaderboardByChallengeId.data as any)?.Testcase,
+          testcase: (getChallengeById.data as any)?.Testcase,
         });
       }
       if (getChallengeById.error) {
@@ -62,6 +68,20 @@ const DetailChallengePage = function () {
       getChallengeById.isSuccess,
       getChallengeById.isError,
     ]
+  );
+
+  useEffect(
+    function () {
+      if (deleteChallenge.isSuccess) {
+        toastHelper.success("Delete challenge successfully");
+        navigate("/challenges");
+      }
+
+      if (deleteChallenge.isError) {
+        toastHelper.success(deleteChallenge.error.message);
+      }
+    },
+    [deleteChallenge.data, deleteChallenge.isSuccess, deleteChallenge.isError]
   );
 
   if (!challenge) {
@@ -78,6 +98,20 @@ const DetailChallengePage = function () {
 
   return (
     <div className="h-(--view-h) flex justify-between bg-transparent px-(--primary-padding) py-3">
+      <UploadFileDialog
+        open={uploadTestcaseDialogOpen}
+        setOpen={setUploadTestcaseDialogOpen}
+        handleOnUpload={function (f: File): void {
+          if (!id || !f) {
+            toastHelper.error("Please select one file");
+            return;
+          }
+          uploadTestcase.mutate({
+            challengeId: id ?? "",
+            file: f,
+          });
+        }}
+      />
       <div className="flex flex-col space-y-5 bg-transparent h-full overflow-y-auto py-3 pr-3 basis-[60%]">
         <div className="bg-transparent flex flex-col space-y-1">
           <ProblemDescription challenge={challenge} />
@@ -93,29 +127,9 @@ const DetailChallengePage = function () {
         {appContext.currentUser?.role === General.accountRoles.ADMIN && (
           <div className="flex space-x-10 w-full">
             <div className="w-full flex-1">
-              <input
-                type="file"
-                accept=".zip"
-                className="flex-1"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setZipFile(file);
-                }}
-              />
               <button
-                disabled={!id || !zipFile}
                 className="flex-col flex-1 rounded-xl py-2 w-full self-stretch text-lg text-white bg-proPurple hover:opacity-80 flex justify-center font-semibold disabled:cursor-not-allowed"
-                onClick={() => {
-                  if (!id || !zipFile) {
-                    toastHelper.error("Please select one file");
-                    return;
-                  }
-
-                  uploadTestcase.mutate({
-                    challengeId: id ?? "",
-                    file: zipFile,
-                  });
-                }}
+                onClick={() => setUploadTestcaseDialogOpen(true)}
               >
                 {(challenge?.testcase ?? []).length <= 0 && (
                   <>
@@ -137,8 +151,13 @@ const DetailChallengePage = function () {
               </button>
             </div>
 
-            <button className="rounded-xl flex-1 py-2 self-stretch text-lg text-white bg-proPurple hover:opacity-80 flex justify-center font-semibold items-center">
-              Update Challenge
+            <button
+              className="rounded-xl flex-1 py-2 self-stretch text-lg text-white bg-red-500 hover:opacity-80 flex justify-center font-semibold items-center"
+              onClick={function (e) {
+                deleteChallenge.mutate({ id: id ?? "" });
+              }}
+            >
+              Delete Challenge
             </button>
 
             {}

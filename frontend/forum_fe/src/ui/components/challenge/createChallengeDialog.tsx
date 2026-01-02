@@ -313,7 +313,7 @@ const CreateChallengeDialog = function (props: CreateGroupDialogProps) {
           </div>
 
           <button
-            className="bg-proPurple rounded-lg py-1 text-lg hover:opacity-70"
+            className="bg-proPurple rounded-lg py-0 text-lg hover:opacity-70"
             onClick={form.handleSubmit(onSubmit)}
           >
             Create Challenge
