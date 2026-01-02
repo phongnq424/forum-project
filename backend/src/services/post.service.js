@@ -251,8 +251,8 @@ const PostService = {
         }
     },
 
-    getByUser: async (userIdOwner, query, { viewerId, blockContext }) => {
-        if (viewerId && blockContext && blockContext.blockedSet.has(userIdOwner)) {
+    getByUser: async (ownerId, query, { viewerId, blockContext }) => {
+        if (viewerId && blockContext && blockContext.blockedSet.has(ownerId)) {
             return { data: [], pagination: { total: 0, page: parseInt(query.page) || 1, limit: parseInt(query.limit) || 10, totalPages: 0 } }
         }
 
@@ -260,7 +260,7 @@ const PostService = {
         const limit = parseInt(query.limit) || 10
         const skip = (page - 1) * limit
 
-        const where = { user_id: userIdOwnerm, is_deleted: false }
+        const where = { user_id: ownerId, is_deleted: false }
 
         const [posts, total] = await Promise.all([
             prisma.post.findMany({
