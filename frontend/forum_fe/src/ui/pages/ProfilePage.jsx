@@ -17,6 +17,7 @@ import { LuFilePlus } from "react-icons/lu";
 import {
   useCreatePost,
   useGetPostsOfUser,
+  useGetPostsSaved,
   useSavePost,
 } from "../../api/hooks/postHook";
 
@@ -179,6 +180,16 @@ function RenderByCategory({ selectedCategory }) {
 }
 
 function RenderPosts() {
+  const postSelections = {
+    MY_POSTS: "My Posts",
+    SAVED_POST: "Saved Posts",
+    asArray: function () {
+      return Object.values(this).filter((i) => typeof i != "function");
+    },
+  };
+  const [postSelection, setPostSelection] = useState(
+    postSelections.asArray()[0]
+  );
   const createPost = useCreatePost();
   const profilePageContext = useContext(ProfilePageContext);
   const appContext = useContext(AppContext);
@@ -192,11 +203,32 @@ function RenderPosts() {
   const getPostOfUser = useGetPostsOfUser(
     profilePageContext.currentUserProfile?.user_id,
     currentPage,
-    pagination?.limit
+    pagination?.limit,
+    postSelection === postSelections.MY_POSTS
   );
+
+  const getPostSaved = useGetPostsSaved(
+    currentPage,
+    postSelection === postSelections.SAVED_POST
+  );
+
   const handleSelectPost = function (post) {
     navigate(`/post-detail?postId=${post.id}`, { state: { post } });
   };
+
+  useEffect(
+    function () {
+      if (getPostSaved.isSuccess) {
+        setPagination(getPostSaved.data.pagination);
+        setPosts(getPostSaved.data.data);
+      }
+
+      if (getPostSaved.isError) {
+        toastHelper.error(getPostSaved.error.message);
+      }
+    },
+    [getPostSaved.data, getPostSaved.isSuccess, getPostSaved.isError]
+  );
 
   useEffect(
     function () {
@@ -289,17 +321,35 @@ function RenderPosts() {
   return (
     <div className="space-y-5 flex flex-col min-h-full" ref={containerPostsRef}>
       {getPostOfUser.isPending && <LoadingScreen />}
-      <SearchBar />
       {profilePageContext.currentUserProfile?.user_id ===
         appContext.currentUser?.user_id && (
-        <button
-          onClick={() => setIsDialogClosing(false)}
-          className="self-end text-white text-[18px] bg-green px-6 py-2 flex items-center justify-center rounded-md font-medium transition-colors hover:opacity-70 duration-200 ease-linear"
-        >
-          <LuFilePlus className="h-4 w-4 me-2" />
-          Create
-        </button>
+        <div className="flex space-x-5">
+          <div className="rounded-lg flex space-x-2 bg-black w-fit text-xl items-center">
+            {postSelections.asArray().map(function (s, i) {
+              return (
+                <div
+                  key={i}
+                  onClick={() => setPostSelection(s)}
+                  className={`rounded-lg px-5 py-2 hover:cursor-pointer ${
+                    s === postSelection ? "bg-proPurple" : ""
+                  }`}
+                >
+                  {s}
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => setIsDialogClosing(false)}
+            className="self-end text-white text-[18px] bg-green px-6 py-2 flex items-center justify-center rounded-md font-medium transition-colors hover:opacity-70 duration-200 ease-linear"
+          >
+            <LuFilePlus className="h-4 w-4 me-2" />
+            Create
+          </button>
+        </div>
       )}
+
       <div className="space-y-10" ref={containerPostsRef}>
         {posts.map((item) => {
           item.author = profilePageContext.currentUserProfile.username;

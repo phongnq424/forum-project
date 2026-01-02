@@ -13,7 +13,7 @@ interface ChallengeCardProps {
 export function ChallengeCard({ challenge, index }: ChallengeCardProps) {
   return (
     <Link
-      to={`/challenges/${challenge.id}/submission`}
+      to={`/challenges/${challenge.id}`}
       className={cn(
         "block p-4 rounded-lg bg-white/10 hover:bg-white/20",
         "transition-all duration-200 hover:shadow-md",

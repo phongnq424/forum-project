@@ -9,7 +9,7 @@ interface ProblemDescriptionProps {
 
 export function ProblemDescription({ challenge }: ProblemDescriptionProps) {
   return (
-    <div className="flex-1 py-6 space-y-6">
+    <div className="flex-1 py-2 space-y-6">
       {/* Header */}
       <div className="space-y-3">
         <div className="flex flex-col items-start gap-3 text-2xl">

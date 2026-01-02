@@ -1,14 +1,17 @@
 import { useGetChallenges } from "@/api/hooks/challengeHook";
-import ChallengeList, {
-  type Challenge,
-} from "@/ui/components/challenge/challengeList";
-import { useEffect, useState } from "react";
+import ChallengeList from "@/ui/components/challenge/challengeList";
+import { useContext, useEffect, useState } from "react";
 import LoadingScreen from "./LoadingScreen";
 import PaginationInput from "../components/PaginationInput";
+import type { Challenge } from "../components/challenge/mockData";
+import CreateChallengeDialog from "../components/challenge/createChallengeDialog";
+import AppContext from "../Context/AppContext.jsx";
+import General from "@/General/General";
 
 function ChallengesPage() {
   const [page, setPage] = useState<number>(1);
   const getChallenges = useGetChallenges(page);
+  const appContext = useContext(AppContext) as any;
 
   useEffect(
     function () {
@@ -24,7 +27,18 @@ function ChallengesPage() {
   }
 
   return (
-    <div className="h-(--view-h) px-(--primary-padding) flex flex-col py-2">
+    <div className="h-(--view-h) px-(--primary-padding) flex flex-col py-10 space-y-5">
+      {/* Stats Header */}
+      <div className="">
+        <h1 className="text-3xl font-bold text-foreground">
+          Coding Challenges
+        </h1>
+      </div>
+
+      {appContext.currentUser?.role === General.accountRoles.ADMIN && (
+        <CreateChallengeDialog className="sm:max-w-none w-[80vw] h-[80vh] bg-black404040" />
+      )}
+
       <ChallengeList
         challenges={(getChallenges.data?.data as any).map(function (
           c: any,
@@ -51,8 +65,8 @@ function ChallengesPage() {
 
       {page > 1 && (
         <PaginationInput
-          totalPages={10}
-          onChange={(i: number) => alert(i)}
+          totalPages={page}
+          onChange={(i: number) => setPage(i)}
           currentPage={1}
         />
       )}

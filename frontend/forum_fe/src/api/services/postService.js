@@ -222,6 +222,39 @@ const postService = {
       throw General.createError(error);
     }
   },
+
+  getPostsSaved: async function (page) {
+    try {
+      const response = await axiosClient.get("/post-saved", {
+        params: { page: page || 1 },
+      });
+      const ps = [];
+      for (let i = 0; i < response.data.length; i++) {
+        const curr = response.data[i];
+
+        ps.push({
+          id: curr.id,
+          author: curr.User.username,
+          authorImg: curr.User.Profile.avatar,
+          date: new Date(curr.created_at).toLocaleDateString(),
+          title: curr.title,
+          description: curr.content,
+          comments: curr?.commentCount ?? -1,
+          likes: curr?.reactionCount ?? -1,
+          images: curr.Image ?? [],
+          thumbnail: curr.Image.length > 0 ? curr.Image[0].url : null,
+          isLiked: false,
+          isSaved: curr.isSaved ?? false,
+          topic: curr.Topic,
+          user: curr.User,
+        });
+      }
+      console.log(ps, response.pagination);
+      return { data: ps, pagination: response.pagination };
+    } catch (error) {
+      throw General.createError(error);
+    }
+  },
 };
 
 export default postService;

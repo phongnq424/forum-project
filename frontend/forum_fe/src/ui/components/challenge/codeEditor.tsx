@@ -77,7 +77,10 @@ export function CodeEditor({ onSubmit }: CodeEditorProps) {
             variant="default"
             size="sm"
             className="bg-proPurple"
-            onClick={() => onSubmit(code, selectedLanguage?.id ?? "")}
+            onClick={() => {
+              onSubmit(code, selectedLanguage?.id ?? "");
+              setCode("");
+            }}
           >
             <Send className="w-4 h-4 mr-2" />
             Submit
