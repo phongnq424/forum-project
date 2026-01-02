@@ -237,16 +237,32 @@ const PostService = {
       where.topic_id = { in: topics.map((t) => t.id) };
     }
 
-    const blockedIds =
-      blockContext && blockContext.blockedUserIds
-        ? Array.from(blockContext.blockedUserIds)
-        : [];
+    getByUser: async (ownerId, query, { viewerId, blockContext }) => {
+        if (viewerId && blockContext && blockContext.blockedSet.has(ownerId)) {
+            return { data: [], pagination: { total: 0, page: parseInt(query.page) || 1, limit: parseInt(query.limit) || 10, totalPages: 0 } }
+        }
 
-    if (blockedIds.length > 0) {
-      if (where.user_id) {
-        // nếu query chỉ request posts của 1 user cụ thể
-        if (typeof where.user_id === "string") {
-          if (blockedIds.includes(where.user_id)) {
+        const page = parseInt(query.page) || 1
+        const limit = parseInt(query.limit) || 10
+        const skip = (page - 1) * limit
+
+        const where = { user_id: ownerId, is_deleted: false }
+
+        const [posts, total] = await Promise.all([
+            prisma.post.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { created_at: 'desc' },
+                include: {
+                    Topic: { select: { id: true, name: true } },
+                    Image: { select: { id: true, url: true } }
+                }
+            }),
+            prisma.post.count({ where })
+        ])
+
+        if (posts.length === 0) {
             return {
               data: [],
               pagination: { total: 0, page, limit, totalPages: 0 },

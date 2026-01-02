@@ -20,7 +20,6 @@ const SubmissionController = {
     receiveResult: async (req, res) => {
         try {
             const { submissionId, score, status } = req.body;
-
             if (!submissionId || score === undefined || !status) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
