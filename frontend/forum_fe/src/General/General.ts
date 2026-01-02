@@ -51,7 +51,7 @@ const General = {
     SEE_PROFILE: { id: 0, name: "See Profile" } as MenuOption,
     EDIT_PROFILE: { id: 1, name: "Edit Profile" } as MenuOption,
     LOG_OUT: { id: 2, name: "Log Out" } as MenuOption,
-    BLOCKED_USERS: { id: 3, name: "Blocked Users" } as MenuOption,
+    CHANGE_PASSWORD: { id: 3, name: "Change Password" } as MenuOption,
 
     asArray(): MenuOption[] {
       return Object.values(this).filter(

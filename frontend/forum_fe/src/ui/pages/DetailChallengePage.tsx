@@ -84,7 +84,7 @@ const DetailChallengePage = function () {
         </div>
 
         <NavLink
-          className="rounded-xl flex-1 py-2 self-stretch text-lg text-white bg-proPurple hover:opacity-80 flex justify-center font-semibold mt-4"
+          className="rounded-xl py-2 self-stretch text-lg text-white bg-proPurple hover:opacity-80 flex justify-center font-semibold mt-4 h-fit"
           to={`/challenges/${id}/submission`}
         >
           Try Submitting
@@ -92,10 +92,11 @@ const DetailChallengePage = function () {
 
         {appContext.currentUser?.role === General.accountRoles.ADMIN && (
           <div className="flex space-x-10 w-full">
-            <div className="flex-1 w-full">
+            <div className="w-full flex-1">
               <input
                 type="file"
                 accept=".zip"
+                className="flex-1"
                 onChange={(e) => {
                   const file = e.target.files?.[0] || null;
                   setZipFile(file);
@@ -103,7 +104,7 @@ const DetailChallengePage = function () {
               />
               <button
                 disabled={!id || !zipFile}
-                className="flex-col rounded-xl py-2 w-full self-stretch text-lg text-white bg-proPurple hover:opacity-80 flex justify-center font-semibold disabled:cursor-not-allowed"
+                className="flex-col flex-1 rounded-xl py-2 w-full self-stretch text-lg text-white bg-proPurple hover:opacity-80 flex justify-center font-semibold disabled:cursor-not-allowed"
                 onClick={() => {
                   if (!id || !zipFile) {
                     toastHelper.error("Please select one file");
