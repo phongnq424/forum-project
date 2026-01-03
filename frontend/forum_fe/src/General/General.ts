@@ -16,6 +16,7 @@ export class AppError extends Error {
 interface MenuOption {
   id: number;
   name: string;
+  isAdminFeature: boolean;
 }
 
 // Kiểu cho gender
@@ -48,10 +49,23 @@ const General = {
   },
 
   menuOptions: {
-    SEE_PROFILE: { id: 0, name: "See Profile" } as MenuOption,
-    EDIT_PROFILE: { id: 1, name: "Edit Profile" } as MenuOption,
-    LOG_OUT: { id: 2, name: "Log Out" } as MenuOption,
-    CHANGE_PASSWORD: { id: 3, name: "Change Password" } as MenuOption,
+    SEE_PROFILE: {
+      id: 0,
+      name: "See Profile",
+      isAdminFeature: false,
+    } as MenuOption,
+    EDIT_PROFILE: {
+      id: 1,
+      name: "Edit Profile",
+      isAdminFeature: false,
+    } as MenuOption,
+    LOG_OUT: { id: 2, name: "Log Out", isAdminFeature: false } as MenuOption,
+    CHANGE_PASSWORD: {
+      id: 3,
+      name: "Change Password",
+      isAdminFeature: false,
+    } as MenuOption,
+    ADMIN: { id: 4, name: "Admin", isAdminFeature: true },
 
     asArray(): MenuOption[] {
       return Object.values(this).filter(
