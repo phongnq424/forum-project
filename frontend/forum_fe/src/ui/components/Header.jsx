@@ -45,6 +45,8 @@ function Header({ variant = "transparent", className = "" }) {
       navigate("/update-profile");
     } else if (option.id === General.menuOptions.CHANGE_PASSWORD.id) {
       setChangePasswordDialogOpen(true);
+    } else if (option.id === General.menuOptions.ADMIN.id) {
+      navigate("/admin");
     }
   };
 
@@ -97,7 +99,14 @@ function Header({ variant = "transparent", className = "" }) {
             onSelect={(option) => handleOnMenuSelection(option)}
             ref={refMenu}
             className="right-[2px]"
-            options={General.menuOptions.asArray()}
+            options={General.menuOptions
+              .asArray()
+              .filter(
+                (i) =>
+                  !i?.isAdminFeature ||
+                  (i?.isAdminFeature &&
+                    appContext.currentUser?.role === General.accountRoles.ADMIN)
+              )}
             displayField="name"
           />
         </div>

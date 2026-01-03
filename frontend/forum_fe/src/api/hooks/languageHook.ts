@@ -49,7 +49,7 @@ export const useDeleteLanguages = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: function (ids: string[]) {
+    mutationFn: function ({ ids }: { ids: string[] }) {
       return languageService.removeMany(ids);
     },
   });
