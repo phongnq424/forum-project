@@ -75,16 +75,16 @@ const ProfilePage = () => {
 
   const categories = [
     { id: 1, name: "Posts", icon: <BsPostcard className="text-[24px]" /> },
-    {
-      id: 2,
-      name: "Comments",
-      icon: <TbMessageCircleFilled className="text-[24px]" />,
-    },
-    {
-      id: 3,
-      name: "Achievements",
-      icon: <PiMedalFill className="text-[24px]" />,
-    },
+    // {
+    //   id: 2,
+    //   name: "Comments",
+    //   icon: <TbMessageCircleFilled className="text-[24px]" />,
+    // },
+    // {
+    //   id: 3,
+    //   name: "Achievements",
+    //   icon: <PiMedalFill className="text-[24px]" />,
+    // },
 
     {
       id: 4,
