@@ -43,7 +43,7 @@ export default function ChatbotPopup() {
           ...prev,
           {
             id: "1",
-            content: chatbot.data,
+            content: chatbot.data.reply,
             sender: "bot",
             timestamp: new Date(),
             isError: false,
