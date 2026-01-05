@@ -83,9 +83,7 @@ const DetailPostPage = () => {
   useEffect(
     function () {
       if (rateComment.isSuccess) {
-        toastHelper.success(
-          rateComment.data.comment_id + " " + rateComment.data.rating
-        );
+        toastHelper.success("Rate successfully");
       }
 
       if (rateComment.isError) {
@@ -175,11 +173,10 @@ const DetailPostPage = () => {
   useEffect(
     function () {
       if (toggleReaction.isSuccess) {
-        //getPostById.refetch();
         setCurrentPost(function (prev) {
           return {
             ...prev,
-            i,
+            isLiked: toggleReaction.data,
           };
         });
       }
@@ -240,8 +237,6 @@ const DetailPostPage = () => {
     [getPostById.isSuccess, getPostById.isError, getPostById.data]
   );
 
-  if (!currentPost) return <></>;
-
   const handleOnClickOnUserInfo = function () {
     if (appContext?.currentUser?.user_id != currentPost.user.id) {
       navigate(`/profile?id=${currentPost.user.id}`);
@@ -259,6 +254,8 @@ const DetailPostPage = () => {
   };
 
   const textAreaRef = useRef(null);
+
+  if (!currentPost) return <></>;
   return (
     <>
       <main className="h-(--view-h) w-full overflow-hidden px-(--primary-padding)">
@@ -339,7 +336,7 @@ const DetailPostPage = () => {
                           return true;
                         if (
                           appContext.currentUser?.user_id ===
-                          currentPost.user.id
+                          currentPost.user?.id
                         ) {
                           return item.showFor.includes(General.showFor.OWN);
                         } else {
@@ -358,7 +355,7 @@ const DetailPostPage = () => {
 
                   <div className="flex py-1 px-2 rounded-md space-x-2.5 bg-proPurple w-fit">
                     <p className="text-lg leading-relaxed text-white">
-                      {currentPost.topic.name}
+                      {currentPost.topic?.name}
                     </p>
                   </div>
                   {/* Post content */}
@@ -434,6 +431,7 @@ const DetailPostPage = () => {
                         key={comment.id}
                         commentItem={comment}
                         currentUser={appContext?.currentUser}
+                        avgRate={comment.avgRate}
                         onSelectAuthor={function (commentItem) {
                           onSelectAuthorOfComment(commentItem);
                         }}
@@ -550,6 +548,7 @@ const RenderComment = function ({
   onEditComment,
   onReplyTo,
   onRatingComment,
+  avgRate,
 }) {
   const refCommentDropDownOptions = useRef();
   const refRatingStar = useRef();
@@ -690,7 +689,7 @@ const RenderComment = function ({
                 refRatingStar.current?.open();
               }}
             >
-              Rate
+              {avgRate} Rate
             </button>
 
             {level == 0 && (
