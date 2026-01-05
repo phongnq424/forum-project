@@ -40,7 +40,7 @@ const ProfileCard = ({
 
           <p className="text-[18px] text-lg italic">{`${bio}`}</p>
 
-          <div className="flex space-x-5 w-full">
+          {/* <div className="flex space-x-5 w-full">
             <p className="text-[18px] text-lg hover:cursor-pointer hover:underline hover:text-proPurple">
               <b>{followers}</b> Follower{followers > 1 ? "s" : ""}
             </p>
@@ -53,7 +53,7 @@ const ProfileCard = ({
             <p className="text-[18px] text-lg hover:cursor-pointer hover:underline hover:text-proPurple">
               <b>{comments}</b> Comment{comments > 1 ? "s" : ""}
             </p>
-          </div>
+          </div> */}
 
           <div className="flex p-0 m-0 space-x-5">
             {isOwnProfile && (

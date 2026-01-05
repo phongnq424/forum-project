@@ -22,6 +22,7 @@ const LanguageRoutes = require("./language.route.js");
 const CommentRatesRoutes = require("./commentRate.route.js");
 const InternalTestcaseRoutes = require("./internal.testcase.route.js");
 const ConversationRoutes = require("./conversation.route.js");
+const NotificationRoutes = require("./notification.route.js");
 
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
@@ -44,5 +45,6 @@ router.use("/languages", LanguageRoutes);
 router.use("/comment-rates", CommentRatesRoutes);
 router.use("/internal", InternalTestcaseRoutes);
 router.use("/conversations", ConversationRoutes);
+router.use("/notifications", NotificationRoutes);
 
 module.exports = router;

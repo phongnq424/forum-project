@@ -9,6 +9,9 @@ import CustomDropDown3 from "./CustomDropDown/CustomDropDown3";
 import { useLogOut } from "../../api/hooks/AuthenticationHook";
 import ChangePasswordDialog from "../components/changePassword/changePasswordDialog";
 import { toast } from "react-toastify";
+import { NotificationBell } from "./bellNotification.tsx";
+import { fa } from "zod/v4/locales";
+import LoadingScreen from "../pages/LoadingScreen";
 
 function Header({ variant = "transparent", className = "" }) {
   const variants = {
@@ -83,32 +86,36 @@ function Header({ variant = "transparent", className = "" }) {
       )}
 
       {appContext.isLogged && (
-        <div className="relative self-center w-fit h-fit">
-          <button
-            className="w-fit h-fit"
-            onClick={() => refMenu.current.open()}
-          >
-            <img
-              src={appContext.currentUser?.avatar}
-              alt={appContext.currentUser?.username || "avatar"}
-              className="h-[60px] w-[60px]  rounded-full bg-white object-cover"
-            ></img>
-          </button>
+        <div className="flex space-x-3">
+          <NotificationBell className="bg-transparent" />
+          <div className="relative self-center w-fit h-fit">
+            <button
+              className="w-fit h-fit"
+              onClick={() => refMenu.current.open()}
+            >
+              <img
+                src={appContext.currentUser?.avatar}
+                alt={appContext.currentUser?.username || "avatar"}
+                className="h-[60px] w-[60px]  rounded-full bg-white object-cover"
+              ></img>
+            </button>
 
-          <CustomDropDown3
-            onSelect={(option) => handleOnMenuSelection(option)}
-            ref={refMenu}
-            className="right-[2px]"
-            options={General.menuOptions
-              .asArray()
-              .filter(
-                (i) =>
-                  !i?.isAdminFeature ||
-                  (i?.isAdminFeature &&
-                    appContext.currentUser?.role === General.accountRoles.ADMIN)
-              )}
-            displayField="name"
-          />
+            <CustomDropDown3
+              onSelect={(option) => handleOnMenuSelection(option)}
+              ref={refMenu}
+              className="right-[2px]"
+              options={General.menuOptions
+                .asArray()
+                .filter(
+                  (i) =>
+                    !i?.isAdminFeature ||
+                    (i?.isAdminFeature &&
+                      appContext.currentUser?.role ===
+                        General.accountRoles.ADMIN)
+                )}
+              displayField="name"
+            />
+          </div>
         </div>
       )}
     </div>

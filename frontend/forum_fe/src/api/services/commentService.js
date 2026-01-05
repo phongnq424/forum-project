@@ -17,6 +17,7 @@ const commentService = {
         updateAt: new Date(from.update_at).toLocaleDateString(),
         user: from.User,
         childComments: from.childComments?.map((item) => change(item)),
+        avgRate: from?.stats.average,
       };
 
       return to;
@@ -32,6 +33,7 @@ const commentService = {
   async addComment(postId, parentComment_id, comment_detail) {
     try {
       const request = { postId, parentComment_id, comment_detail };
+      console.log(request);
       const response = await axiosClient.post("/comments", request);
       return response;
     } catch (error) {
