@@ -19,6 +19,10 @@ import {
   useGetUnreadCount,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
+  useOffListenNewNotification,
+  useOffListenUnreadBadge,
+  useOnListenNewNotification,
+  useOnListenUnreadBadge,
 } from "@/api/hooks/notificationHook";
 
 import LoadingScreen from "../pages/LoadingScreen.jsx";
@@ -52,6 +56,51 @@ export function NotificationBell() {
   const markAllAsRead = () => {
     markAllRead.mutate();
   };
+
+  const onListenNewNotification = useOnListenNewNotification();
+  const offListenNewNotification = useOffListenNewNotification();
+
+  const onUnread = useOnListenUnreadBadge();
+  const offUnread = useOffListenUnreadBadge();
+
+  const handleOnHaveNewNotification = function (notification: any) {
+    const valid = {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      description: notification.message,
+      time: new Date(notification.created_at).toLocaleString(),
+      read: notification.is_read,
+      ref: notification.ref_id,
+    };
+
+    setNotifications((prev) => [valid, ...prev]);
+  };
+
+  const handleOnUnread = function (unread: any) {
+    console.log(unread.unreadCount);
+    setUnreadCount(unread.unreadCount);
+  };
+
+  useEffect(() => {
+    onListenNewNotification.mutate({
+      onNewNotification: handleOnHaveNewNotification,
+    });
+
+    onUnread.mutate({
+      onUnread: handleOnUnread,
+    });
+
+    return () => {
+      offListenNewNotification.mutate({
+        offNewNotification: handleOnHaveNewNotification,
+      });
+
+      offUnread.mutate({
+        onUnread: handleOnUnread,
+      });
+    };
+  }, []);
 
   const getUnreadCount = useGetUnreadCount();
   useEffect(
@@ -163,11 +212,14 @@ export function NotificationBell() {
                     key={notification.id}
                     className={cn(
                       "relative flex gap-3 px-4 py-3 transition-colors cursor-pointer",
-                      "hover:bg-muted/50",
+                      "hover:bg-white/10",
                       !notification.read && "font-bold"
                     )}
                     onClick={() => {
-                      if (notification.type.includes("POST")) {
+                      if (
+                        notification.type.includes("COMMENT") ||
+                        notification.type.includes("POST")
+                      ) {
                         nav(`/post-detail?postId=${notification.ref}`);
                       }
 

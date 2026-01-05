@@ -1,6 +1,7 @@
 // src/api/queries/useNotifications.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import notificationService from "@/api/services/notificationService";
+import notificationSocketService from "@/socket/notificationSocketService";
 
 /* ================= LIST ================= */
 
@@ -52,6 +53,60 @@ export const useMarkAllNotificationsRead = () => {
       queryClient.invalidateQueries({
         queryKey: ["notifications", "unread-count"],
       });
+    },
+  });
+};
+
+export const useOnListenNewNotification = function () {
+  return useMutation({
+    mutationFn: function ({
+      onNewNotification,
+    }: {
+      onNewNotification: (...args: any[]) => void;
+    }) {
+      return Promise.resolve(
+        notificationSocketService.onNewNotification(onNewNotification)
+      );
+    },
+  });
+};
+
+export const useOffListenNewNotification = function () {
+  return useMutation({
+    mutationFn: function ({
+      offNewNotification,
+    }: {
+      offNewNotification: (...args: any[]) => void;
+    }) {
+      return Promise.resolve(
+        notificationSocketService.offNewNotification(offNewNotification)
+      );
+    },
+  });
+};
+
+export const useOnListenUnreadBadge = function () {
+  return useMutation({
+    mutationFn: function ({
+      onUnread,
+    }: {
+      onUnread: (...args: any[]) => void;
+    }) {
+      return Promise.resolve(notificationSocketService.onUnreadBadge(onUnread));
+    },
+  });
+};
+
+export const useOffListenUnreadBadge = function () {
+  return useMutation({
+    mutationFn: function ({
+      onUnread,
+    }: {
+      onUnread: (...args: any[]) => void;
+    }) {
+      return Promise.resolve(
+        notificationSocketService.offUnreadBadge(onUnread)
+      );
     },
   });
 };

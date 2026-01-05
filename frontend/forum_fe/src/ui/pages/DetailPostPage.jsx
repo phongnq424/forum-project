@@ -176,7 +176,9 @@ const DetailPostPage = () => {
         setCurrentPost(function (prev) {
           return {
             ...prev,
-            isLiked: toggleReaction.data,
+            isLiked: toggleReaction.data.action === "added",
+            likes:
+              prev.likes + (toggleReaction.data.action === "added" ? 1 : -1),
           };
         });
       }
@@ -689,7 +691,7 @@ const RenderComment = function ({
                 refRatingStar.current?.open();
               }}
             >
-              {avgRate} Rate
+              <span className="text-yellow-400">{avgRate} ★</span> Rate
             </button>
 
             {level == 0 && (
@@ -726,6 +728,7 @@ const RenderComment = function ({
               <RenderComment
                 key={child.id}
                 currentUser={currentUser}
+                avgRate={child.avgRate}
                 commentItem={child}
                 level={level + 1}
                 onSelectAuthor={onSelectAuthor}
