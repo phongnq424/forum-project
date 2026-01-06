@@ -525,6 +525,20 @@ function RenderConnections() {
   );
 
   const navigate = useNavigate();
+  const blockUser = useBlockUser();
+
+  useEffect(
+    function () {
+      if (blockUser.isSuccess) {
+        toastHelper.success("Unblock successfully");
+      }
+
+      if (blockUser.isError) {
+        toastHelper.error(blockUser.error.message);
+      }
+    },
+    [blockUser.isSuccess, blockUser.isError, blockUser.data]
+  );
 
   return (
     <>
@@ -595,6 +609,7 @@ function RenderConnections() {
                   onBlockClick={function (userId) {
                     blockUser.mutate({ targetUserId: userId });
                   }}
+                  isRenderingBlock={selectedTab?.id === options.BLOCK.id}
                 />
               );
             })}

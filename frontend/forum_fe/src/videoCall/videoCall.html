@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>ZEGOCLOUD Video Call</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        #root {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/@zegocloud/zego-uikit-prebuilt/zego-uikit-prebuilt.js"></script>
+    <script>
+        const APP_ID = 1342885349
+        const SERVER_SECRET = "8d3c8b05e3925778e40e4c196b2be65a"
+
+        const userID = String(Math.floor(Math.random() * 100000))
+        const userName = "User_" + userID
+        const roomID = "room_demo"
+
+        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+            APP_ID,
+            SERVER_SECRET,
+            roomID,
+            userID,
+            userName
+        )
+
+        const zp = ZegoUIKitPrebuilt.create(kitToken)
+        zp.joinRoom({
+            container: document.querySelector("#root"),
+            scenario: {
+                mode: ZegoUIKitPrebuilt.VideoConference
+            },
+            turnOnCameraWhenJoining: true,
+            turnOnMicrophoneWhenJoining: true,
+            showPreJoinView: false
+        })
+    </script>
+
+</body>
+
+</html>

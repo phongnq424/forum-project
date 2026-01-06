@@ -9,6 +9,8 @@ export const UserFollowCard = ({
   isFollowing,
   isFollowMe,
   isShowButtons = true,
+  onBlockClick,
+  isRenderingBlock,
 }) => {
   return (
     <div
@@ -60,6 +62,18 @@ export const UserFollowCard = ({
               }}
             >
               Remove
+            </button>
+          )}
+
+          {isRenderingBlock && (
+            <button
+              className={`h-fit w-fit px-3 py-1 rounded-full bg-icon-button bg-red-600 hover:bg-red-600/50 text-white flex items-center justify-center`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onBlockClick?.(userId);
+              }}
+            >
+              Unblock
             </button>
           )}
         </div>

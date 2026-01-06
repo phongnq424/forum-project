@@ -74,18 +74,19 @@ const ChatArea = ({
             <h2 className="text-lg font-semibold text-foreground">
               {contactName}
             </h2>
-            <p className="text-sm text-muted-foreground">
-              You have already followed each other
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <button className="text-muted-foreground hover:text-foreground transition-colors">
             <Phone className="w-5 h-5" />
           </button>
-          <button className="text-muted-foreground hover:text-foreground transition-colors">
+          <a
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            href="../../../videoCall/videoCall.html"
+            target="blank"
+          >
             <Video className="w-5 h-5" />
-          </button>
+          </a>
           <button className="w-8 h-8 rounded-full border-2 border-muted-foreground flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-colors">
             <AlertCircle className="w-4 h-4" />
           </button>
