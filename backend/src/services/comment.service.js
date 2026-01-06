@@ -59,7 +59,9 @@ const CommentService = {
         actor_id: userId,
         type: "POST_COMMENT",
         title: "Bình luận mới",
-        message: "đã bình luận bài viết của bạn",
+        message: `${
+          comment?.User?.username ?? "?"
+        } đã bình luận bài viết của bạn`,
         ref_id: postId,
         ref_sub_id: comment.id,
       });
@@ -72,7 +74,9 @@ const CommentService = {
         actor_id: userId,
         type: "COMMENT_REPLY",
         title: "Phản hồi bình luận",
-        message: "đã trả lời bình luận của bạn",
+        message: `${
+          comment?.User?.username ?? "? "
+        } đã trả lời bình luận của bạn`,
         ref_id: postId,
         ref_sub_id: comment.id,
       });
