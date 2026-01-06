@@ -9,7 +9,7 @@ import CustomDropDown3 from "./CustomDropDown/CustomDropDown3";
 import { useLogOut } from "../../api/hooks/AuthenticationHook";
 import ChangePasswordDialog from "../components/changePassword/changePasswordDialog";
 import { toast } from "react-toastify";
-import { NotificationBell } from "./bellNotification.tsx";
+import { NotificationBell } from "./notification/bellNotification";
 import { fa } from "zod/v4/locales";
 import LoadingScreen from "../pages/LoadingScreen";
 
