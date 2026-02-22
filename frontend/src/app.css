@@ -1,0 +1,36 @@
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #111317;
+    color: #e4e4e7;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* CONTAINER */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* LINKS */
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: 0.2s ease;
+}
+
+a:hover {
+    color: #818cf8;
+}
