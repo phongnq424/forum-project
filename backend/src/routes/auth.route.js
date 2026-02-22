@@ -1,17 +1,19 @@
 const { Router } = require('express');
-const { AuthController } = require('../controllers/auth.controller')
+const { AuthController } = require('../controllers/auth.controller');
 const { rateLimitMiddleware } = require('../middlewares/rateLimit.middleware');
+const { verifyToken } = require('../middlewares/auth.middleware');
+const validate = require('../middlewares/validate.middleware');
+const authValidation = require('../validations/auth.validation');
 
 const router = Router();
 
-router.post("/send-otp", rateLimitMiddleware, AuthController.sendOtp) //
-router.post("/resend-otp", rateLimitMiddleware, AuthController.resendOtp) //
-router.post("/verify-otp", rateLimitMiddleware, AuthController.verifyOtp) //
-router.post("/check-exist", rateLimitMiddleware, AuthController.checkExistUser)
-router.post("/register", rateLimitMiddleware, AuthController.register) //
-router.post("/login", rateLimitMiddleware, AuthController.login) //
-router.post("/logout", rateLimitMiddleware, AuthController.logout) //
-router.post("/login-google", rateLimitMiddleware, AuthController.loginGoogle) 
+router.post("/send-otp", rateLimitMiddleware, validate(authValidation.emailOnly), AuthController.sendOtp);
+router.post("/resend-otp", rateLimitMiddleware, validate(authValidation.emailOnly), AuthController.resendOtp);
+router.post("/verify-otp", rateLimitMiddleware, validate(authValidation.verifyOtp), AuthController.verifyOtp);
+router.post("/check-exist", rateLimitMiddleware, validate(authValidation.register), AuthController.checkExistUser);
+router.post("/register", rateLimitMiddleware, validate(authValidation.register), AuthController.register);
+router.post("/login", rateLimitMiddleware, validate(authValidation.login), AuthController.login);
+router.post("/refresh-token", validate(authValidation.refreshToken), AuthController.refresh);
+router.post("/logout", validate(authValidation.logout), verifyToken, AuthController.logout);
 
-module.exports = router
-
+module.exports = router;

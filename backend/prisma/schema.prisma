@@ -95,7 +95,6 @@ model User {
   FollowerFollow   Follower[]         @relation("follower")
   ConversationUser ConversationUser[]
   MessageSent      Message[]          @relation("sender")
-  Attachment       Attachment[]       @relation(fields: [], references: [])
   AlMessage        AlMessage[]
   Notification     Notification[]
   ReportCreated    Report[]           @relation("reporter")
@@ -107,22 +106,24 @@ model User {
   Comment_Rate     Comment_Rate[]
   blocks           Block[]            @relation("blocker")
   blockedBy        Block[]            @relation("blocked")
+  refreshTokens    RefreshToken[]
+  attachments      Attachment[]
 }
 
 model Profile {
-  id             String       @id @default(uuid())
-  user_id        String       @unique
-  fullname       String?      @db.VarChar(255)
-  bio            String?
-  avatar         String?
-  avatarPublicId String?      @db.VarChar(255)
-  cover          String?
-  coverPublicId  String?      @db.VarChar(255)
-  dob            DateTime?
-  gender         GENDER_TYPE?
-  location       String?
-  created_at     DateTime     @default(now())
-  updated_at     DateTime     @default(now()) @updatedAt
+  id               String       @id @default(uuid())
+  user_id          String       @unique
+  fullname         String?      @db.VarChar(255)
+  bio              String?
+  avatar           String?
+  avatar_public_id String?      @db.VarChar(255)
+  cover            String?
+  cover_public_id  String?      @db.VarChar(255)
+  dob              DateTime?
+  gender           GENDER_TYPE?
+  location         String?
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @default(now()) @updatedAt
 
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
@@ -492,4 +493,23 @@ model ActivityLogs {
   created_at  DateTime @default(now())
 
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id           String   @id @default(uuid())
+  user_id      String
+  hashed_token String   @db.VarChar(255)
+  expires_at   DateTime
+  revoked      Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now()) @updatedAt
+
+  device_info  String?
+  last_used_at DateTime?
+  revoked_at   DateTime?
+
+  User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, expires_at])
+  @@index([user_id, revoked])
 }

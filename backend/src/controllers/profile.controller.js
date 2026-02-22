@@ -1,6 +1,6 @@
 const { ProfileService } = require('../services/profile.service')
 const { upload } = require('../middlewares/upload.middleware')
-const { validateFiles } = require('../validators/file.validator')
+const { validateFiles } = require('../validations/file.validation')
 
 const ProfileController = {
     getMyProfile: async (req, res) => {

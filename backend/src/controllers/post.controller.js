@@ -1,6 +1,6 @@
 const { PostService } = require('../services/post.service')
 const { upload } = require('../middlewares/upload.middleware')
-const { validateFiles } = require('../validators/file.validator')
+const { validateFiles } = require('../validations/file.validation')
 const { buildBlockContext } = require('../contexts/block.context')
 
 const PostController = {
