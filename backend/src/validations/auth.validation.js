@@ -1,23 +1,23 @@
 const Joi = require('joi');
 
 const authValidation = {
-    // Quy tắc cho đăng ký
+    // Validation rules for register
     register: {
         body: Joi.object().keys({
             email: Joi.string().email().required().messages({
-                'string.email': 'Email không đúng định dạng',
-                'any.required': 'Email là bắt buộc'
+                'string.email': 'Invalid email format',
+                'any.required': 'Email is required'
             }),
             password: Joi.string().min(6).required().messages({
-                'string.min': 'Mật khẩu phải có ít nhất 6 ký tự',
-                'any.required': 'Mật khẩu là bắt buộc'
+                'string.min': 'Password must be at least 6 characters',
+                'any.required': 'Password is required'
             }),
             username: Joi.string().alphanum().min(3).max(30).required(),
             role: Joi.string().valid('USER', 'ADMIN').default('USER')
         })
     },
 
-    // Quy tắc cho đăng nhập
+    // Validation rules for login
     login: {
         body: Joi.object().keys({
             username: Joi.string().required(),
@@ -25,7 +25,7 @@ const authValidation = {
         })
     },
 
-    // Quy tắc cho OTP
+    // Validation rule for email only (OTP request)
     emailOnly: {
         body: Joi.object().keys({
             email: Joi.string().email().required()
@@ -42,8 +42,8 @@ const authValidation = {
     refreshToken: {
         body: Joi.object().keys({
             refreshToken: Joi.string().required().messages({
-                'any.required': 'Refresh token là bắt buộc',
-                'string.empty': 'Refresh token không được để trống'
+                'any.required': 'Refresh token is required',
+                'string.empty': 'Refresh token cannot be empty'
             })
         })
     },
@@ -51,10 +51,17 @@ const authValidation = {
     logout: {
         body: Joi.object().keys({
             refreshToken: Joi.string().required().messages({
-                'any.required': 'Phải cung cấp refresh token để đăng xuất'
+                'any.required': 'Refresh token must be provided to logout'
             })
         })
-    }
+    },
+
+    checkExist: {
+        body: Joi.object().keys({
+            email: Joi.string().email().optional(),
+            username: Joi.string().min(3).max(30).optional()
+        }).or('email', 'username')
+    },
 };
 
 module.exports = authValidation;

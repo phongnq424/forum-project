@@ -46,13 +46,17 @@ const AuthService = {
 
     async sendOtp(email) {
         try {
-            // Sử dụng crypto.randomInt để OTP bảo mật hơn Math.random
+            const existingUser = await prisma.user.findFirst({
+                where: { email, is_deleted: false }
+            });
+            if (existingUser) throw new Error('Email already registered');
+            // Using crypto.randomInt for better security than Math.random
             const otp = crypto.randomInt(100000, 1000000).toString();
-            await redisClient.set(`otp:${email}`, otp, 'EX', 300); // 5 phút
-            await sendMail(email, "Mã OTP xác thực", `Mã OTP của bạn là: ${otp}`);
+            await redisClient.set(`otp:${email}`, otp, 'EX', 300); // 5 minutes
+            await sendMail(email, "OTP Verification Code", `Your OTP code is: ${otp}`);
             return otp;
         } catch (error) {
-            throw new Error('Lỗi gửi OTP: ' + error.message);
+            throw new Error('Error sending OTP: ' + error.message);
         }
     },
 
@@ -61,22 +65,23 @@ const AuthService = {
             await redisClient.del(`otp:${email}`);
             return await this.sendOtp(email);
         } catch (error) {
-            throw new Error('Lỗi gửi lại OTP: ' + error.message);
+            throw new Error('Error resending OTP: ' + error.message);
         }
     },
 
     async verifyOtp(email, otp) {
         try {
             const savedOtp = await redisClient.get(`otp:${email}`);
-            if (!savedOtp) throw new Error('OTP đã hết hạn hoặc không tồn tại');
-            if (savedOtp !== otp) throw new Error('Mã OTP không chính xác');
+            if (!savedOtp) throw new Error('OTP has expired or does not exist');
+            if (savedOtp !== otp) throw new Error('Invalid OTP code');
 
             await redisClient.del(`otp:${email}`);
-            // Đánh dấu email này đã verify để cho phép đăng ký trong 10 phút tiếp theo
+            // Mark this email as verified to allow registration within the next 10 minutes
             await redisClient.set(`verified:${email}`, 'true', 'EX', 600);
-            return { message: 'Xác thực email thành công' };
+
+            return { message: 'Email verification successful' };
         } catch (error) {
-            throw new Error('Lỗi xác thực OTP: ' + error.message);
+            throw new Error('OTP verification error: ' + error.message);
         }
     },
 
@@ -89,19 +94,20 @@ const AuthService = {
                 OR: [{ email }, { username }]
             },
         });
-        if (existingUser) throw new Error('Người dùng hoặc email đã tồn tại');
+
+        if (existingUser) throw new Error('User or email already exists');
     },
 
     async register({ email, password, username }, req) {
         try {
-            // 1. Kiểm tra xem email đã qua bước verify OTP chưa
+            // 1. Check if email has been verified via OTP
             const isVerified = await redisClient.get(`verified:${email}`);
-            if (!isVerified) throw new Error('Vui lòng xác thực email trước khi đăng ký');
+            if (!isVerified) throw new Error('Please verify your email before registering');
 
-            // 2. Kiểm tra trùng lặp lần cuối
+            // 2. Final duplicate check
             await this.checkExistUser({ email, username });
 
-            // 3. Hash mật khẩu và tạo user
+            // 3. Hash password and create user
             const hashedPassword = await bcrypt.hash(password, 10);
             const newUser = await prisma.user.create({
                 data: {
@@ -109,26 +115,26 @@ const AuthService = {
                     username,
                     password_hash: hashedPassword,
                     role: 'USER',
-                    status: 'ACTIVE' // Hoặc PENDING tùy logic của bạn
+                    status: 'ACTIVE' // Or PENDING depending on your logic
                 },
             });
 
-            // 4. Dọn dẹp cache xác thực
+            // 4. Clean up verification cache
             await redisClient.del(`verified:${email}`);
 
-            // 5. Tự động tạo token (Auto-login sau khi đăng ký)
+            // 5. Auto-login after registration
             const deviceInfo = req ? getDeviceInfo(req) : null;
             const refreshToken = await this._createRefreshToken(newUser.id, deviceInfo);
             const accessToken = generateAccessToken(newUser);
 
             return {
-                message: 'Đăng ký tài khoản thành công',
+                message: 'User registered successfully',
                 user: newUser,
                 accessToken,
                 refreshToken
             };
         } catch (error) {
-            throw new Error('Lỗi đăng ký: ' + error.message);
+            throw new Error('Registration error: ' + error.message);
         }
     },
 
@@ -143,18 +149,18 @@ const AuthService = {
                 }
             });
 
-            if (!user) throw new Error('Tài khoản hoặc mật khẩu không chính xác');
-            if (user.status === 'BANNED') throw new Error('Tài khoản của bạn đã bị khóa');
-            if (user.status !== 'ACTIVE') throw new Error('Tài khoản chưa được kích hoạt');
+            if (!user) throw new Error('Invalid username or password');
+            if (user.status === 'BANNED') throw new Error('Your account has been banned');
+            if (user.status !== 'ACTIVE') throw new Error('Your account is not activated');
 
             const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-            if (!isPasswordValid) throw new Error('Tài khoản hoặc mật khẩu không chính xác');
+            if (!isPasswordValid) throw new Error('Invalid username or password');
 
             const accessToken = generateAccessToken(user);
             const refreshToken = await this._createRefreshToken(user.id, getDeviceInfo(req));
 
             return {
-                message: 'Đăng nhập thành công',
+                message: 'Login successful',
                 accessToken,
                 refreshToken,
                 user: {
@@ -165,17 +171,17 @@ const AuthService = {
                 }
             };
         } catch (error) {
-            throw new Error('Lỗi đăng nhập: ' + error.message);
+            throw new Error(error.message);
         }
     },
 
     async logout(refreshToken) {
         await this._revokeRefreshToken(refreshToken);
-        return { message: 'Đăng xuất thành công' };
+        return { message: 'Logout successful' };
     },
 
     async refresh(refreshToken, req) {
-        if (!refreshToken) throw new Error('Không tìm thấy Refresh Token');
+        if (!refreshToken) throw new Error('Refresh Token not found');
 
         const hashed = hashRefreshToken(refreshToken);
         const storedToken = await prisma.refreshToken.findFirst({
@@ -188,13 +194,16 @@ const AuthService = {
         });
 
         if (!storedToken || !storedToken.User) {
-            throw new Error('Refresh Token không hợp lệ hoặc đã hết hạn');
+            throw new Error('Invalid or expired Refresh Token');
         }
 
         await this._revokeRefreshToken(refreshToken);
 
         const newAccessToken = generateAccessToken(storedToken.User);
-        const newRefreshToken = await this._createRefreshToken(storedToken.user_id, getDeviceInfo(req));
+        const newRefreshToken = await this._createRefreshToken(
+            storedToken.user_id,
+            getDeviceInfo(req)
+        );
 
         return {
             accessToken: newAccessToken,

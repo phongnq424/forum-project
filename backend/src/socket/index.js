@@ -6,7 +6,10 @@ const { initEmitter } = require("./emitter");
 
 function initSocket(server) {
     const io = new Server(server, {
-        cors: { origin: "*" },
+        cors: {
+            origin: "http://localhost:5173",
+            credentials: true
+        }
     });
 
     initEmitter(io);
