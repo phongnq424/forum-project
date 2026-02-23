@@ -1,13 +1,24 @@
 <script>
 	import "../app.css";
-	import Header from "../components/Header.svelte";
-	import Footer from "../components/Footer.svelte";
+	import Header from "$lib/components/Header.svelte";
+	import Footer from "$lib/components/Footer.svelte";
+	import { onMount } from "svelte";
+	import { api } from "$lib/services/api";
+	import { setAuth, user } from "$lib/stores/auth.store";
 
-	let user = $state(null);
+	onMount(async () => {
+		try {
+			const res = await api.post("auth/refresh", {});
+			setAuth(res.accessToken);
+			console.log("Session khôi phục thành công");
+		} catch (err) {
+			console.log("Session hết hạn hoặc chưa đăng nhập");
+		}
+	});
 </script>
 
 <div class="app">
-	<Header currentUser={user} />
+	<Header currentUser={$user} />
 
 	<main>
 		<div class="page-container">
@@ -36,13 +47,13 @@
 
 	main {
 		flex: 1;
-		margin-top: 72px; /* match header height */
+		margin-top: 50px;
 	}
 
 	.page-container {
 		max-width: 1280px;
 		margin: 0 auto;
-		padding: 48px 20px 80px;
+		padding: 48px 20px 40px;
 		width: 100%;
 	}
 </style>

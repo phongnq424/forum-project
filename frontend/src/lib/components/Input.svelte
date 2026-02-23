@@ -1,22 +1,15 @@
 <script lang="ts">
-    type Props = {
-        type?: string;
-        placeholder?: string;
-        name?: string;
+    import type { HTMLInputAttributes } from "svelte/elements";
+    type Props = HTMLInputAttributes & {
         label?: string;
         error?: string;
-        disabled?: boolean;
-        value?: string;
     };
 
     let {
-        type = "text",
-        placeholder = "",
-        name = "",
         label = "",
         error = "",
-        disabled = false,
         value = $bindable(""),
+        ...rest
     }: Props = $props();
 </script>
 
@@ -25,14 +18,7 @@
         <label class="label">{label}</label>
     {/if}
 
-    <input
-        class={`input ${error ? "error" : ""}`}
-        {type}
-        {name}
-        bind:value
-        {placeholder}
-        {disabled}
-    />
+    <input class={`input ${error ? "error" : ""}`} bind:value {...rest} />
 
     {#if error}
         <span class="error-text">{error}</span>

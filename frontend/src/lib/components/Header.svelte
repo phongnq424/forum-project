@@ -160,22 +160,25 @@
     .search input {
         width: 220px;
         padding: 9px 14px 9px 38px;
-        border-radius: 8px;
+        border-radius: 10px;
         border: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.04);
+        background: #1c1f26;
         color: white;
         font-size: 14px;
         outline: none;
         transition:
+            width 0.25s ease,
             border 0.2s ease,
-            width 0.25s ease;
+            box-shadow 0.2s ease,
+            background 0.2s ease;
     }
 
     .search input:focus {
-        border: 1px solid #8b5cf6;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+        background: #20232b;
         width: 260px;
     }
-
     .search-icon {
         position: absolute;
         left: 12px;
