@@ -60,7 +60,13 @@ const PostService = {
           },
           take: 50
         },
-        Reaction: { select: { id: true, type: true, user_id: true } }
+        Reaction: { select: { id: true, type: true, user_id: true } },
+        _count: {
+          select: {
+            Comment: true,
+            Reaction: true
+          }
+        }
       }
     })
 
@@ -70,8 +76,6 @@ const PostService = {
       return null
     }
 
-    const commentCount = await prisma.comment.count({ where: { post_id: postId } })
-    const reactionCount = await prisma.reaction.count({ where: { post_id: postId } })
     let isSaved = false
     if (viewerId) {
       const s = await prisma.postSaved.findUnique({
@@ -82,9 +86,10 @@ const PostService = {
 
     return {
       ...post,
-      commentCount,
-      reactionCount,
-      isSaved
+      commentCount: post._count.Comment,
+      reactionCount: post._count.Reaction,
+      isSaved,
+      _count: undefined
     }
   },
 
@@ -199,7 +204,7 @@ const PostService = {
         include: {
           User: { select: { id: true, username: true, Profile: { select: { avatar: true } } } },
           Topic: { select: { id: true, name: true } },
-          Image: { select: { id: true, url: true } }
+          Image: { select: { id: true, url: true }, take: 3 }
         }
       }),
       prisma.post.count({ where })
@@ -270,7 +275,7 @@ const PostService = {
         orderBy: { created_at: 'desc' },
         include: {
           Topic: { select: { id: true, name: true } },
-          Image: { select: { id: true, url: true } }
+          Image: { select: { id: true, url: true }, take: 3 }
         }
       }),
       prisma.post.count({ where })

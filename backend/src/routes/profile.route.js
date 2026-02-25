@@ -7,10 +7,10 @@ const { cache } = require("../middlewares/cache.middleware");
 
 const router = Router();
 
-router.get('/me', verifyToken, cache, ProfileController.getMyProfile)
-router.get('/:userId', verifyTokenOptional, cache, ProfileController.getProfileByUserId)
+router.get('/me', verifyToken, ProfileController.getMyProfile)
+router.get('/:userId', verifyTokenOptional, ProfileController.getProfileByUserId)
 router.put('/me', rateLimitMiddleware, verifyToken, ProfileController.updateMyProfile)
-router.get('/', cache, ProfileController.listProfiles)
+router.get('/', ProfileController.listProfiles)
 router.get('/search/all', cache, ProfileController.searchUsers)
 
 module.exports = router;

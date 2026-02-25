@@ -3,6 +3,7 @@ dotenv.config({ quiet: true });
 
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require('cookie-parser');
 const routes = require("./routes/index.js");
 
 const http = require("http");
@@ -18,6 +19,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
 app.use("/api", routes);
 
 const port = process.env.PORT || 3000;

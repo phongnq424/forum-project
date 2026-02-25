@@ -13,7 +13,8 @@ router.post("/verify-otp", rateLimitMiddleware, validate(authValidation.verifyOt
 router.post("/check-exist", rateLimitMiddleware, validate(authValidation.checkExist), AuthController.checkExistUser);
 router.post("/register", rateLimitMiddleware, validate(authValidation.register), AuthController.register);
 router.post("/login", rateLimitMiddleware, validate(authValidation.login), AuthController.login);
-router.post("/refresh-token", validate(authValidation.refreshToken), AuthController.refresh);
-router.post("/logout", validate(authValidation.logout), verifyToken, AuthController.logout);
+router.get("/me", verifyToken, AuthController.getMe);
+router.post("/refresh", AuthController.refresh);
+router.post("/logout", verifyToken, AuthController.logout);
 
 module.exports = router;

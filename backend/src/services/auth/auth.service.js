@@ -100,41 +100,50 @@ const AuthService = {
 
     async register({ email, password, username }, req) {
         try {
-            // 1. Check if email has been verified via OTP
             const isVerified = await redisClient.get(`verified:${email}`);
             if (!isVerified) throw new Error('Please verify your email before registering');
 
-            // 2. Final duplicate check
             await this.checkExistUser({ email, username });
 
-            // 3. Hash password and create user
             const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = await prisma.user.create({
-                data: {
-                    email,
-                    username,
-                    password_hash: hashedPassword,
-                    role: 'USER',
-                    status: 'ACTIVE' // Or PENDING depending on your logic
-                },
+
+            const newUser = await prisma.$transaction(async (tx) => {
+                const user = await tx.user.create({
+                    data: {
+                        email,
+                        username,
+                        password_hash: hashedPassword,
+                        role: 'USER',
+                        status: 'ACTIVE'
+                    },
+                });
+
+                await tx.profile.create({
+                    data: { user_id: user.id }
+                });
+
+                return user;
             });
 
-            // 4. Clean up verification cache
             await redisClient.del(`verified:${email}`);
 
-            // 5. Auto-login after registration
             const deviceInfo = req ? getDeviceInfo(req) : null;
             const refreshToken = await this._createRefreshToken(newUser.id, deviceInfo);
             const accessToken = generateAccessToken(newUser);
 
             return {
                 message: 'User registered successfully',
-                user: newUser,
+                user: {
+                    id: newUser.id,
+                    username: newUser.username,
+                    email: newUser.email
+                },
                 accessToken,
                 refreshToken
             };
         } catch (error) {
-            throw new Error('Registration error: ' + error.message);
+            console.error("Register Error:", error);
+            throw new Error(error.message);
         }
     },
 
@@ -167,7 +176,8 @@ const AuthService = {
                     id: user.id,
                     username: user.username,
                     email: user.email,
-                    role: user.role
+                    role: user.role,
+                    avatar: user.avatar
                 }
             };
         } catch (error) {

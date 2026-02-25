@@ -20,7 +20,7 @@ const checkToken = async (token) => {
 
 // Middleware bắt buộc token
 const verifyToken = async (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
+    const token = req.cookies?.access_token;
     try {
         const decoded = await checkToken(token);
         if (!decoded) return res.status(401).json({ message: 'Unauthorized' });
@@ -37,7 +37,7 @@ const verifyToken = async (req, res, next) => {
 
 // Middleware tùy chọn token
 const verifyTokenOptional = async (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
+    const token = req.cookies?.access_token;
     try {
         const decoded = await checkToken(token);
         req.user = decoded;

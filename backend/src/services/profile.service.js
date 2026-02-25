@@ -20,20 +20,23 @@ const ProfileService = {
                         username: true,
                         email: true,
                         role: true,
-                        created_at: true
+                        fullname: true,
+                        avatar: true,
+                        created_at: true,
+                        _count: {
+                            select: {
+                                Post: true,
+                                Comment: true,
+                                FollowerFollowed: true,
+                                FollowerFollow: true
+                            }
+                        }
                     }
                 }
             }
         })
 
         if (!profile) return null
-
-        const [postCount, commentCount, followingCount, followerCount] = await Promise.all([
-            prisma.post.count({ where: { user_id: userId } }),
-            prisma.comment.count({ where: { user_id: userId } }),
-            prisma.follower.count({ where: { follow_id: userId } }), // số người user follow
-            prisma.follower.count({ where: { followed_id: userId } }) // số người follow user
-        ])
 
         let isFollowing = false
         if (viewerId) {
@@ -45,44 +48,65 @@ const ProfileService = {
 
         return {
             ...profile,
-            postCount,
-            commentCount,
-            followingCount,
-            followerCount,
+            postCount: profile.User._count.Post,
+            commentCount: profile.User._count.Comment,
+            followingCount: profile.User._count.FollowerFollowed,
+            followerCount: profile.User._count.FollowerFollow,
             isFollowing
         }
     },
 
     updateProfile: async (userId, data, files = {}) => {
-        const existing = await prisma.profile.findUnique({ where: { user_id: userId } })
-
-        if (data.dob && typeof data.dob === 'string') {
+        const profile = await prisma.profile.findUnique({ where: { user_id: userId } })
+        const user = await prisma.user.findUnique({ where: { id: userId } })
+        if (data.dob === "") {
+            data.dob = null;
+        }
+        else if (data.dob && typeof data.dob === 'string') {
             data.dob = new Date(data.dob)
         }
 
+        if (data.gender === "") {
+            data.gender = null;
+        }
+
+        // Upload avatar → lưu vào User table
         if (files.avatar) {
             const uploadedAvatar = await CloudinaryService.update(
                 files.avatar,
                 'avatar',
-                existing?.avatarPublicId
+                user?.avatar_public_id
             );
-            data.avatar = uploadedAvatar.url;
-            data.avatarPublicId = uploadedAvatar.public_id;
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    avatar: uploadedAvatar.url,
+                    avatar_public_id: uploadedAvatar.public_id
+                }
+            });
         }
 
+        // Upload cover → lưu vào Profile table
         if (files.cover) {
             const uploadedCover = await CloudinaryService.update(
                 files.cover,
                 'cover',
-                existing?.coverPublicId
+                profile?.cover_public_id
             );
             data.cover = uploadedCover.url;
-            data.coverPublicId = uploadedCover.public_id;
+            data.cover_public_id = uploadedCover.public_id;
         }
 
+        // Update fullname vào User table nếu được gửi
+        if (data.fullname) {
+            await prisma.user.update({
+                where: { id: userId },
+                data: { fullname: data.fullname }
+            });
+            delete data.fullname; // remove khỏi Profile data
+        }
 
-
-        if (!existing)
+        if (!profile)
             return await prisma.profile.create({ data: { ...data, user_id: userId } })
 
         return await prisma.profile.update({ where: { user_id: userId }, data })
@@ -100,7 +124,6 @@ const ProfileService = {
                 take: limit,
                 include: {
                     User: {
-
                         select: {
                             InterestedTopic: {
                                 select: {
@@ -113,7 +136,9 @@ const ProfileService = {
                             },
                             id: true,
                             username: true,
-                            email: true
+                            email: true,
+                            fullname: true,
+                            avatar: true
                         }
                     }
                 }
@@ -138,22 +163,15 @@ const ProfileService = {
                 OR: [
                     { username: { contains: query, mode: 'insensitive' } },
                     { email: { contains: query, mode: 'insensitive' } },
-                    { Profile: { fullname: { contains: query, mode: 'insensitive' } } },
-                    { Profile: { location: { contains: query, mode: 'insensitive' } } }
+                    { fullname: { contains: query, mode: 'insensitive' } }
                 ]
             },
             select: {
                 id: true,
                 username: true,
                 email: true,
-                Profile: {
-                    select: {
-                        fullname: true,
-                        avatar: true,
-                        bio: true,
-                        location: true
-                    }
-                }
+                fullname: true,
+                avatar: true
             },
             take: 20
         })

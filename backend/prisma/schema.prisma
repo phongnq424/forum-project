@@ -75,16 +75,19 @@ enum NotificationType {
  * * MODELS **
  */
 model User {
-  id            String           @id @default(uuid())
-  email         String           @unique @db.VarChar(255)
-  password_hash String           @db.VarChar(255)
-  username      String           @unique @db.VarChar(100)
-  created_at    DateTime         @default(now())
-  updated_at    DateTime         @default(now()) @updatedAt
-  role          ROLE             @default(USER)
-  is_deleted    Boolean          @default(false)
-  deleted_at    DateTime?
-  status        USER_STATUS_TYPE @default(ACTIVE)
+  id               String           @id @default(uuid())
+  email            String           @unique @db.VarChar(255)
+  password_hash    String           @db.VarChar(255)
+  username         String           @unique @db.VarChar(100)
+  fullname         String?          @db.VarChar(255)
+  avatar           String?
+  avatar_public_id String?          @db.VarChar(255)
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @default(now()) @updatedAt
+  role             ROLE             @default(USER)
+  is_deleted       Boolean          @default(false)
+  deleted_at       DateTime?
+  status           USER_STATUS_TYPE @default(ACTIVE)
 
   Profile          Profile?
   Post             Post[]
@@ -111,19 +114,16 @@ model User {
 }
 
 model Profile {
-  id               String       @id @default(uuid())
-  user_id          String       @unique
-  fullname         String?      @db.VarChar(255)
-  bio              String?
-  avatar           String?
-  avatar_public_id String?      @db.VarChar(255)
-  cover            String?
-  cover_public_id  String?      @db.VarChar(255)
-  dob              DateTime?
-  gender           GENDER_TYPE?
-  location         String?
-  created_at       DateTime     @default(now())
-  updated_at       DateTime     @default(now()) @updatedAt
+  id              String       @id @default(uuid())
+  user_id         String       @unique
+  bio             String?
+  cover           String?
+  cover_public_id String?      @db.VarChar(255)
+  dob             DateTime?
+  gender          GENDER_TYPE?
+  location        String?
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @default(now()) @updatedAt
 
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

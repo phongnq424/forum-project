@@ -39,23 +39,6 @@ const authValidation = {
         })
     },
 
-    refreshToken: {
-        body: Joi.object().keys({
-            refreshToken: Joi.string().required().messages({
-                'any.required': 'Refresh token is required',
-                'string.empty': 'Refresh token cannot be empty'
-            })
-        })
-    },
-
-    logout: {
-        body: Joi.object().keys({
-            refreshToken: Joi.string().required().messages({
-                'any.required': 'Refresh token must be provided to logout'
-            })
-        })
-    },
-
     checkExist: {
         body: Joi.object().keys({
             email: Joi.string().email().optional(),
