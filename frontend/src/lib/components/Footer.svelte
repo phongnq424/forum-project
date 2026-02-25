@@ -165,4 +165,45 @@
         font-size: 12px;
         color: #71717a;
     }
+
+    @media (max-width: 1024px) {
+        .grid {
+            grid-template-columns: 1.5fr 1fr; /* Brand rộng hơn một chút */
+            gap: 40px;
+        }
+    }
+
+    /* Mobile: Xếp chồng tất cả lên nhau và căn giữa */
+    @media (max-width: 640px) {
+        footer {
+            padding: 40px 0 20px;
+        }
+
+        .grid {
+            grid-template-columns: 1fr;
+            gap: 32px;
+            text-align: center; /* Căn giữa nội dung cho đẹp trên mobile */
+        }
+
+        .brand p {
+            max-width: 100%; /* Cho phép text tràn hết chiều ngang */
+            margin: 0 auto 20px;
+        }
+
+        .logo-row {
+            justify-content: center; /* Căn giữa logo */
+        }
+
+        .social {
+            justify-content: center; /* Căn giữa icon mạng xã hội */
+        }
+
+        h3 {
+            margin-bottom: 12px;
+        }
+
+        footer a {
+            margin-bottom: 10px;
+        }
+    }
 </style>

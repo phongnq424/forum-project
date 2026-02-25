@@ -19,7 +19,6 @@
         error = "";
 
         try {
-            // Nếu cần xử lý rememberMe, bạn có thể truyền thêm vào đây
             await authService.login({ username, password });
             goto("/");
         } catch (e: any) {

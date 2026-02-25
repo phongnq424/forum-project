@@ -47,6 +47,7 @@
         background: #14161c;
         color: #e5e7eb;
         font-size: 14px;
+        font-family: inherit;
         outline: none;
         transition: 0.2s ease;
     }

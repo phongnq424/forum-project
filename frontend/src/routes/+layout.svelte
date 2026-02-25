@@ -1,31 +1,26 @@
-<script>
+<script lang="ts">
 	import "../app.css";
 	import Header from "$lib/components/Header.svelte";
 	import Footer from "$lib/components/Footer.svelte";
-	import { onMount } from "svelte";
-	import { api } from "$lib/services/api";
-	import { setAuth, user } from "$lib/stores/auth.store";
+	import { auth, user, initAuth } from "$lib/stores/auth.store";
 
-	onMount(async () => {
-		try {
-			const res = await api.post("auth/refresh", {});
-			setAuth(res.accessToken);
-			console.log("Session khôi phục thành công");
-		} catch (err) {
-			console.log("Session hết hạn hoặc chưa đăng nhập");
+	let { data, children }: { data: App.PageData; children: any } = $props();
+
+	// Init store từ server data NGAY lúc load (trước render)
+	$effect.pre(() => {
+		if (data?.user) {
+			initAuth(data.user);
 		}
 	});
 </script>
 
 <div class="app">
-	<Header currentUser={$user} />
-
+	<Header {data} />
 	<main>
 		<div class="page-container">
-			<slot />
+			{@render children?.()}
 		</div>
 	</main>
-
 	<Footer />
 </div>
 
@@ -47,13 +42,13 @@
 
 	main {
 		flex: 1;
-		margin-top: 50px;
+		margin-top: 30px;
 	}
 
 	.page-container {
 		max-width: 1280px;
 		margin: 0 auto;
-		padding: 48px 20px 40px;
+		padding: 48px 20px 30px;
 		width: 100%;
 	}
 </style>

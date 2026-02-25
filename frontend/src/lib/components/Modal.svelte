@@ -1,12 +1,21 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount, type Snippet } from "svelte";
 
     type Props = {
         open?: boolean;
         title?: string;
+        maxWidth?: string;
+        children?: Snippet;
+        footer?: Snippet;
     };
 
-    let { open = $bindable(false), title = "" }: Props = $props();
+    let {
+        open = $bindable(false),
+        title = "",
+        maxWidth = "500px",
+        children,
+        footer,
+    }: Props = $props();
 
     let overlayEl: HTMLDivElement | null = null;
 
@@ -33,26 +42,49 @@
         aria-modal="true"
         aria-labelledby="modal-title"
         tabindex="0"
-        on:click={close}
-        on:keydown={handleKeydown}
+        onclick={close}
+        onkeydown={handleKeydown}
     >
-        <div class="modal" on:click|stopPropagation>
+        <div
+            class="modal"
+            style="max-width: {maxWidth};"
+            onclick={(e) => e.stopPropagation()}
+        >
             <div class="header">
                 <h3 id="modal-title">{title}</h3>
 
                 <button
                     type="button"
                     class="close"
-                    on:click={close}
+                    onclick={close}
                     aria-label="Close modal"
                 >
-                    ×
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
                 </button>
             </div>
 
             <div class="content">
-                <slot />
+                {@render children?.()}
             </div>
+
+            {#if footer}
+                <div class="footer">
+                    {@render footer()}
+                </div>
+            {/if}
         </div>
     </div>
 {/if}
@@ -67,11 +99,15 @@
         align-items: center;
         justify-content: center;
         z-index: 1000;
+        padding: 20px;
     }
 
     .modal {
         width: 100%;
+        display: flex;
+        flex-direction: column;
         max-width: 500px;
+        max-height: 85vh;
         background: linear-gradient(145deg, #171a22, #13151b);
         border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 20px;
@@ -85,14 +121,16 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 22px 24px;
+        padding: 10px 24px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        flex-shrink: 0;
     }
 
     h3 {
         margin: 0;
         font-size: 16px;
         font-weight: 600;
+        color: #fff;
     }
 
     .close {
@@ -116,8 +154,55 @@
 
     .content {
         padding: 24px;
+        flex: 1;
+        overflow-y: auto;
     }
 
+    .footer {
+        padding: 16px 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        background: #13151b;
+        border-radius: 0 0 20px 20px;
+        /* Fix cứng footer */
+        flex-shrink: 0;
+    }
+
+    .content::-webkit-scrollbar {
+        width: 6px;
+    }
+    .content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .content::-webkit-scrollbar-thumb {
+        background: #374151;
+        border-radius: 10px;
+    }
+    .content::-webkit-scrollbar-thumb:hover {
+        background: #4b5563;
+    }
+    .close {
+        width: 36px; /* Tăng kích thước nút */
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px; /* Bo góc mượt hơn */
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05); /* Thêm viền nhẹ */
+        color: #94a3b8;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .close:hover {
+        background: rgba(239, 68, 68, 0.1); /* Hover sang tone đỏ nhẹ */
+        color: #f87171;
+        transform: rotate(90deg); /* Xoay nhẹ khi hover cho "ngầu" */
+    }
+
+    .close svg {
+        transition: transform 0.2s ease;
+    }
     @keyframes modalIn {
         from {
             opacity: 0;

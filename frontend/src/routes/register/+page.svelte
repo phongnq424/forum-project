@@ -54,14 +54,11 @@
         loading = true;
         error = "";
         try {
-            // 1. Xác thực OTP
             await authService.verifyOtp(email, otpCode);
 
-            // 2. Đăng ký chính thức (BE sẽ check verified key trong Redis)
             await authService.register({ username, email, password });
 
-            // Thành công thì qua Login (hoặc Home nếu service có setAuth)
-            goto("/login");
+            goto("/profile");
         } catch (e: any) {
             error = e?.message || "Verification or registration failed";
         } finally {

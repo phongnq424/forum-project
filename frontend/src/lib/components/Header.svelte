@@ -1,6 +1,11 @@
-<script>
+<script lang="ts">
     import { page } from "$app/state";
-    let { currentUser } = $props();
+    import { user } from "$lib/stores/auth.store";
+
+    let { data }: { data?: App.PageData } = $props();
+
+    // Dùng $derived để Svelte 5 tự động theo dõi và ưu tiên lấy dữ liệu mới nhất từ store $user
+    let currentUser = $derived($user || data?.user);
 </script>
 
 <header class="site-header">
@@ -59,13 +64,52 @@
                 <a href="/login" class="signin">Sign in</a>
                 <a href="/register" class="join">Join now</a>
             {:else}
-                <span class="greeting">Hi, {currentUser.username}</span>
+                <div class="notification-wrapper">
+                    <button class="notification-btn" aria-label="Notifications">
+                        <svg viewBox="0 0 24 24" class="bell-icon">
+                            <path
+                                d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                fill="none"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                            <path
+                                d="M13.73 21a2 2 0 01-3.46 0"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                fill="none"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                        </svg>
+                        <span class="badge">3</span>
+                    </button>
+                </div>
+                <div class="user-menu">
+                    <span class="greeting">Hi, {currentUser.username}</span>
+                    <a href="/profile" class="avatar-link">
+                        {#if currentUser.avatar}
+                            <img
+                                src={currentUser.avatar}
+                                alt={currentUser.username}
+                                class="avatar"
+                            />
+                        {:else}
+                            <div class="avatar-placeholder">
+                                {currentUser.username.charAt(0).toUpperCase()}
+                            </div>
+                        {/if}
+                    </a>
+                </div>
             {/if}
         </div>
     </div>
 </header>
 
 <style>
+    /* ... (Giữ nguyên toàn bộ phần CSS của bạn ở đây) ... */
     .site-header {
         position: fixed;
         top: 0;
@@ -80,7 +124,7 @@
     .container {
         max-width: 1280px;
         margin: 0 auto;
-        padding: 15px 20px;
+        padding: 10px 20px;
     }
 
     .nav {
@@ -245,6 +289,93 @@
         font-size: 14px;
         color: #9ca3af;
     }
+    /* CSS CHO AVATAR */
+    .user-menu {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .avatar-link {
+        display: block;
+        line-height: 0;
+        transition: transform 0.2s ease;
+    }
+
+    .avatar-link:hover {
+        transform: scale(1.05);
+    }
+
+    .avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(139, 92, 246, 0.5); /* Viền tím mờ */
+        background: #1c1f26;
+    }
+
+    .avatar-placeholder {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #8b5cf6, #6366f1);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    .notification-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .notification-btn {
+        background: none;
+        border: none;
+        padding: 8px;
+        color: #9ca3af;
+        cursor: pointer;
+        position: relative;
+        transition:
+            color 0.2s ease,
+            transform 0.1s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .notification-btn:hover {
+        color: #8b5cf6; /* Tím khi hover */
+        transform: translateY(-1px);
+    }
+
+    .bell-icon {
+        width: 22px;
+        height: 22px;
+    }
+
+    .badge {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: #ef4444; /* Màu đỏ thông báo */
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        min-width: 16px;
+        height: 16px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+        border: 2px solid #282828; /* Viền trùng màu header để tách khối */
+    }
 
     /* ===== RESPONSIVE ===== */
 
@@ -257,11 +388,17 @@
         .search input {
             width: 180px;
         }
+        .greeting {
+            display: none;
+        }
     }
 
     /* Small tablet */
     @media (max-width: 900px) {
         .main-nav {
+            display: none;
+        }
+        .greeting {
             display: none;
         }
 
@@ -273,6 +410,9 @@
     /* Mobile */
     @media (max-width: 600px) {
         .search {
+            display: none;
+        }
+        .greeting {
             display: none;
         }
 

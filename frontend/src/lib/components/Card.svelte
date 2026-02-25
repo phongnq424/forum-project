@@ -3,12 +3,17 @@
         padding?: string;
         variant?: "default" | "elevated" | "outline";
         hover?: boolean;
+        class?: string;
+        style?: string;
     };
 
     let {
         padding = "24px",
         variant = "default",
         hover = true,
+        class: className = "",
+        style = "",
+        ...rest
     }: Props = $props();
 </script>
 

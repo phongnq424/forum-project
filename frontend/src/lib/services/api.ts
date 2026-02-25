@@ -1,6 +1,5 @@
 import { PUBLIC_API_URL } from '$env/static/public';
-import { get } from 'svelte/store';
-import { auth, setAuth, clearAuth } from '$lib/stores/auth.store';
+import { auth, setUser, clearAuth } from '$lib/stores/auth.store';
 
 interface SendOptions<T = unknown> {
     method: string;
@@ -23,40 +22,37 @@ async function send<T>(opts: SendOptions<T>): Promise<T> {
     const url = `${PUBLIC_API_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
 
     const headers: HeadersInit = { Accept: 'application/json' };
-    if (data) headers['Content-Type'] = 'application/json';
-
-    const token = get(auth).accessToken;
-    if (token) headers.Authorization = `Bearer ${token}`;
+    let body: any = data;
+    if (data && !(data instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+        body = JSON.stringify(data);
+    }
 
     const requestOpts: RequestInit = {
         method,
         headers,
-        body: data ? JSON.stringify(data) : undefined,
-        credentials: 'include'
+        body,
+        credentials: 'include' // Send cookies automatically
     };
 
     let response = await customFetch(url, requestOpts);
 
-    if (response.status === 401 && !path.includes('refresh') && !path.includes('login')) {
+    if (response.status === 401 && !path.includes('refresh') && !path.includes('login') && !path.includes('register')) {
         if (!isRefreshing) {
             isRefreshing = true;
             try {
-                const refreshResponse = await customFetch(`${PUBLIC_API_URL}/auth/refresh`, {
+                // Call refresh endpoint - backend sets new access_token cookie
+                const refreshResponse = await customFetch(`${PUBLIC_API_URL}auth/refresh`, {
                     method: 'POST',
                     credentials: 'include'
                 });
 
                 if (!refreshResponse.ok) throw new Error('Refresh failed');
 
-                const { accessToken } = await refreshResponse.json(); // BE set Set-Cookie refresh mới nếu rotation
-
-                setAuth(accessToken);
-
                 await processQueue();
 
-                // Retry original request
-                headers.Authorization = `Bearer ${accessToken}`;
-                response = await customFetch(url, { ...requestOpts, headers });
+                // Retry original request with new token from cookie
+                response = await customFetch(url, requestOpts);
             } catch (err) {
                 await processQueue(err);
                 clearAuth();
@@ -80,7 +76,9 @@ async function send<T>(opts: SendOptions<T>): Promise<T> {
         throw err;
     }
 
-    return response.status === 204 ? ({} as T) : await response.json() as T;
+    const result = response.status === 204 ? ({} as T) : await response.json() as T;
+
+    return result;
 }
 
 export const api = {

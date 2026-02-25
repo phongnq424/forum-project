@@ -2,7 +2,7 @@
     import type { HTMLButtonAttributes } from "svelte/elements";
 
     type Props = HTMLButtonAttributes & {
-        variant?: "primary" | "secondary" | "ghost";
+        variant?: "primary" | "secondary" | "ghost" | "danger";
     };
 
     let { variant = "primary", type = "button", ...rest }: Props = $props();
@@ -71,5 +71,23 @@
     .ghost:hover:not(:disabled) {
         background: rgba(255, 255, 255, 0.05);
         color: white;
+    }
+
+    /* DANGER */
+    .danger {
+        background: transparent;
+        color: #ef4444;
+        border: 1px solid #ef4444;
+        box-shadow: none;
+        opacity: 0.8;
+    }
+
+    .danger:hover:not(:disabled) {
+        background: rgba(239, 68, 68, 0.1);
+        color: #dc2626;
+        border-color: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+        opacity: 1;
     }
 </style>
