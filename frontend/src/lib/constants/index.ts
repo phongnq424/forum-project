@@ -17,5 +17,16 @@ export const ENDPOINTS = {
     },
     POSTS: {
         BASE: 'posts',
+        BY_ID: (id: string) => `posts/${id}`,
+        BY_USER: (userId: string) => `posts/user/${userId}`,
+        SEARCH: 'posts/search',
     },
+    CATEGORIES: {
+        BASE: 'categories',
+        BY_ID: (id: string) => `categories/${id}`,
+    },
+    TOPICS: {
+        BASE: 'topics',
+        BY_ID: (id: string) => `topics/${id}`,
+    }
 };

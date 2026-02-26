@@ -1,28 +1,36 @@
 <script lang="ts">
+    import type { Snippet } from "svelte";
     import type { HTMLInputAttributes } from "svelte/elements";
     type Props = HTMLInputAttributes & {
         label?: string;
         error?: string;
+        icon?: Snippet;
     };
 
     let {
         label = "",
         error = "",
         value = $bindable(""),
+        icon,
         ...rest
     }: Props = $props();
 </script>
 
 <div class="wrapper">
-    {#if label}
-        <label class="label">{label}</label>
-    {/if}
+    {#if label}<label class="label">{label}</label>{/if}
 
-    <input class={`input ${error ? "error" : ""}`} bind:value {...rest} />
+    <div class="input-container">
+        {#if icon}
+            <div class="icon-wrapper">{@render icon()}</div>
+        {/if}
+        <input
+            class={`input ${error ? "error" : ""} ${icon ? "has-icon" : ""}`}
+            bind:value
+            {...rest}
+        />
+    </div>
 
-    {#if error}
-        <span class="error-text">{error}</span>
-    {/if}
+    {#if error}<span class="error-text">{error}</span>{/if}
 </div>
 
 <style>
@@ -74,5 +82,19 @@
     .error-text {
         font-size: 12px;
         color: #ef4444;
+    }
+    .input-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .icon-wrapper {
+        position: absolute;
+        left: 12px;
+        color: #6b7280;
+        display: flex;
+    }
+    .input.has-icon {
+        padding-left: 40px;
     }
 </style>

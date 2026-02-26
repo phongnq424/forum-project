@@ -5,6 +5,7 @@ interface SendOptions<T = unknown> {
     method: string;
     path: string;
     data?: any;
+    params?: Record<string, any>;
     fetch?: typeof fetch;
 }
 
@@ -18,8 +19,18 @@ async function processQueue(error: any = null) {
 
 async function send<T>(opts: SendOptions<T>): Promise<T> {
 
-    const { method, path, data, fetch: customFetch = fetch } = opts;
-    const url = `${PUBLIC_API_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+    const { method, path, data, params, fetch: customFetch = fetch } = opts;
+    let url = `${PUBLIC_API_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+
+    if (params) {
+        const cleanParams = Object.fromEntries(
+            Object.entries(params).filter(([_, v]) => v != null)
+        );
+        const queryString = new URLSearchParams(cleanParams as any).toString();
+        if (queryString) {
+            url += (url.includes('?') ? '&' : '?') + queryString;
+        }
+    }
 
     const headers: HeadersInit = { Accept: 'application/json' };
     let body: any = data;
@@ -82,8 +93,15 @@ async function send<T>(opts: SendOptions<T>): Promise<T> {
 }
 
 export const api = {
-    get: <T>(path: string, opts?: { fetch?: typeof fetch }) => send<T>({ method: 'GET', path, ...opts }),
-    post: <T>(path: string, data: any, opts?: { fetch?: typeof fetch }) => send<T>({ method: 'POST', path, data, ...opts }),
-    put: <T>(path: string, data: any, opts?: { fetch?: typeof fetch }) => send<T>({ method: 'PUT', path, data, ...opts }),
-    delete: <T>(path: string, opts?: { fetch?: typeof fetch }) => send<T>({ method: 'DELETE', path, ...opts })
+    get: <T>(path: string, opts?: { params?: Record<string, any>, fetch?: typeof fetch }) =>
+        send<T>({ method: 'GET', path, ...opts }),
+
+    post: <T>(path: string, data?: any, opts?: { params?: Record<string, any>, fetch?: typeof fetch }) =>
+        send<T>({ method: 'POST', path, data, ...opts }),
+
+    put: <T>(path: string, data?: any, opts?: { params?: Record<string, any>, fetch?: typeof fetch }) =>
+        send<T>({ method: 'PUT', path, data, ...opts }),
+
+    delete: <T>(path: string, data?: any, opts?: { params?: Record<string, any>, fetch?: typeof fetch }) =>
+        send<T>({ method: 'DELETE', path, data, ...opts })
 };

@@ -3,35 +3,40 @@ import { ENDPOINTS } from '$lib/constants/index';
 import type { PaginatedPostResponse } from "$lib/types/post.type";
 
 export const postService = {
-    async createPost(formData: FormData) {
-        const response = await api.post(ENDPOINTS.POSTS.BASE, formData);
-        return response.data;
-    },
-
-    async listPosts(params: { page?: number; limit?: number; topic_id?: string; user_id?: string; category_id?: string }): Promise<PaginatedPostResponse> {
-        const query = new URLSearchParams(params as any).toString();
-        const response = await api.get(`${ENDPOINTS.POSTS.BASE}?${query}`);
-        return response.data; // Phải return .data để khớp với Type
+    async listPosts(params: {
+        page?: number;
+        limit?: number;
+        topic_id?: string;
+        user_id?: string;
+        category_id?: string;
+        sortBy?: string;
+    }): Promise<PaginatedPostResponse> {
+        return api.get<PaginatedPostResponse>(ENDPOINTS.POSTS.BASE, { params });
     },
 
     async getByUser(userId: string, params: { page?: number; limit?: number }): Promise<PaginatedPostResponse> {
-        const query = new URLSearchParams(params as any).toString();
-        const response = await api.get(`${ENDPOINTS.POSTS.BASE}/user/${userId}?${query}`);
-        return response.data;
+        return api.get<PaginatedPostResponse>(`${ENDPOINTS.POSTS.BASE}/user/${userId}`, { params });
     },
 
     async getPost(id: string) {
-        const response = await api.get(`${ENDPOINTS.POSTS.BASE}/${id}`);
-        return response.data;
+        return api.get(`${ENDPOINTS.POSTS.BASE}/${id}`);
+    },
+
+    async createPost(formData: FormData) {
+        // api.post tự nhận biết FormData để không set Content-Type: json
+        return api.post(ENDPOINTS.POSTS.BASE, formData);
     },
 
     async updatePost(id: string, formData: FormData) {
-        const response = await api.put(`${ENDPOINTS.POSTS.BASE}/${id}`, formData);
-        return response.data;
+        return api.put(`${ENDPOINTS.POSTS.BASE}/${id}`, formData);
     },
 
     async search(q: string) {
-        const response = await api.get(`${ENDPOINTS.POSTS.BASE}/search?q=${encodeURIComponent(q)}`);
-        return response.data;
+        // Chuyển về dạng params cho đồng bộ với cách xử lý của api.ts
+        return api.get(`${ENDPOINTS.POSTS.BASE}/search`, { params: { q } });
+    },
+
+    async deletePost(id: string) {
+        return api.delete(`${ENDPOINTS.POSTS.BASE}/${id}`);
     }
 };

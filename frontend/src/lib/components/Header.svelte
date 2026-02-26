@@ -209,6 +209,7 @@
         background: #1c1f26;
         color: white;
         font-size: 14px;
+        font-family: poppins;
         outline: none;
         transition:
             width 0.25s ease,
