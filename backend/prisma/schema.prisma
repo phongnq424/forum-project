@@ -143,6 +143,7 @@ model Category {
   id          String  @id @default(uuid())
   name        String  @db.VarChar(100)
   description String?
+  is_deleted  Boolean @default(false)
   Topic       Topic[]
 }
 
@@ -151,6 +152,7 @@ model Topic {
   name            String            @db.VarChar(100)
   category_id     String
   description     String?
+  is_deleted      Boolean           @default(false)
   Category        Category          @relation(fields: [category_id], references: [id], onDelete: Cascade)
   Post            Post[]
   InterestedTopic InterestedTopic[]

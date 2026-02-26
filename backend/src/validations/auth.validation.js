@@ -13,7 +13,7 @@ const authValidation = {
                 'any.required': 'Password is required'
             }),
             username: Joi.string().alphanum().min(3).max(30).required(),
-            role: Joi.string().valid('USER', 'ADMIN').default('USER')
+            role: Joi.string().valid('USER').default('USER')
         })
     },
 

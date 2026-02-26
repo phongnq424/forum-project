@@ -49,7 +49,7 @@ const CategoryController = {
           .status(400)
           .json({ message: "ids must be a non-empty array" });
       const result = await CategoryService.deleteMany(ids);
-      return res.status(200).json({ deletedCount: result.count });
+      return res.status(200).json({ count: result.count });
     } catch (e) {
       return res.status(500).json({ message: e.message });
     }

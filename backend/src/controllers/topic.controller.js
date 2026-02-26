@@ -22,10 +22,9 @@ const TopicController = {
     const data = await TopicService.update(req.params.id, req.body);
     res.json(data);
   },
-  delete: async (req, res) => {
+  deleteMany: async (req, res) => {
     try {
       const { ids } = req.body;
-      console.log(1);
       if (!Array.isArray(ids) || ids.length === 0)
         return res
           .status(400)

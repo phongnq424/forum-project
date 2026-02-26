@@ -52,6 +52,7 @@ const AuthService = {
             if (existingUser) throw new Error('Email already registered');
             // Using crypto.randomInt for better security than Math.random
             const otp = crypto.randomInt(100000, 1000000).toString();
+            console.log(`Generated OTP for ${email}: ${otp}`); // For debugging, remove in production
             await redisClient.set(`otp:${email}`, otp, 'EX', 300); // 5 minutes
             await sendMail(email, "OTP Verification Code", `Your OTP code is: ${otp}`);
             return otp;

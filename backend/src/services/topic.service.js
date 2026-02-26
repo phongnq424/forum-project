@@ -10,24 +10,42 @@ const TopicService = {
   },
 
   list: async (query) => {
-    const page = parseInt(query.page) || 1;
-    const limit = parseInt(query.limit) || 10;
+    const page = parseInt(query?.page) || 1;
+    const limit = parseInt(query?.limit) || 10;
     const skip = (page - 1) * limit;
-    const where = {};
 
-    if (query.category_id) where.category_id = query.category_id;
+    const where = {
+      is_deleted: false,
+    };
+
+    if (query?.category_id)
+      where.category_id = query.category_id;
 
     const [topics, total] = await Promise.all([
       prisma.topic.findMany({
-        where,
+        where: {
+          ...where,
+          Category: {
+            is_deleted: false
+          }
+        },
         skip,
         take: limit,
         orderBy: { name: "asc" },
         include: {
-          Category: { select: { id: true, name: true } },
+          Category: {
+            select: { id: true, name: true },
+          },
         },
       }),
-      prisma.topic.count({ where }),
+      prisma.topic.count({
+        where: {
+          ...where,
+          Category: {
+            is_deleted: false
+          }
+        }
+      })
     ]);
 
     return {
@@ -42,21 +60,39 @@ const TopicService = {
   },
 
   getById: async (id) => {
-    return await prisma.topic.findUnique({
-      where: { id },
+    return await prisma.topic.findFirst({
+      where: {
+        id: id,
+        is_deleted: false,
+        Category: {
+          is_deleted: false
+        }
+      },
       include: {
-        Category: { select: { id: true, name: true } },
+        Category: {
+          select: { id: true, name: true },
+        },
       },
     });
   },
 
   update: async (id, data) => {
-    return await prisma.topic.update({ where: { id }, data });
+    return await prisma.topic.update({
+      where: {
+        id: id,
+        is_deleted: false,
+      },
+      data,
+    });
   },
 
   delete: async (ids) => {
-    return await prisma.topic.deleteMany({
-      where: { id: { in: ids } },
+    return await prisma.topic.updateMany({
+      where: {
+        id: { in: ids },
+        is_deleted: false,
+      },
+      data: { is_deleted: true },
     });
   },
 };

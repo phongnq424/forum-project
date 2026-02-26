@@ -10,7 +10,7 @@ const COOKIE_OPTIONS = {
 
 const ACCESS_TOKEN_OPTIONS = {
     ...COOKIE_OPTIONS,
-    maxAge: 15 * 60 * 1000 
+    maxAge: 15 * 60 * 1000
 };
 
 const REFRESH_TOKEN_OPTIONS = {
@@ -68,7 +68,7 @@ const AuthController = {
 
             res.cookie('access_token', result.accessToken, ACCESS_TOKEN_OPTIONS);
             res.cookie('refresh_token', result.refreshToken, REFRESH_TOKEN_OPTIONS);
-            
+
 
             // Return only user, tokens are in HttpOnly cookies
             return res.status(201).json({
@@ -92,7 +92,8 @@ const AuthController = {
             // Return only user, tokens are in HttpOnly cookies
             return res.status(200).json({
                 message: "Login successful",
-                user: result.user
+                user: result.user,
+                accessToken: result.accessToken,
             });
         } catch (error) {
             return res.status(401).json({ error: error.message });
