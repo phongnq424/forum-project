@@ -3,12 +3,12 @@
 	import { postService } from "$lib/services/post.service";
 
 	// Components
-	import Card from "$lib/components/Card.svelte";
-	import Badge from "$lib/components/Badge.svelte";
-	import Button from "$lib/components/Button.svelte";
-	import Select from "$lib/components/Select.svelte";
-	import Input from "$lib/components/Input.svelte";
-	import PostCard from "$lib/components/PostCard.svelte"; // Dùng cái đã tách hoặc để code cũ
+	import Card from "$lib/components/ui/Card.svelte";
+	import Badge from "$lib/components/ui/Badge.svelte";
+	import Button from "$lib/components/ui/Button.svelte";
+	import Select from "$lib/components/ui/Select.svelte";
+	import Input from "$lib/components/ui/Input.svelte";
+	import PostCard from "$lib/components/ui/PostCard.svelte";
 
 	// State (Svelte 5 Runes)
 	let posts = $state<any[]>([]);
@@ -124,7 +124,10 @@
 					</button>
 				{/each}
 			</div>
-			<Button variant="primary" onclick={() => (isEditModalOpen = true)}>
+			<Button
+				variant="primary"
+				onclick={() => alert("Create post clicked")}
+			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					width="16"
@@ -139,7 +142,7 @@
 						d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
 					/>
 				</svg>
-				Edit Profile
+				Create Post
 			</Button>
 		</div>
 	</header>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import "../app.css";
-	import Header from "$lib/components/Header.svelte";
-	import Footer from "$lib/components/Footer.svelte";
+	import Header from "$lib/components/ui/Header.svelte";
+	import Footer from "$lib/components/ui/Footer.svelte";
 	import { auth, user, initAuth } from "$lib/stores/auth.store";
 
 	let { data, children }: { data: App.PageData; children: any } = $props();

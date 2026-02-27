@@ -1,19 +1,17 @@
 <script lang="ts">
-    import AuthLayout from "$lib/components/AuthLayout.svelte";
-    import Input from "$lib/components/Input.svelte";
-    import Button from "$lib/components/Button.svelte";
+    import AuthLayout from "$lib/components/auth/AuthLayout.svelte";
+    import Input from "$lib/components/ui/Input.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
+    import PasswordInput from "$lib/components/auth/PasswordInput.svelte";
+    import ErrorMessage from "$lib/components/ui/ErrorMessage.svelte";
     import { authService } from "$lib/services/auth.service";
     import { goto } from "$app/navigation";
-    import OTPVerification from "$lib/components/OTPVerification.svelte";
+    import OTPVerification from "$lib/components/auth/OTPVerification.svelte";
 
     let username = $state("");
     let email = $state("");
     let password = $state("");
     let confirmPassword = $state("");
-
-    let showPassword = $state(false);
-    let showConfirmPassword = $state(false);
-
     let loading = $state(false);
     let error = $state("");
     let otpCode = $state("");
@@ -30,12 +28,9 @@
 
         loading = true;
         try {
-            // BE của ông có hàm checkExistUser, gọi nó trước cho chắc
             await authService.checkExistUser({ email, username });
-
-            // Nếu không trùng thì gửi mã
             await authService.sendOtp(email);
-            step = 2; // Chuyển sang giao diện OTP
+            step = 2;
         } catch (e: any) {
             error = e?.message || "Something went wrong";
         } finally {
@@ -100,90 +95,22 @@
                 />
             </div>
 
-            <div class="input-group">
-                <label for="password">Password</label>
-                <div class="password-wrapper">
-                    <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Create a password"
-                        bind:value={password}
-                        required
-                    />
-                    <button
-                        type="button"
-                        class="eye-toggle-btn"
-                        onclick={() => (showPassword = !showPassword)}
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="size-5"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d={showPassword
-                                    ? "M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
-                                    : "M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"}
-                            />
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                            />
-                        </svg>
-                    </button>
-                </div>
-            </div>
+            <PasswordInput
+                id="password"
+                label="Password"
+                placeholder="Create a password"
+                bind:value={password}
+                required
+            />
+            <PasswordInput
+                id="confirm"
+                label="Confirm Password"
+                placeholder="Re-enter password"
+                bind:value={confirmPassword}
+                required
+            />
 
-            <div class="input-group">
-                <label for="confirm">Confirm Password</label>
-                <div class="password-wrapper">
-                    <Input
-                        id="confirm"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Re-enter password"
-                        bind:value={confirmPassword}
-                        required
-                    />
-                    <button
-                        type="button"
-                        class="eye-toggle-btn"
-                        onclick={() =>
-                            (showConfirmPassword = !showConfirmPassword)}
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="size-5"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d={showPassword
-                                    ? "M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
-                                    : "M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"}
-                            />
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                            />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            {#if error}
-                <div class="error-box">{error}</div>
-            {/if}
+            <ErrorMessage {error} />
 
             <Button
                 type="submit"
@@ -255,32 +182,6 @@
         color: #a1a1aa;
     }
 
-    .password-wrapper {
-        position: relative;
-    }
-
-    .eye-toggle-btn {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        color: #a1a1aa;
-        cursor: pointer;
-    }
-
-    .error-box {
-        background: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
-        padding: 12px;
-        border-radius: 8px;
-        font-size: 14px;
-        text-align: center;
-        margin-bottom: 20px;
-        border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
     .divider {
         text-align: center;
         margin: 24px 0;
@@ -333,10 +234,7 @@
         background: #2a2f3a;
         border-color: #3f4451;
     }
-    .size-5 {
-        width: 20px;
-        height: 20px;
-    }
+
     .footer-text {
         text-align: center;
         margin-top: 20px;
@@ -350,7 +248,7 @@
     }
     @media (max-width: 480px) {
         .social-btn {
-            padding: 14px; /* Nút to hơn tí cho dễ chạm (Touch target) */
+            padding: 14px;
             font-size: 15px;
         }
 

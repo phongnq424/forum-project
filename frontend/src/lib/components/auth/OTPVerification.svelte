@@ -1,6 +1,6 @@
 <script lang="ts">
     import OTPInput from "./OTPInput.svelte";
-    import Button from "./Button.svelte";
+    import Button from "../ui/Button.svelte";
 
     // Định nghĩa Interface rõ ràng cho Svelte 5 Props
     interface Props {

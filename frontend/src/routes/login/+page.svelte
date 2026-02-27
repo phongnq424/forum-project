@@ -1,7 +1,9 @@
 <script lang="ts">
-    import AuthLayout from "$lib/components/AuthLayout.svelte";
-    import Input from "$lib/components/Input.svelte";
-    import Button from "$lib/components/Button.svelte";
+    import AuthLayout from "$lib/components/auth/AuthLayout.svelte";
+    import Input from "$lib/components/ui/Input.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
+    import PasswordInput from "$lib/components/auth/PasswordInput.svelte";
+    import ErrorMessage from "$lib/components/ui/ErrorMessage.svelte";
     import { authService } from "$lib/services/auth.service";
     import { goto } from "$app/navigation";
 
@@ -54,58 +56,13 @@
             />
         </div>
 
-        <div class="input-group">
-            <label for="password">Password</label>
-            <div class="password-wrapper">
-                <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    bind:value={password}
-                    required
-                />
-                <button
-                    type="button"
-                    class="eye-toggle-btn"
-                    onclick={togglePasswordVisibility}
-                    aria-label="Toggle password visibility"
-                >
-                    {#if showPassword}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="size-5"
-                            ><path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M2.036 10.041a17.59 17.59 0 0 1 3.5-3.931m12 0a17.59 17.59 0 0 1 3.5 3.931M12 21c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 9.164A8.997 8.997 0 0 1 12 21Z"
-                            /><path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                            /></svg
-                        >
-                    {:else}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="size-5"
-                            ><path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"
-                            /></svg
-                        >
-                    {/if}
-                </button>
-            </div>
-        </div>
+        <PasswordInput
+            id="password"
+            label="Password"
+            placeholder="Enter your password"
+            bind:value={password}
+            required
+        />
 
         <div class="options-row">
             <label class="remember-me">
@@ -115,9 +72,7 @@
             <a href="/forgot-password" class="forgot-link">Forgot password?</a>
         </div>
 
-        {#if error}
-            <div class="error-box">{error}</div>
-        {/if}
+        <ErrorMessage {error} />
 
         <Button
             type="submit"
@@ -188,35 +143,6 @@
         color: #a1a1aa; /* Màu xám nhạt cho label */
     }
 
-    /* Wrapper để đặt icon con mắt đè lên input */
-    .password-wrapper {
-        position: relative;
-    }
-
-    .eye-toggle-btn {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        color: #a1a1aa;
-        cursor: pointer;
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: color 0.2s;
-    }
-
-    .eye-toggle-btn:hover {
-        color: #fff;
-    }
-
-    .size-5 {
-        width: 20px;
-        height: 20px;
-    }
     .footer-text {
         text-align: center;
         margin-top: 20px;
@@ -316,17 +242,6 @@
     .social-btn:hover {
         background: #2a2f3a;
         border-color: #3f4451;
-    }
-
-    .error-box {
-        background: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
-        padding: 12px;
-        border-radius: 8px;
-        font-size: 14px;
-        text-align: center;
-        margin-bottom: 20px;
-        border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
     @media (max-width: 480px) {
