@@ -57,8 +57,12 @@ const ProfileService = {
     },
 
     updateProfile: async (userId, data, files = {}) => {
-        const profile = await prisma.profile.findUnique({ where: { user_id: userId } })
-        const user = await prisma.user.findUnique({ where: { id: userId } })
+        // 🚀 Chạy query song song
+        const [profile, user] = await Promise.all([
+            prisma.profile.findUnique({ where: { user_id: userId } }),
+            prisma.user.findUnique({ where: { id: userId } })
+        ])
+
         if (data.dob === "") {
             data.dob = null;
         }
@@ -70,46 +74,82 @@ const ProfileService = {
             data.gender = null;
         }
 
-        // Upload avatar → lưu vào User table
+        // 🚀 Upload avatar + cover song song
+        const uploadPromises = []
+        let uploadedAvatar = null
+        let uploadedCover = null
+
         if (files.avatar) {
-            const uploadedAvatar = await CloudinaryService.update(
-                files.avatar,
-                'avatar',
-                user?.avatar_public_id
-            );
-            await prisma.user.update({
-                where: { id: userId },
-                data: {
-                    avatar: uploadedAvatar.url,
-                    avatar_public_id: uploadedAvatar.public_id
-                }
-            });
+            uploadPromises.push(
+                CloudinaryService.update(
+                    files.avatar,
+                    'avatar',
+                    user?.avatar_public_id
+                ).then(uploaded => {
+                    uploadedAvatar = uploaded
+                })
+            )
         }
 
-        // Upload cover → lưu vào Profile table
         if (files.cover) {
-            const uploadedCover = await CloudinaryService.update(
-                files.cover,
-                'cover',
-                profile?.cover_public_id
-            );
-            data.cover = uploadedCover.url;
-            data.cover_public_id = uploadedCover.public_id;
+            uploadPromises.push(
+                CloudinaryService.update(
+                    files.cover,
+                    'cover',
+                    profile?.cover_public_id
+                ).then(uploaded => {
+                    uploadedCover = uploaded
+                })
+            )
         }
 
-        // Update fullname vào User table nếu được gửi
+        if (uploadPromises.length > 0) {
+            await Promise.all(uploadPromises)
+        }
+
+        // 🚀 Chuẩn bị data cập nhật User (gộp avatar + fullname thành 1 lần)
+        const userUpdateData = {}
+
+        if (uploadedAvatar) {
+            userUpdateData.avatar = uploadedAvatar.url
+            userUpdateData.avatar_public_id = uploadedAvatar.public_id
+        }
+
         if (data.fullname) {
-            await prisma.user.update({
-                where: { id: userId },
-                data: { fullname: data.fullname }
-            });
-            delete data.fullname; // remove khỏi Profile data
+            userUpdateData.fullname = data.fullname
+            delete data.fullname
         }
 
-        if (!profile)
-            return await prisma.profile.create({ data: { ...data, user_id: userId } })
+        // Chuẩn bị data cập nhật Profile (cover)
+        if (uploadedCover) {
+            data.cover = uploadedCover.url
+            data.cover_public_id = uploadedCover.public_id
+        }
 
-        return await prisma.profile.update({ where: { user_id: userId }, data })
+        // 🚀 Cập nhật User + Profile song song
+        const updatePromises = []
+
+        if (Object.keys(userUpdateData).length > 0) {
+            updatePromises.push(
+                prisma.user.update({
+                    where: { id: userId },
+                    data: userUpdateData
+                })
+            )
+        }
+
+        if (!profile) {
+            updatePromises.push(
+                prisma.profile.create({ data: { ...data, user_id: userId } })
+            )
+        } else {
+            updatePromises.push(
+                prisma.profile.update({ where: { user_id: userId }, data })
+            )
+        }
+
+        const results = await Promise.all(updatePromises)
+        return results[results.length - 1]
     },
 
 

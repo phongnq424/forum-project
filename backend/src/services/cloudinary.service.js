@@ -46,10 +46,11 @@ const CloudinaryService = {
             // upload mới trước
             const uploaded = await CloudinaryService.upload(filePath, type);
 
-            // nếu upload thành công thì xóa ảnh cũ (không block nếu xóa fail)
+            // xóa ảnh cũ dù upload mới có thành công hay không (đảm bảo không bị rác)
             if (oldPublicId) {
-                await CloudinaryService.delete(oldPublicId).catch(() => { });
+                CloudinaryService.delete(oldPublicId).catch(() => { });
             }
+
 
             return uploaded;
         } catch (err) {
