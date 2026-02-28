@@ -36,7 +36,7 @@ const PostService = {
     return await prisma.post.findUnique({
       where: { id: created.id },
       include: {
-        User: { select: { id: true, username: true, Profile: { select: { avatar: true } } } },
+        User: { select: { id: true, username: true, avatar: true, fullname: true } },
         Topic: { select: { id: true, name: true } },
         Image: { select: { id: true, url: true } }
       }
@@ -47,7 +47,7 @@ const PostService = {
     const post = await prisma.post.findUnique({
       where: { id: postId, is_deleted: false },
       include: {
-        User: { select: { id: true, username: true, Profile: { select: { avatar: true } } } },
+        User: { select: { id: true, username: true, avatar: true, fullname: true } },
         Topic: { select: { id: true, name: true } },
         Image: { select: { id: true, url: true } },
         Comment: {
@@ -56,7 +56,7 @@ const PostService = {
             comment_detail: true,
             user_id: true,
             created_at: true,
-            User: { select: { id: true, username: true, Profile: { select: { avatar: true } } } }
+            User: { select: { id: true, username: true, avatar: true, fullname: true } },
           },
           take: 50
         },
@@ -129,7 +129,7 @@ const PostService = {
           topic_id: topic_id !== undefined ? topic_id : existing.topic_id
         },
         include: {
-          User: { select: { id: true, username: true, Profile: { select: { avatar: true } } } },
+          User: { select: { id: true, username: true, avatar: true, fullname: true } },
           Topic: { select: { id: true, name: true } },
           Image: { select: { id: true, url: true } }
         }
@@ -202,7 +202,7 @@ const PostService = {
         take: limit,
         orderBy: { created_at: 'desc' },
         include: {
-          User: { select: { id: true, username: true, Profile: { select: { avatar: true } } } },
+          User: { select: { id: true, username: true, avatar: true, fullname: true } },
           Topic: { select: { id: true, name: true } },
           Image: { select: { id: true, url: true }, take: 3 }
         }
@@ -322,7 +322,7 @@ const PostService = {
         { content: { contains: query, mode: 'insensitive' } },
         { title: { contains: query, mode: 'insensitive' } },
         { Topic: { name: { contains: query, mode: 'insensitive' } } },
-        { User: { username: { contains: query, mode: 'insensitive' } } }
+        { User: { username: { contains: query, mode: 'insensitive' }, fullname: { contains: query, mode: 'insensitive' } } }
       ]
     }
 
@@ -335,7 +335,7 @@ const PostService = {
       take: 50,
       orderBy: { created_at: 'desc' },
       include: {
-        User: { select: { id: true, username: true, Profile: { select: { avatar: true } } } },
+        User: { select: { id: true, username: true, avatar: true, fullname: true } },
         Topic: { select: { id: true, name: true } },
         Image: { select: { id: true, url: true } }
       }
