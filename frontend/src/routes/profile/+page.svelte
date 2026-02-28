@@ -12,6 +12,7 @@
     import Modal from "$lib/components/ui/Modal.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import Card from "$lib/components/ui/Card.svelte";
+    import Icon from "$lib/components/ui/Icon.svelte";
 
     let profile = $state<any>(null);
     let posts = $state<any[]>([]);
@@ -70,7 +71,9 @@
             <Card variant="default" padding="20px" hover={false}>
                 <h3 class="sidebar-title">Recent Contests</h3>
                 <div class="contest-mini">
-                    <div class="contest-icon">🏆</div>
+                    <div class="contest-icon">
+                        <Icon name="trophy" size={20} />
+                    </div>
                     <div class="contest-info">
                         <p class="c-name">Windflow Pro #2</p>
                         <p class="c-rank">Ranked #12</p>

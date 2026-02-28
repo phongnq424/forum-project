@@ -1,11 +1,21 @@
 <script lang="ts">
     import Card from "./Card.svelte";
+    import type { Post } from "$lib/types/post.type";
+    import Badge from "./Badge.svelte";
+    import Icon from "./Icon.svelte";
+    let { post } = $props<{ post: Post }>();
 
-    let { post } = $props();
-
-    function getInitial(name: string) {
+    function getInitial(name?: string) {
         return name ? name.charAt(0).toUpperCase() : "U";
     }
+
+    const displayName =
+        post.User?.fullname || post.User?.username || "Anonymous";
+
+    const coverImage =
+        post.Image && post.Image.length > 0
+            ? post.Image[0].url
+            : "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400";
 </script>
 
 <Card
@@ -16,77 +26,68 @@
 >
     <div class="post-card">
         <div class="post-content">
-            <div class="post-author">
-                <div class="mini-avatar">
-                    {getInitial(post.User?.fullname)}
+            <div class="post-header">
+                <div class="post-author">
+                    {#if post.User?.avatar}
+                        <img
+                            class="real-avatar"
+                            src={post.User.avatar}
+                            alt={displayName}
+                        />
+                    {:else}
+                        <div class="mini-avatar">
+                            {getInitial(displayName)}
+                        </div>
+                    {/if}
+                    <span class="author-name">{displayName}</span>
+                    <span class="dot">•</span>
+                    <span class="post-date">
+                        {new Date(post.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                        })}
+                    </span>
                 </div>
-                <span class="author-name"
-                    >{post.User?.fullname || "Anonymous"}</span
-                >
-                <span class="dot">•</span>
-                <span class="post-date"
-                    >{new Date(post.created_at).toLocaleDateString()}</span
-                >
+
+                {#if post.Topic?.name}
+                    <Badge color="outline" size="sm">
+                        #{post.Topic.name}
+                    </Badge>
+                {/if}
             </div>
+
             <h2 class="post-title">{post.title}</h2>
+
             <p class="post-excerpt">
-                {post.excerpt || "No description provided for this post yet..."}
+                {post.content || "No description provided for this post yet..."}
             </p>
+
             <div class="post-actions">
                 <div class="stats-group">
-                    <button class="action-btn">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            ><path
-                                d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-                            /></svg
-                        > 90
+                    <button class="action-btn" title="Reactions">
+                        <Icon name="heart" />
+                        {post.reactionCount || 0}
                     </button>
-                    <button class="action-btn">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            ><path
-                                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-                            /></svg
-                        > 70
+                    <button class="action-btn" title="Comments">
+                        <Icon name="message-square" />
+                        {post.commentCount || 0}
                     </button>
-                </div>
-                <div class="utility-group">
-                    <button class="action-btn">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            ><path
-                                d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"
-                            /></svg
-                        >
+                    <button
+                        class="action-btn {post.isSaved ? 'saved' : ''}"
+                        title="Save Post"
+                    >
+                        <Icon
+                            name="bookmark"
+                            fill={post.isSaved ? "currentColor" : "none"}
+                        />
                     </button>
                 </div>
             </div>
         </div>
+
         <div class="post-thumbnail">
-            <img
-                src={post.thumbnail ||
-                    "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400"}
-                alt="post thumb"
-            />
+            <img src={coverImage} alt={post.title} />
         </div>
     </div>
 </Card>
@@ -98,39 +99,59 @@
         padding: 24px;
         gap: 20px;
     }
+
+    .post-header {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        gap: 16px;
+    }
+
     .post-author {
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 12px;
     }
-    .mini-avatar {
+
+    .mini-avatar,
+    .real-avatar {
         width: 24px;
         height: 24px;
-        background: #6366f1;
         border-radius: 6px;
+    }
+    .mini-avatar {
+        background: #6366f1;
         font-size: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: bold;
+        color: white;
     }
+    .real-avatar {
+        object-fit: cover;
+    }
+
     .author-name {
         font-size: 13px;
         font-weight: 600;
         color: #d1d5db;
     }
+
     .post-date,
     .dot {
         font-size: 12px;
         color: #6b7280;
     }
+
     .post-title {
-        font-size: 20px;
+        font-size: 18px; /* Đã làm nhỏ lại so với 20px cũ */
         font-weight: 700;
-        margin: 0 0 10px 0;
+        margin: 0 0 8px 0;
         line-height: 1.4;
+        color: #f3f4f6;
     }
+
     .post-excerpt {
         font-size: 14px;
         color: #9ca3af;
@@ -141,16 +162,18 @@
         overflow: hidden;
         margin-bottom: 20px;
     }
+
     .post-actions {
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
-    .stats-group,
-    .utility-group {
+
+    .stats-group {
         display: flex;
         gap: 16px;
     }
+
     .action-btn {
         background: transparent;
         border: none;
@@ -161,10 +184,25 @@
         font-size: 13px;
         cursor: pointer;
         transition: 0.2s;
+        padding: 0;
     }
+
     .action-btn:hover {
         color: #fff;
     }
+
+    .action-btn.saved {
+        color: #6366f1; /* Đổi màu xanh nếu đã lưu */
+    }
+    .action-btn.saved:hover {
+        color: #818cf8;
+    }
+
+    .post-thumbnail {
+        display: flex;
+        align-items: center;
+    }
+
     .post-thumbnail img {
         width: 100%;
         height: 120px;
@@ -179,6 +217,10 @@
         }
         .post-thumbnail {
             order: -1;
+        }
+        .post-thumbnail img {
+            height: auto;
+            aspect-ratio: 16/9;
         }
     }
 </style>

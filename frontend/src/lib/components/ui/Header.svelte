@@ -1,11 +1,22 @@
 <script lang="ts">
     import { page } from "$app/state";
     import { user } from "$lib/stores/auth.store";
+    import Icon from "$lib/components/ui/Icon.svelte";
 
     let { data }: { data?: App.PageData } = $props();
 
-    // Dùng $derived để Svelte 5 tự động theo dõi và ưu tiên lấy dữ liệu mới nhất từ store $user
+    // Quản lý menu tập trung
+    const navItems = [
+        { name: "Discuss", href: "/discuss" },
+        { name: "Challenges", href: "/challenges" },
+        { name: "Chat", href: "/chat" },
+        { name: "Contact", href: "/contact" },
+    ];
+
     let currentUser = $derived($user || data?.user);
+
+    // Avatar logic gọn gàng hơn
+    let avatarUrl = $derived($user?.avatar || data?.user?.avatar || null);
 </script>
 
 <header class="site-header">
@@ -16,47 +27,26 @@
         </a>
 
         <nav class="main-nav">
-            <a
-                href="/discuss"
-                class:active={page.url.pathname.startsWith("/discuss")}
-            >
-                Discuss
-            </a>
-
-            <a
-                href="/challenges"
-                class:active={page.url.pathname.startsWith("/challenges")}
-            >
-                Challenges
-            </a>
-
-            <a
-                href="/chat"
-                class:active={page.url.pathname.startsWith("/chat")}
-            >
-                Chat
-            </a>
-
-            <a
-                href="/contact"
-                class:active={page.url.pathname.startsWith("/contact")}
-            >
-                Contact
-            </a>
+            {#each navItems as item}
+                <a
+                    href={item.href}
+                    class:active={page.url.pathname.startsWith(item.href)}
+                    aria-current={page.url.pathname.startsWith(item.href)
+                        ? "page"
+                        : undefined}
+                >
+                    {item.name}
+                </a>
+            {/each}
         </nav>
 
         <div class="search">
-            <svg viewBox="0 0 26 26" class="search-icon">
-                <path
-                    d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    fill="none"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                />
-            </svg>
-            <input type="text" placeholder="Search..." />
+            <Icon name="search" size={16} class="search-icon" />
+            <input
+                type="text"
+                placeholder="Search..."
+                aria-label="Search site"
+            />
         </div>
 
         <div class="auth">
@@ -65,34 +55,25 @@
                 <a href="/register" class="join">Join now</a>
             {:else}
                 <div class="notification-wrapper">
-                    <button class="notification-btn" aria-label="Notifications">
-                        <svg viewBox="0 0 24 24" class="bell-icon">
-                            <path
-                                d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                fill="none"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            />
-                            <path
-                                d="M13.73 21a2 2 0 01-3.46 0"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                fill="none"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            />
-                        </svg>
+                    <button
+                        class="notification-btn"
+                        aria-label="3 new notifications"
+                    >
+                        <Icon name="bell" size={22} class="bell-icon" />
                         <span class="badge">3</span>
                     </button>
                 </div>
+
                 <div class="user-menu">
                     <span class="greeting">Hi, {currentUser.username}</span>
-                    <a href="/profile" class="avatar-link">
-                        {#if currentUser.avatar}
+                    <a
+                        href="/profile"
+                        class="avatar-link"
+                        aria-label="View profile"
+                    >
+                        {#if avatarUrl}
                             <img
-                                src={currentUser.avatar}
+                                src={avatarUrl}
                                 alt={currentUser.username}
                                 class="avatar"
                             />
@@ -199,6 +180,8 @@
     .search {
         position: relative;
         margin-left: auto;
+        display: flex; /* Thêm cái này để căn icon dễ hơn */
+        align-items: center;
     }
 
     .search input {
@@ -224,15 +207,15 @@
         background: #20232b;
         width: 260px;
     }
-    .search-icon {
+    :global(.search-icon) {
+        /* Dùng :global nếu class truyền từ ngoài vào component con */
         position: absolute;
         left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        width: 16px;
-        height: 16px;
         color: #9ca3af;
         pointer-events: none;
+        z-index: 2;
     }
 
     /* AUTH */
@@ -356,8 +339,7 @@
     }
 
     .bell-icon {
-        width: 22px;
-        height: 22px;
+        transition: color 0.2s ease;
     }
 
     .badge {

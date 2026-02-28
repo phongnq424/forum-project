@@ -2,6 +2,7 @@
     import Card from "$lib/components/ui/Card.svelte";
     import Badge from "$lib/components/ui/Badge.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import Icon from "$lib/components/ui/Icon.svelte";
     import type { Profile } from "$lib/types/profile.type";
 
     let { profile, onEdit, onLogout } = $props<{
@@ -58,19 +59,7 @@
 
         <div class="actions" style="gap: 8px; display: flex;">
             <Button variant="primary" onclick={onEdit}>
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    style="margin-right: 6px;"
-                    ><path
-                        d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
-                    /></svg
-                >
+                <Icon name="pencil" size={16} />
                 Edit Profile
             </Button>
             <Button
@@ -78,24 +67,7 @@
                 style="background-color: #ef4444; color: white; border: none;"
                 onclick={onLogout}
             >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    style="margin-right: 6px;"
-                    ><path
-                        d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
-                    /><polyline points="16 17 21 12 16 7" /><line
-                        x1="21"
-                        y1="12"
-                        x2="9"
-                        y2="12"
-                    /></svg
-                >
+                <Icon name="log-out" size={16} />
                 Logout
             </Button>
         </div>
@@ -104,20 +76,28 @@
     <div class="bio-container">
         <p class="bio-text">{profile.bio || "No bio yet."}</p>
         <div class="meta-info">
-            {#if profile.location}<span class="meta-item"
-                    >📍 {profile.location}</span
-                >{/if}
-            {#if profile.gender}<span class="meta-item"
-                    >👤 {formatGender(profile.gender)}</span
-                >{/if}
-            {#if profile.dob}<span class="meta-item"
-                    >🎂 {new Date(profile.dob).toLocaleDateString()}</span
-                >{/if}
-            <span class="meta-item"
-                >📅 Joined {new Date(
-                    profile.User.created_at,
-                ).toLocaleDateString()}</span
-            >
+            {#if profile.location}
+                <span class="meta-item">
+                    <Icon name="map-pin" size={14} />
+                    {profile.location}
+                </span>
+            {/if}
+            {#if profile.gender}
+                <span class="meta-item">
+                    <Icon name="user" size={14} />
+                    {formatGender(profile.gender)}
+                </span>
+            {/if}
+            {#if profile.dob}
+                <span class="meta-item">
+                    <Icon name="cake" size={14} />
+                    {new Date(profile.dob).toLocaleDateString()}
+                </span>
+            {/if}
+            <span class="meta-item">
+                <Icon name="calendar" size={14} />
+                Joined {new Date(profile.User.created_at).toLocaleDateString()}
+            </span>
         </div>
     </div>
 </Card>

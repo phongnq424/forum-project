@@ -1,6 +1,12 @@
 <script lang="ts">
     type Props = {
-        color?: "default" | "success" | "warning" | "danger" | "info";
+        color?:
+            | "default"
+            | "success"
+            | "warning"
+            | "danger"
+            | "info"
+            | "outline";
         size?: "sm" | "md";
     };
 
@@ -63,5 +69,17 @@
         background: rgba(99, 102, 241, 0.15);
         color: #6366f1;
         border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .outline {
+        background: #14161c;
+        color: #9ca3af;
+        border-color: #2a2e36;
+        cursor: pointer;
+    }
+
+    .outline:hover {
+        background: #1f2230; /* Hiệu ứng hover nhẹ */
+        color: #d1d5db;
     }
 </style>

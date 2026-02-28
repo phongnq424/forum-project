@@ -1,36 +1,45 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { postService } from "$lib/services/post.service";
+	import { categoryService } from "$lib/services/category.service";
+	import type { Post, PaginatedPostResponse } from "$lib/types/post.type";
+	import type { Category } from "$lib/types/category.type";
 
-	// Components
-	import Card from "$lib/components/ui/Card.svelte";
-	import Badge from "$lib/components/ui/Badge.svelte";
-	import Button from "$lib/components/ui/Button.svelte";
-	import Select from "$lib/components/ui/Select.svelte";
-	import Input from "$lib/components/ui/Input.svelte";
+	// Import Components
 	import PostCard from "$lib/components/ui/PostCard.svelte";
+	import Icon from "$lib/components/ui/Icon.svelte";
+	import DiscussHeader from "$lib/components/discuss/DiscussHeader.svelte";
+	import DiscussSidebar from "$lib/components/discuss/DiscussSidebar.svelte";
+	import CreatePostModal from "$lib/components/discuss/CreatePostModal.svelte";
 
-	// State (Svelte 5 Runes)
+	type SortOption = { value: string; label: string };
+	type TrendingPost = { id: number; title: string; author: string };
+	type FilterGroup = { name: string; topics: string[] };
+	type SuggestedAuthor = { name: string; role: string };
+
+	// State cho dữ liệu động
 	let posts = $state<any[]>([]);
+	let categories = $state<string[]>(["For You"]);
+	let rawCategories = $state<Category[]>([]);
+
+	// State UI
 	let loading = $state(true);
 	let activeCategory = $state("For You");
 	let searchQuery = $state("");
 	let sortBy = $state("Newest");
+	let filterGroups = $state<FilterGroup[]>([]);
+	let isCreateModalOpen = $state(false);
+	let availableTopics = $derived(
+		rawCategories.flatMap((cat: any) => cat.Topic || []),
+	);
 
-	// Dữ liệu cứng cho UI
-	const sortOptions = [
+	// 2. DATA CỨNG CHO SIDEBAR (Giữ nguyên)
+	const sortOptions: SortOption[] = [
 		{ value: "Newest", label: "Newest" },
 		{ value: "Most Favorite", label: "Most Favorite" },
 	];
-	const categories = [
-		"For You",
-		"Web",
-		"Mobile",
-		"DSA",
-		"Data Science & AI/ML",
-		"Career",
-	];
-	const trendingPosts = [
+
+	const trendingPosts: TrendingPost[] = [
 		{
 			id: 1,
 			title: "How to scale SvelteKit apps to millions of users",
@@ -47,105 +56,99 @@
 			author: "pro_coder",
 		},
 	];
-	const filterGroups = [
-		{
-			name: "Development",
-			topics: ["Frontend", "Backend", "DevOps", "Cloud"],
-		},
-		{ name: "Design", topics: ["UI/UX", "Figma", "Prototyping"] },
-		{ name: "Career", topics: ["Interview", "Salary", "Remote Work"] },
-	];
-	const suggestedAuthors = [
+
+	const suggestedAuthors: SuggestedAuthor[] = [
 		{ name: "PN Nguyen", role: "Fullstack Developer" },
 		{ name: "Sarah Connor", role: "AI Researcher" },
 		{ name: "Tech Lead", role: "Ex-Google Engineer" },
 	];
 
-	onMount(async () => {
+	async function fetchPosts() {
+		loading = true;
 		try {
-			const res = await postService.listPosts({ page: 1, limit: 10 });
-			posts = res?.data || [];
-		} catch (e) {
-			console.error(e);
+			// Dùng type từ Parameters để tự nội suy type của hàm listPosts
+			let payload: Parameters<typeof postService.listPosts>[0] = {
+				page: 1,
+				limit: 10,
+			};
+
+			if (activeCategory !== "For You") {
+				const foundCat = rawCategories.find(
+					(c) => c.name === activeCategory,
+				);
+				if (foundCat) payload.category_id = foundCat.id;
+			}
+
+			if (sortBy) {
+				payload.sortBy = sortBy === "Newest" ? "desc" : "asc";
+			}
+
+			if (searchQuery.trim() !== "") {
+				// Ép kiểu chuẩn cho an toàn
+				const res = (await postService.search(
+					searchQuery,
+				)) as PaginatedPostResponse;
+				posts = Array.isArray(res?.data) ? res.data : [];
+			} else {
+				const res = await postService.listPosts(payload);
+				posts = Array.isArray(res?.data) ? res.data : [];
+			}
+		} catch (error) {
+			console.error("Error fetching posts:", error);
+			posts = [];
 		} finally {
 			loading = false;
 		}
+	}
+
+	onMount(async () => {
+		try {
+			const res = await categoryService.listCategories({
+				page: 1,
+				limit: 20,
+			});
+
+			if (res.data && res.data.length > 0) {
+				rawCategories = res.data;
+				const categoryNames = res.data.map((c) => c.name);
+				categories = ["For You", ...categoryNames];
+			}
+			filterGroups = res.data
+				.map((c: any) => {
+					return {
+						name: c.name,
+						topics: c.Topic
+							? c.Topic.map((t: any) =>
+									typeof t === "string" ? t : t.name,
+								)
+							: [],
+					};
+				})
+				.filter((group) => group.topics.length > 0);
+		} catch (error) {
+			console.error("Error fetching categories:", error);
+		}
 	});
 
-	function getInitial(name: string) {
-		return name ? name.charAt(0).toUpperCase() : "U";
-	}
+	// $effect: Tự gọi lại fetchPosts mỗi khi các state filter bị thay đổi
+	$effect(() => {
+		const timeout = setTimeout(() => {
+			fetchPosts();
+		}, 300);
+
+		return () => clearTimeout(timeout);
+	});
 </script>
 
 <div class="discuss-container">
-	<header class="discuss-header">
-		<div class="search-bar-wrapper">
-			<div class="search-input">
-				<Input
-					placeholder="Search posts, topics..."
-					bind:value={searchQuery}
-				>
-					{#snippet icon()}
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="18"
-							height="18"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-						>
-							<circle cx="11" cy="11" r="8" /><path
-								d="m21 21-4.3-4.3"
-							/>
-						</svg>
-					{/snippet}
-				</Input>
-			</div>
-			<div class="sort-filter">
-				<Select
-					label="Sort By:"
-					inline={true}
-					options={sortOptions}
-					bind:value={sortBy}
-					style="width: 200px;"
-				/>
-			</div>
-		</div>
-
-		<div class="category-nav">
-			<div class="chips-scroll">
-				{#each categories as cat}
-					<button
-						class="chip {activeCategory === cat ? 'active' : ''}"
-						onclick={() => (activeCategory = cat)}
-					>
-						{cat}
-					</button>
-				{/each}
-			</div>
-			<Button
-				variant="primary"
-				onclick={() => alert("Create post clicked")}
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					style="margin-right: 6px;"
-				>
-					<path
-						d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
-					/>
-				</svg>
-				Create Post
-			</Button>
-		</div>
-	</header>
+	<DiscussHeader
+		bind:searchQuery
+		bind:sortBy
+		bind:activeCategory
+		{categories}
+		{sortOptions}
+		onCreatePost={() => (isCreateModalOpen = true)}
+	/>
 
 	<main class="discuss-layout">
 		<section class="feed-section">
@@ -158,83 +161,20 @@
 			{/if}
 		</section>
 
-		<aside class="discuss-sidebar">
-			<Card variant="default" padding="20px">
-				<h3 class="sidebar-heading">🔥 Trending posts</h3>
-				<div class="trending-list">
-					{#each trendingPosts as trend, i}
-						<div class="trend-item">
-							<span class="trend-number">0{i + 1}</span>
-							<div class="trend-info">
-								<p class="trend-title">{trend.title}</p>
-								<p class="trend-author">@{trend.author}</p>
-							</div>
-						</div>
-					{/each}
-				</div>
-			</Card>
-
-			<Card variant="default" padding="20px">
-				<h3 class="sidebar-heading">📁 Category filter</h3>
-				<div class="category-filter-box">
-					{#each filterGroups as group}
-						<div class="filter-group">
-							<span class="group-label">{group.name}</span>
-							<div class="topic-chips">
-								{#each group.topics as topic}
-									<span class="topic-tag">#{topic}</span>
-								{/each}
-							</div>
-						</div>
-					{/each}
-				</div>
-			</Card>
-
-			<Card variant="default" padding="20px">
-				<h3 class="sidebar-heading">👤 Suggested authors</h3>
-				<div class="author-list">
-					{#each suggestedAuthors as author}
-						<div class="author-item">
-							<div class="author-avatar-mini">
-								{getInitial(author.name)}
-							</div>
-							<div class="author-meta">
-								<p class="a-name">{author.name}</p>
-								<p class="a-role">{author.role}</p>
-							</div>
-							<button class="follow-btn">Follow</button>
-						</div>
-					{/each}
-				</div>
-			</Card>
-		</aside>
+		<div class="sidebar-wrapper">
+			<DiscussSidebar {trendingPosts} {filterGroups} {suggestedAuthors} />
+		</div>
 	</main>
 
 	<button class="chat-fab" title="Chat with AI Assistant">
-		<div class="fab-icon">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="28"
-				height="28"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				><path d="M12 8V4H8" /><rect
-					width="16"
-					height="12"
-					x="4"
-					y="8"
-					rx="2"
-				/><path d="M2 14h2" /><path d="M20 14h2" /><path
-					d="M15 13v2"
-				/><path d="M9 13v2" /></svg
-			>
-		</div>
+		<Icon name="bot" size={28} />
 		<span class="online-indicator"></span>
 	</button>
+	<CreatePostModal
+		bind:open={isCreateModalOpen}
+		topics={availableTopics}
+		onSuccess={fetchPosts}
+	/>
 </div>
 
 <style>
@@ -244,166 +184,12 @@
 		padding: 20px;
 		color: #e5e7eb;
 	}
-	.discuss-header {
-		margin-bottom: 30px;
-	}
-	.search-bar-wrapper {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 24px;
-		gap: 20px;
-	}
-	.search-input {
-		flex: 1;
-		position: relative;
-	}
-
-	.sort-filter {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 14px;
-		color: #9ca3af;
-	}
-	.category-nav {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 20px;
-	}
-	.chips-scroll {
-		display: flex;
-		gap: 10px;
-		overflow-x: auto;
-		scrollbar-width: none;
-	}
-	.chip {
-		padding: 8px 18px;
-		background: #1e222b;
-		border: 1px solid #2a2e36;
-		border-radius: 20px;
-		font-size: 14px;
-		white-space: nowrap;
-		cursor: pointer;
-		color: #9ca3af;
-	}
-	.chip.active {
-		background: #6366f1;
-		color: white;
-		border-color: #6366f1;
-	}
-
 	.discuss-layout {
 		display: grid;
 		grid-template-columns: 1fr 340px;
 		gap: 30px;
 	}
-	.discuss-sidebar {
-		display: flex;
-		flex-direction: column;
-		gap: 24px;
-	}
-	.sidebar-heading {
-		font-size: 14px;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-		color: #6b7280;
-		margin-bottom: 20px;
-	}
 
-	/* Trending & Authors */
-	.trend-item {
-		display: flex;
-		gap: 15px;
-		margin-bottom: 16px;
-	}
-	.trend-number {
-		font-size: 24px;
-		font-weight: 800;
-		color: #2a2e36;
-	}
-	.trend-title {
-		font-size: 14px;
-		font-weight: 600;
-		margin: 0;
-		line-height: 1.4;
-	}
-	.trend-author {
-		font-size: 12px;
-		color: #6366f1;
-		margin-top: 4px;
-	}
-	.author-item {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		margin-bottom: 16px;
-	}
-	.author-avatar-mini {
-		width: 32px;
-		height: 32px;
-		border-radius: 50%;
-		background: #374151;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: bold;
-		font-size: 12px;
-	}
-	.author-meta {
-		flex: 1;
-	}
-	.a-name {
-		font-size: 13px;
-		font-weight: 600;
-		margin: 0;
-	}
-	.a-role {
-		font-size: 11px;
-		color: #6b7280;
-		margin: 0;
-	}
-	.follow-btn {
-		font-size: 11px;
-		font-weight: 700;
-		background: #fff;
-		color: #000;
-		border: none;
-		padding: 6px 14px;
-		border-radius: 20px;
-		cursor: pointer;
-	}
-
-	/* Category Filter */
-	.filter-group {
-		margin-bottom: 16px;
-	}
-	.group-label {
-		font-size: 11px;
-		font-weight: 800;
-		color: #6366f1;
-		text-transform: uppercase;
-		display: block;
-		margin-bottom: 8px;
-	}
-	.topic-chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-	.topic-tag {
-		font-size: 12px;
-		color: #9ca3af;
-		background: #14161c;
-		padding: 4px 10px;
-		border-radius: 6px;
-		border: 1px solid #2a2e36;
-		cursor: pointer;
-	}
-
-	/* FAB Bot */
 	.chat-fab {
 		position: fixed;
 		bottom: 30px;
@@ -419,8 +205,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: 0.3s;
 		z-index: 100;
+		transition: transform 0.2s;
+	}
+	.chat-fab:hover {
+		transform: scale(1.05);
 	}
 	.online-indicator {
 		position: absolute;
@@ -437,7 +226,7 @@
 		.discuss-layout {
 			grid-template-columns: 1fr;
 		}
-		.discuss-sidebar {
+		.sidebar-wrapper {
 			display: none;
 		}
 	}

@@ -6,9 +6,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     const accessToken = event.cookies.get('access_token');
     const refreshToken = event.cookies.get('refresh_token');
 
-    const isPageLoad = !event.request.headers.get('x-sveltekit-invalidated');
-
-    if (accessToken && isPageLoad) {
+    if (accessToken) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -32,6 +30,7 @@ export const handle: Handle = async ({ event, resolve }) => {
             clearTimeout(timeoutId);
 
             if (response.ok) {
+
                 const data = await response.json();
                 event.locals.user = data.user || null;
             } else {

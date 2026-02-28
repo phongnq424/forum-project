@@ -14,6 +14,10 @@
 
 <style>
     .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
         padding: 10px 18px;
         border-radius: 12px;
         font-size: 14px;

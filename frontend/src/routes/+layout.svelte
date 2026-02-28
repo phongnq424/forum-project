@@ -6,12 +6,10 @@
 
 	let { data, children }: { data: App.PageData; children: any } = $props();
 
-	// Init store từ server data NGAY lúc load (trước render)
-	$effect.pre(() => {
-		if (data?.user) {
-			initAuth(data.user);
-		}
-	});
+	// Nếu server trả về user data, init store ngay (server data luôn chuẩn hơn localStorage)
+	if (data?.user) {
+		initAuth(data.user);
+	}
 </script>
 
 <div class="app">

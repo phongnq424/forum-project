@@ -23,7 +23,6 @@ export const postService = {
     },
 
     async createPost(formData: FormData) {
-        // api.post tự nhận biết FormData để không set Content-Type: json
         return api.post(ENDPOINTS.POSTS.BASE, formData);
     },
 
@@ -31,8 +30,7 @@ export const postService = {
         return api.put(`${ENDPOINTS.POSTS.BASE}/${id}`, formData);
     },
 
-    async search(q: string) {
-        // Chuyển về dạng params cho đồng bộ với cách xử lý của api.ts
+    async search(q: string): Promise<PaginatedPostResponse> {
         return api.get(`${ENDPOINTS.POSTS.BASE}/search`, { params: { q } });
     },
 

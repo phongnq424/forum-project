@@ -7,6 +7,7 @@
     import { profileService } from "$lib/services/profile.service";
     import { updateUser } from "$lib/stores/auth.store";
     import type { Profile } from "$lib/types/profile.type";
+    import Icon from "$lib/components/ui/Icon.svelte";
 
     let {
         open = $bindable(),
@@ -69,6 +70,7 @@
 
             const updated = await profileService.updateProfile(submitData);
 
+            // Cập nhật store với tất cả thông tin user (avatar, fullname, v.v)
             updateUser({
                 avatar:
                     updated?.User?.avatar ||
@@ -101,18 +103,7 @@
             ></div>
             <div class="overlay">
                 <label class="camera-btn" for="cover-upload">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        ><path
-                            d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-                        /><circle cx="12" cy="13" r="4" /></svg
-                    >
+                    <Icon name="camera" size={20} />
                 </label>
                 <input
                     type="file"
@@ -138,18 +129,7 @@
             {/if}
             <div class="overlay avatar-overlay">
                 <label class="camera-btn" for="avatar-upload">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        ><path
-                            d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-                        /><circle cx="12" cy="13" r="4" /></svg
-                    >
+                    <Icon name="camera" size={20} />
                 </label>
                 <input
                     type="file"

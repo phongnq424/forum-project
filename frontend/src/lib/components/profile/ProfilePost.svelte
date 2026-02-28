@@ -1,8 +1,10 @@
 <script lang="ts">
-    import Card from "$lib/components/ui/Card.svelte";
     import Badge from "$lib/components/ui/Badge.svelte";
+    import type { Post } from "$lib/types/post.type";
+    import PostCard from "$lib/components/ui/PostCard.svelte";
 
-    let { posts, postCount } = $props<{ posts: any[]; postCount: number }>();
+    // 👇 Khuyên dùng type Post[] thay vì any[] để code chặt chẽ hơn
+    let { posts, postCount } = $props<{ posts: Post[]; postCount: number }>();
 </script>
 
 <div class="section-title">
@@ -12,19 +14,7 @@
 
 <div class="posts-grid">
     {#each posts as post}
-        <Card variant="default" hover={true} padding="16px">
-            <div class="post-card-content">
-                <h4>{post.title}</h4>
-                <div class="post-footer">
-                    <span class="post-date">
-                        {new Date(post.created_at).toLocaleDateString()}
-                    </span>
-                    <div class="post-stats">
-                        <span>💬 {post.commentCount || 0}</span>
-                    </div>
-                </div>
-            </div>
-        </Card>
+        <PostCard {post} />
     {:else}
         <div class="empty-state">No posts yet.</div>
     {/each}
@@ -43,21 +33,11 @@
         color: #fff;
         margin: 0;
     }
+
     .posts-grid {
         display: flex;
         flex-direction: column;
-        gap: 16px;
-    }
-    .post-card-content h4 {
-        margin: 0 0 12px 0;
-        font-size: 16px;
-        color: #fff;
-    }
-    .post-footer {
-        display: flex;
-        justify-content: space-between;
-        font-size: 13px;
-        color: #6b7280;
+        gap: 16px; /* Giữ nguyên khoảng cách giữa các PostCard */
     }
     .empty-state {
         color: #6b7280;

@@ -7,20 +7,52 @@ export interface PaginationMetadata {
 
 export interface Post {
     id: string;
+    user_id: string;
+    topic_id: string;
     title: string;
     content?: string;
     created_at: string;
     updated_at: string;
-    userId: string;
+    is_deleted?: boolean;
+    deleted_at?: string | null;
+
     commentCount: number;
+    reactionCount: number;
+    isSaved: boolean;
+
     User: {
+        id: string;
         username: string;
-        fullname: string;
+        fullname?: string; // Đặt dấu ? (optional) đề phòng BE lúc có lúc không
         avatar: string | null;
     };
+
+    Topic: {
+        id: string;
+        name: string;
+    };
+
+    Image: {
+        id: string;
+        url: string;
+    }[];
 }
 
 export interface PaginatedPostResponse {
     data: Post[];
     pagination: PaginationMetadata;
+}
+
+export interface PostCreatePayload {
+    topic_id: string;
+    title: string;
+    content: string;
+    images?: File[] | FileList | null;
+}
+
+export interface PostUpdatePayload {
+    topic_id?: string;
+    title?: string;
+    content?: string;
+    images?: File[] | FileList | null;
 }
