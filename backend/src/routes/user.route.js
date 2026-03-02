@@ -12,7 +12,7 @@ router.get("/me", verifyToken, cache, UserController.getMe);
 router.get("/:id", verifyToken, cache, UserController.getUserById);
 router.put("/me", rateLimitMiddleware, verifyToken, UserController.updateMe);
 router.put("/me/password", rateLimitMiddleware, verifyToken, UserController.changePassword);
-router.put("/:id", rateLimitMiddleware, verifyToken, UserController.updateUser);
-router.delete("/:id", verifyToken, UserController.deleteUser);
+router.put("/:id", rateLimitMiddleware, verifyToken, requireRole("ADMIN"), UserController.updateUser);
+router.delete("/:id", verifyToken, requireRole("ADMIN"), UserController.deleteUser);
 
 module.exports = router;

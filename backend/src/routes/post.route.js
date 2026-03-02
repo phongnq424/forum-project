@@ -8,7 +8,6 @@ const router = Router();
 
 router.post('/', rateLimitMiddleware, verifyToken, PostController.createPost)
 router.get('/', verifyTokenOptional, PostController.list)
-router.get('/search', verifyTokenOptional, PostController.search)
 router.get('/user/:userId', verifyTokenOptional, PostController.getByUser)
 router.get('/:id', verifyTokenOptional, PostController.getPost)
 router.put('/:id', rateLimitMiddleware, verifyToken, PostController.updatePost)

@@ -76,13 +76,29 @@ const ReactionService = {
 
         return { action, reaction, stats }
     },
-
+    isReacted: async (userId, postId) => {
+        const reaction = await prisma.reaction.findUnique({
+            where: {
+                user_id_post_id: {
+                    user_id: userId,
+                    post_id: postId
+                }
+            }
+        })
+        return !!reaction
+    },
     getReactionsByPost: async (postId) => {
         return prisma.reaction.findMany({
             where: { post_id: postId },
             select: { id: true, type: true, user_id: true }
         })
-    }
+    },
+    getReactionsByUser: async (userId) => {
+        return prisma.reaction.findMany({
+            where: { user_id: userId },
+            select: { id: true, type: true, post_id: true }
+        })
+    },
 }
 
 module.exports = { ReactionService }

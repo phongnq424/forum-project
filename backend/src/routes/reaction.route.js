@@ -7,5 +7,7 @@ const router = Router();
 
 router.post("/toggle", rateLimitMiddleware, verifyToken, ReactionController.toggle);
 router.get("/post/:postId", ReactionController.listByPost);
+router.get("/is-reacted/:postId", verifyToken, ReactionController.isReacted);
+router.get("/user/:userId", verifyToken, ReactionController.listByUser);
 
 module.exports = router;

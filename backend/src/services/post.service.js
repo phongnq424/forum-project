@@ -3,149 +3,148 @@ const { CloudinaryService } = require('./cloudinary.service')
 const { BlockService } = require('./block.service')
 const prisma = new PrismaClient()
 
+const USER_SELECT = { id: true, username: true, avatar: true, fullname: true };
+const TOPIC_SELECT = { id: true, name: true };
+const IMAGE_SELECT = { id: true, url: true };
+
 const PostService = {
+  _enrichPosts: async (posts, viewerId) => {
+    if (!posts.length) return [];
+    const postIds = posts.map(p => p.id);
+
+    const [commentGroups, reactionGroups, saved, reacted] = await Promise.all([
+      prisma.comment.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
+      prisma.reaction.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
+      viewerId ? prisma.postSaved.findMany({ where: { user_id: viewerId, post_id: { in: postIds } }, select: { post_id: true } }) : [],
+      viewerId ? prisma.reaction.findMany({ where: { user_id: viewerId, post_id: { in: postIds } }, select: { post_id: true } }) : []
+    ]);
+
+    const commentMap = new Map(commentGroups.map(g => [g.post_id, g._count._all]));
+    const reactionMap = new Map(reactionGroups.map(g => [g.post_id, g._count._all]));
+    const savedSet = new Set(saved.map(s => s.post_id));
+    const reactedSet = new Set(reacted.map(r => r.post_id));
+
+    return posts.map(p => ({
+      ...p,
+      commentCount: commentMap.get(p.id) || 0,
+      reactionCount: reactionMap.get(p.id) || 0,
+      isSaved: savedSet.has(p.id),
+      isReacted: reactedSet.has(p.id),
+      _count: undefined
+    }));
+  },
+
+  /**
+   * HELPER: Xử lý logic chặn (Blocking) trong mệnh đề where
+   */
+  _applyBlockLogic: (where, blockContext) => {
+    const blockedIds = blockContext?.blockedUserIds ? Array.from(blockContext.blockedUserIds) : [];
+    if (blockedIds.length > 0) {
+      where.user_id = where.user_id
+        ? { AND: [where.user_id, { notIn: blockedIds }] }
+        : { notIn: blockedIds };
+    }
+    return where;
+  },
+
   createPost: async (userId, payload) => {
     const { content, title, topic_id, files = [] } = payload
 
-    const created = await prisma.post.create({
-      data: {
-        content: content || '',
-        topic_id: topic_id || null,
-        user_id: userId,
-        title: title || ''
-      }
-    })
-
-    if (files.length > 0) {
-      const uploaded = []
-      try {
-        for (const f of files) {
-          const u = await CloudinaryService.upload(f.path, 'post')
-          uploaded.push({ url: u.url, public_id: u.public_id, post_id: created.id })
+    return await prisma.$transaction(async (tx) => {
+      const created = await tx.post.create({
+        data: {
+          content: content || '',
+          topic_id: topic_id || null,
+          user_id: userId,
+          title: title || ''
         }
+      });
 
-        await prisma.image.createMany({ data: uploaded.map(i => ({ url: i.url, post_id: i.post_id })) })
-      } catch (err) {
-        for (const up of uploaded) {
-          if (up.public_id) await CloudinaryService.delete(up.public_id).catch(() => { })
+      if (files.length > 0) {
+        const uploaded = [];
+        try {
+          for (const f of files) {
+            const u = await CloudinaryService.upload(f.path, 'post');
+            uploaded.push({ url: u.url, public_id: u.public_id, post_id: created.id });
+          }
+          await tx.image.createMany({ data: uploaded.map(i => ({ url: i.url, post_id: i.post_id, public_id: i.public_id })) });
+        } catch (err) {
+          await Promise.all(uploaded.map(up => up.public_id && CloudinaryService.delete(up.public_id).catch(() => { })));
+          throw err;
         }
-        throw err
       }
-    }
 
-    return await prisma.post.findUnique({
-      where: { id: created.id },
-      include: {
-        User: { select: { id: true, username: true, avatar: true, fullname: true } },
-        Topic: { select: { id: true, name: true } },
-        Image: { select: { id: true, url: true } }
-      }
-    })
+      return tx.post.findUnique({
+        where: { id: created.id },
+        include: { User: { select: USER_SELECT }, Topic: { select: TOPIC_SELECT }, Image: { select: IMAGE_SELECT } }
+      });
+    });
   },
 
   getPostById: async (postId, { viewerId, blockContext }) => {
-    const post = await prisma.post.findUnique({
+    const post = await prisma.post.findFirst({
       where: { id: postId, is_deleted: false },
       include: {
-        User: { select: { id: true, username: true, avatar: true, fullname: true } },
-        Topic: { select: { id: true, name: true } },
-        Image: { select: { id: true, url: true } },
+        User: { select: USER_SELECT },
+        Topic: { select: TOPIC_SELECT },
+        Image: { select: IMAGE_SELECT },
         Comment: {
           select: {
             id: true,
             comment_detail: true,
-            user_id: true,
             created_at: true,
-            User: { select: { id: true, username: true, avatar: true, fullname: true } },
+            User: { select: { id: true, username: true, avatar: true, fullname: true } }
           },
-          take: 50
-        },
-        Reaction: { select: { id: true, type: true, user_id: true } },
-        _count: {
-          select: {
-            Comment: true,
-            Reaction: true
-          }
+          take: 3,
+          orderBy: { created_at: 'desc' }
         }
       }
-    })
+    });
 
-    if (!post) return null
+    if (!post || (blockContext?.blockedSet?.has(post.user_id))) return null;
 
-    if (blockContext && blockContext.blockedSet && blockContext.blockedSet.has(post.user_id)) {
-      return null
-    }
-
-    let isSaved = false
-    if (viewerId) {
-      const s = await prisma.postSaved.findUnique({
-        where: { user_id_post_id: { user_id: viewerId, post_id: postId } }
-      })
-      isSaved = !!s
-    }
-
-    return {
-      ...post,
-      commentCount: post._count.Comment,
-      reactionCount: post._count.Reaction,
-      isSaved,
-      _count: undefined
-    }
+    const [enriched] = await PostService._enrichPosts([post], viewerId);
+    return enriched;
   },
 
   updatePost: async (userId, postId, payload) => {
-    const { content, title, topic_id, files = [], removeImageIds = [] } = payload
-    const existing = await prisma.post.findUnique({ where: { id: postId }, include: { Image: true } })
-    if (!existing) throw new Error('Post not found')
-    if (existing.user_id !== userId) throw new Error('Unauthorized')
+    const { content, title, topic_id, files = [], removeImageIds = [] } = payload;
+    const existing = await prisma.post.findFirst({
+      where: { id: postId, is_deleted: false },
+      include: { Image: true }
+    });
 
-    const toDeleteIds = Array.isArray(removeImageIds) ? removeImageIds : []
-    const uploadedPublicIds = []
+    if (!existing || existing.user_id !== userId) throw new Error('Unauthorized or Not Found');
 
+    const uploaded = [];
     try {
-      if (toDeleteIds.length > 0) {
-        const imgs = await prisma.image.findMany({ where: { id: { in: toDeleteIds }, post_id: postId } })
-        await prisma.image.deleteMany({ where: { id: { in: toDeleteIds } } })
-        for (const img of imgs) {
-          if (img.public_id) await CloudinaryService.delete(img.public_id).catch(() => { })
+      return await prisma.$transaction(async (tx) => {
+        if (removeImageIds.length > 0) {
+          const toDelete = existing.Image.filter(img => removeImageIds.includes(img.id));
+          await tx.image.deleteMany({ where: { id: { in: removeImageIds } } });
+          toDelete.forEach(img => CloudinaryService.delete(img.public_id).catch(() => { }));
         }
-      }
 
-      if (files.length > 0) {
-        const uploaded = []
         for (const f of files) {
-          const u = await CloudinaryService.upload(f.path, 'post')
-          uploaded.push({ url: u.url, public_id: u.public_id, post_id: postId })
-          uploadedPublicIds.push(u.public_id)
+          const u = await CloudinaryService.upload(f.path, 'post');
+          uploaded.push({ url: u.url, public_id: u.public_id, post_id: postId });
         }
-        await prisma.image.createMany({ data: uploaded.map(i => ({ url: i.url, post_id: i.post_id })) })
-      }
+        if (uploaded.length > 0) await tx.image.createMany({ data: uploaded });
 
-      const updated = await prisma.post.update({
-        where: { id: postId },
-        data: {
-          content: content !== undefined ? content : existing.content,
-          title: title !== undefined ? title : existing.title,
-          topic_id: topic_id !== undefined ? topic_id : existing.topic_id
-        },
-        include: {
-          User: { select: { id: true, username: true, avatar: true, fullname: true } },
-          Topic: { select: { id: true, name: true } },
-          Image: { select: { id: true, url: true } }
-        }
-      })
-
-      return updated
+        return tx.post.update({
+          where: { id: postId },
+          data: { content, title, topic_id },
+          include: { User: { select: USER_SELECT }, Topic: { select: TOPIC_SELECT }, Image: { select: IMAGE_SELECT } }
+        });
+      });
     } catch (err) {
-      if (uploadedPublicIds.length > 0) {
-        await Promise.all(uploadedPublicIds.map(pid => CloudinaryService.delete(pid).catch(() => { })))
-      }
-      throw err
+      uploaded.forEach(img => CloudinaryService.delete(img.public_id).catch(() => { }));
+      throw err;
     }
   },
 
   deletePost: async (userId, postId) => {
-    const existing = await prisma.post.findUnique({ where: { id: postId }, include: { Image: true } })
+    const existing = await prisma.post.findFirst({ where: { id: postId, is_deleted: false }, include: { Image: true } })
     if (!existing) throw new Error('Post not found')
     if (existing.user_id !== userId) throw new Error('Unauthorized')
 
@@ -164,204 +163,55 @@ const PostService = {
   },
 
   list: async (query, { viewerId, blockContext }) => {
-    const page = parseInt(query.page) || 1
-    const limit = parseInt(query.limit) || 10
-    const skip = (page - 1) * limit
-    const where = { is_deleted: false }
-    if (query.topic_id) where.topic_id = query.topic_id
-    if (query.user_id) where.user_id = query.user_id
+    const page = parseInt(query.page) || 1;
+    const limit = parseInt(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    let where = { is_deleted: false };
+    if (query.topic_id) where.topic_id = query.topic_id;
+    if (query.user_id) where.user_id = query.user_id;
     if (query.category_id) {
-      const topics = await prisma.topic.findMany({ where: { category_id: query.category_id }, select: { id: true } })
-      where.topic_id = { in: topics.map(t => t.id) }
+      const topics = await prisma.topic.findMany({ where: { category_id: query.category_id }, select: { id: true } });
+      where.topic_id = { in: topics.map(t => t.id) };
     }
-
-    const blockedIds = blockContext && blockContext.blockedUserIds ? Array.from(blockContext.blockedUserIds) : []
-
-    if (blockedIds.length > 0) {
-      if (where.user_id) {
-        // nếu query chỉ request posts của 1 user cụ thể
-        if (typeof where.user_id === 'string') {
-          if (blockedIds.includes(where.user_id)) {
-            return { data: [], pagination: { total: 0, page, limit, totalPages: 0 } }
-          }
-        } else if (Array.isArray(where.user_id.in)) {
-          // hợp nhất loại bỏ blockedIds khỏi in-list
-          where.user_id.in = where.user_id.in.filter(id => !blockedIds.includes(id))
-          if (where.user_id.in.length === 0) {
-            return { data: [], pagination: { total: 0, page, limit, totalPages: 0 } }
-          }
+    if (query.q) {
+      where.AND = [
+        {
+          OR: [
+            { content: { contains: query.q, mode: 'insensitive' } },
+            { title: { contains: query.q, mode: 'insensitive' } },
+            { Topic: { name: { contains: query.q, mode: 'insensitive' } } },
+            { User: { username: { contains: query.q, mode: 'insensitive' } } }
+          ]
         }
-      } else {
-        where.user_id = { notIn: blockedIds }
-      }
+      ];
+    }
+    where = PostService._applyBlockLogic(where, blockContext);
+    let orderBy = { created_at: 'desc' }; // Mặc định Newest
+    if (query.sortBy === 'Most Favorite') {
+      orderBy = { Reaction: { _count: 'desc' } };
+    } else if (query.sortBy === 'Oldest') {
+      orderBy = { created_at: 'asc' };
     }
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-        include: {
-          User: { select: { id: true, username: true, avatar: true, fullname: true } },
-          Topic: { select: { id: true, name: true } },
-          Image: { select: { id: true, url: true }, take: 3 }
-        }
+        where, skip, take: limit, orderBy,
+        include: { User: { select: USER_SELECT }, Topic: { select: TOPIC_SELECT }, Image: { select: IMAGE_SELECT, take: 1 } }
       }),
       prisma.post.count({ where })
-    ])
+    ]);
 
-    if (posts.length === 0) {
-      return {
-        data: [],
-        pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
-      }
-    }
+    const data = await PostService._enrichPosts(posts, viewerId);
 
-    const postIds = posts.map(p => p.id)
-
-    const commentGroups = await prisma.comment.groupBy({
-      by: ['post_id'],
-      where: { post_id: { in: postIds } },
-      _count: { _all: true }
-    })
-
-    const reactionGroups = await prisma.reaction.groupBy({
-      by: ['post_id'],
-      where: { post_id: { in: postIds } },
-      _count: { _all: true }
-    })
-
-    let savedSet = new Set()
-    if (viewerId) {
-      const saved = await prisma.postSaved.findMany({
-        where: { user_id: viewerId, post_id: { in: postIds } },
-        select: { post_id: true }
-      })
-      savedSet = new Set(saved.map(s => s.post_id))
-    }
-
-    const commentMap = new Map(commentGroups.map(g => [g.post_id, g._count._all]))
-    const reactionMap = new Map(reactionGroups.map(g => [g.post_id, g._count._all]))
-
-    const data = posts.map(p => ({
-      ...p,
-      commentCount: commentMap.get(p.id) || 0,
-      reactionCount: reactionMap.get(p.id) || 0,
-      isSaved: savedSet.has(p.id)
-    }))
-
-    return {
-      data,
-      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
-    }
+    return { data, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   },
 
   getByUser: async (userIdOwner, query, { viewerId, blockContext }) => {
-    if (viewerId && blockContext && blockContext.blockedSet.has(userIdOwner)) {
-      return { data: [], pagination: { total: 0, page: parseInt(query.page) || 1, limit: parseInt(query.limit) || 10, totalPages: 0 } }
+    if (viewerId && blockContext?.blockedSet.has(userIdOwner)) {
+      return { data: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 0 } };
     }
-
-    const page = parseInt(query.page) || 1
-    const limit = parseInt(query.limit) || 10
-    const skip = (page - 1) * limit
-
-    const where = { user_id: userIdOwner, is_deleted: false }
-
-    const [posts, total] = await Promise.all([
-      prisma.post.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-        include: {
-          Topic: { select: { id: true, name: true } },
-          Image: { select: { id: true, url: true }, take: 3 }
-        }
-      }),
-      prisma.post.count({ where })
-    ])
-
-    if (posts.length === 0) {
-      return {
-        data: [],
-        pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
-      }
-    }
-
-    const postIds = posts.map(p => p.id)
-
-    const [commentGroups, reactionGroups, saved] = await Promise.all([
-      prisma.comment.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
-      prisma.reaction.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
-      viewerId ? prisma.postSaved.findMany({ where: { user_id: viewerId, post_id: { in: postIds } }, select: { post_id: true } }) : []
-    ])
-
-    const commentMap = new Map(commentGroups.map(g => [g.post_id, g._count._all]))
-    const reactionMap = new Map(reactionGroups.map(g => [g.post_id, g._count._all]))
-    const savedSet = new Set(saved.map(s => s.post_id))
-
-    const data = posts.map(p => ({
-      ...p,
-      commentCount: commentMap.get(p.id) || 0,
-      reactionCount: reactionMap.get(p.id) || 0,
-      isSaved: savedSet.has(p.id)
-    }))
-
-    return {
-      data,
-      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
-    }
+    return PostService.list({ ...query, user_id: userIdOwner }, { viewerId, blockContext });
   },
-
-  searchPosts: async (q, { viewerId = null, blockContext = null } = {}) => {
-    const query = q || ''
-
-    const baseWhere = {
-      is_deleted: false,
-      OR: [
-        { content: { contains: query, mode: 'insensitive' } },
-        { title: { contains: query, mode: 'insensitive' } },
-        { Topic: { name: { contains: query, mode: 'insensitive' } } },
-        { User: { username: { contains: query, mode: 'insensitive' }, fullname: { contains: query, mode: 'insensitive' } } }
-      ]
-    }
-
-    const blockedIds = blockContext && blockContext.blockedUserIds ? Array.from(blockContext.blockedUserIds) : []
-
-    const finalWhere = blockedIds.length ? { AND: [baseWhere, { user_id: { notIn: blockedIds } }] } : baseWhere
-
-    const posts = await prisma.post.findMany({
-      where: finalWhere,
-      take: 50,
-      orderBy: { created_at: 'desc' },
-      include: {
-        User: { select: { id: true, username: true, avatar: true, fullname: true } },
-        Topic: { select: { id: true, name: true } },
-        Image: { select: { id: true, url: true } }
-      }
-    })
-
-    if (posts.length === 0) return []
-
-    const postIds = posts.map(p => p.id)
-
-    const [commentGroups, reactionGroups, saved] = await Promise.all([
-      prisma.comment.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
-      prisma.reaction.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
-      viewerId ? prisma.postSaved.findMany({ where: { user_id: viewerId, post_id: { in: postIds } }, select: { post_id: true } }) : []
-    ])
-
-    const commentMap = new Map(commentGroups.map(g => [g.post_id, g._count._all]))
-    const reactionMap = new Map(reactionGroups.map(g => [g.post_id, g._count._all]))
-    const savedSet = new Set(saved.map(s => s.post_id))
-
-    return posts.map(p => ({
-      ...p,
-      commentCount: commentMap.get(p.id) || 0,
-      reactionCount: reactionMap.get(p.id) || 0,
-      isSaved: savedSet.has(p.id)
-    }))
-  }
 }
 
 module.exports = { PostService }

@@ -191,11 +191,11 @@ model PostSaved {
 }
 
 model Image {
-  id      String @id @default(uuid())
-  post_id String
-  url     String @db.VarChar(255)
-
-  Post Post @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  post_id   String
+  url       String  @db.VarChar(255)
+  public_id String? @db.VarChar(255)
+  Post      Post    @relation(fields: [post_id], references: [id], onDelete: Cascade)
 }
 
 model Comment {

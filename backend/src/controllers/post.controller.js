@@ -116,22 +116,6 @@ const PostController = {
         } catch (e) {
             return res.status(500).json({ message: e.message })
         }
-    },
-
-    search: async (req, res) => {
-        try {
-            const q = req.query.q || ''
-            const viewerId = req.user?.id || null
-            const blockContext = await buildBlockContext(viewerId)
-
-            const results = await PostService.searchPosts(q, {
-                viewerId,
-                blockContext
-            })
-            return res.status(200).json(results)
-        } catch (e) {
-            return res.status(500).json({ message: e.message })
-        }
     }
 }
 

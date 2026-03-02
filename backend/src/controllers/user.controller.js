@@ -22,7 +22,6 @@ const UserController = {
         try {
             if (!req.user?.id)
                 return res.status(401).json({ error: 'Unauthorized' })
-
             const user = await UserService.findById(req.user.id)
             if (!user)
                 return res.status(404).json({ error: 'Not found' })
@@ -35,8 +34,8 @@ const UserController = {
 
     getUserById: async (req, res) => {
         try {
-            const id = Number(req.params.id)
-            if (Number.isNaN(id))
+            const id = req.params.id
+            if (id)
                 return res.status(400).json({ error: 'Invalid id' })
 
             const viewerId = req.user?.id || null
@@ -91,8 +90,8 @@ const UserController = {
 
     updateUser: async (req, res) => {
         try {
-            const id = Number(req.params.id)
-            if (Number.isNaN(id))
+            const id = req.params.id
+            if (id)
                 return res.status(400).json({ error: 'Invalid id' })
 
             const user = await UserService.update(id, req.body)

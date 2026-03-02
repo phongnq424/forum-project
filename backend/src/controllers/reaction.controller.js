@@ -19,6 +19,24 @@ const ReactionController = {
         } catch (e) {
             res.status(500).json({ message: e.message })
         }
+    },
+    isReacted: async (req, res) => {
+        try {
+            const userId = req.user.id
+            const postId = req.params.postId
+            const isReacted = await ReactionService.isReacted(userId, postId)
+            res.status(200).json({ isReacted })
+        } catch (e) {
+            res.status(500).json({ message: e.message })
+        }
+    },
+    listByUser: async (req, res) => {
+        try {
+            const reactions = await ReactionService.getReactionsByUser(req.params.userId)
+            res.status(200).json(reactions)
+        } catch (e) {
+            res.status(500).json({ message: e.message })
+        }
     }
 }
 
