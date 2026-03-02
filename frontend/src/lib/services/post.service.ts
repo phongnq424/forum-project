@@ -1,6 +1,6 @@
 import { api } from './api';
 import { ENDPOINTS } from '$lib/constants/index';
-import type { PaginatedPostResponse } from "$lib/types/post.type";
+import type { PaginatedPostResponse, Post } from "$lib/types/post.type";
 
 export const postService = {
     async listPosts(params: {
@@ -19,7 +19,7 @@ export const postService = {
         return api.get<PaginatedPostResponse>(`${ENDPOINTS.POSTS.BASE}/user/${userId}`, { params });
     },
 
-    async getPost(id: string) {
+    async getPost(id: string): Promise<Post> {
         return api.get(`${ENDPOINTS.POSTS.BASE}/${id}`);
     },
 

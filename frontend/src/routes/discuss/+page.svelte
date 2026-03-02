@@ -168,10 +168,6 @@
 		</div>
 	</main>
 
-	<button class="chat-fab" title="Chat with AI Assistant">
-		<Icon name="bot" size={28} />
-		<span class="online-indicator"></span>
-	</button>
 	<CreatePostModal
 		bind:open={isCreateModalOpen}
 		topics={availableTopics}
@@ -195,37 +191,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
-	}
-	.chat-fab {
-		position: fixed;
-		bottom: 30px;
-		right: 30px;
-		width: 60px;
-		height: 60px;
-		border-radius: 50%;
-		background: linear-gradient(135deg, #6366f1, #a855f7);
-		border: none;
-		color: white;
-		box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 100;
-		transition: transform 0.2s;
-	}
-	.chat-fab:hover {
-		transform: scale(1.05);
-	}
-	.online-indicator {
-		position: absolute;
-		top: 2px;
-		right: 2px;
-		width: 14px;
-		height: 14px;
-		background: #10b981;
-		border: 3px solid #14161c;
-		border-radius: 50%;
 	}
 	.empty-state {
 		color: #6b7280;

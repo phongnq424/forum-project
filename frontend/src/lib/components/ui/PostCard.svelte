@@ -40,80 +40,86 @@
     hover={true}
     style="margin-bottom: 20px; overflow: hidden;"
 >
-    <div class="post-card">
-        <div class="post-content">
-            <div class="post-header">
-                <div class="post-author">
-                    {#if post.User?.avatar}
-                        <img
-                            class="real-avatar"
-                            src={post.User.avatar}
-                            alt={displayName}
-                        />
-                    {:else}
-                        <div class="mini-avatar">
-                            {getInitial(displayName)}
-                        </div>
+    <a href="/discuss/{post.id}" class="post-link">
+        <div class="post-card">
+            <div class="post-content">
+                <div class="post-header">
+                    <div class="post-author">
+                        {#if post.User?.avatar}
+                            <img
+                                class="real-avatar"
+                                src={post.User.avatar}
+                                alt={displayName}
+                            />
+                        {:else}
+                            <div class="mini-avatar">
+                                {getInitial(displayName)}
+                            </div>
+                        {/if}
+                        <span class="author-name">{displayName}</span>
+                        <span class="dot">•</span>
+                        <span class="post-date">
+                            {new Date(post.created_at).toLocaleDateString(
+                                "en-US",
+                                {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                },
+                            )}
+                        </span>
+                    </div>
+
+                    {#if post.Topic?.name}
+                        <Badge color="outline" size="sm">
+                            #{post.Topic.name}
+                        </Badge>
                     {/if}
-                    <span class="author-name">{displayName}</span>
-                    <span class="dot">•</span>
-                    <span class="post-date">
-                        {new Date(post.created_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                        })}
-                    </span>
                 </div>
 
-                {#if post.Topic?.name}
-                    <Badge color="outline" size="sm">
-                        #{post.Topic.name}
-                    </Badge>
-                {/if}
-            </div>
+                <h2 class="post-title">{post.title}</h2>
 
-            <h2 class="post-title">{post.title}</h2>
+                <p class="post-excerpt">
+                    {post.content ||
+                        "No description provided for this post yet..."}
+                </p>
 
-            <p class="post-excerpt">
-                {post.content || "No description provided for this post yet..."}
-            </p>
-
-            <div class="post-actions">
-                <div class="stats-group">
-                    <button
-                        class="action-btn {isReacted ? 'liked' : ''}"
-                        title="Reactions"
-                        onclick={handleReaction}
-                    >
-                        <Icon
-                            name="heart"
-                            fill={isReacted ? "currentColor" : "none"}
-                        />
-                        {reactionCount || 0}
-                    </button>
-                    <button class="action-btn" title="Comments">
-                        <Icon name="message-square" />
-                        {post.commentCount || 0}
-                    </button>
-                    <button
-                        class="action-btn {post.isSaved ? 'saved' : ''}"
-                        title="Save Post"
-                    >
-                        <Icon
-                            name="bookmark"
-                            fill={post.isSaved ? "currentColor" : "none"}
-                        />
-                    </button>
+                <div class="post-actions">
+                    <div class="stats-group">
+                        <button
+                            class="action-btn {isReacted ? 'liked' : ''}"
+                            title="Reactions"
+                            onclick={handleReaction}
+                        >
+                            <Icon
+                                name="heart"
+                                fill={isReacted ? "currentColor" : "none"}
+                            />
+                            {reactionCount || 0}
+                        </button>
+                        <button class="action-btn" title="Comments">
+                            <Icon name="message-square" />
+                            {post.commentCount || 0}
+                        </button>
+                        <button
+                            class="action-btn {post.isSaved ? 'saved' : ''}"
+                            title="Save Post"
+                        >
+                            <Icon
+                                name="bookmark"
+                                fill={post.isSaved ? "currentColor" : "none"}
+                            />
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="post-thumbnail">
-            <img src={coverImage} alt={post.title} />
+            <div class="post-thumbnail">
+                <img src={coverImage} alt={post.title} />
+            </div>
         </div>
-    </div>
-</Card>
+    </a></Card
+>
 
 <style>
     .post-card {
@@ -121,6 +127,11 @@
         grid-template-columns: 1fr 180px;
         padding: 24px;
         gap: 20px;
+    }
+    .post-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
     }
 
     .post-header {

@@ -2,7 +2,11 @@
 	import "../app.css";
 	import Header from "$lib/components/ui/Header.svelte";
 	import Footer from "$lib/components/ui/Footer.svelte";
-	import { auth, user, initAuth } from "$lib/stores/auth.store";
+	import ChatBotFab from "$lib/components/ChatBotFab.svelte";
+	import { auth, user, initAuth, clearAuth } from "$lib/stores/auth.store";
+	import { onMount } from "svelte";
+	import { goto } from "$app/navigation";
+	import { api } from "$lib/services/api";
 
 	let { data, children }: { data: App.PageData; children: any } = $props();
 
@@ -10,6 +14,23 @@
 	if (data?.user) {
 		initAuth(data.user);
 	}
+
+	onMount(() => {
+		const handleFocus = async () => {
+			try {
+				await api.post("auth/refresh");
+			} catch {
+				clearAuth();
+				goto("/login?expired=true");
+			}
+		};
+
+		window.addEventListener("focus", handleFocus);
+
+		return () => {
+			window.removeEventListener("focus", handleFocus);
+		};
+	});
 </script>
 
 <div class="app">
@@ -17,8 +38,10 @@
 	<main>
 		<div class="page-container">
 			{@render children?.()}
+			<ChatBotFab />
 		</div>
 	</main>
+
 	<Footer />
 </div>
 

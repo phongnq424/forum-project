@@ -19,6 +19,7 @@ export interface Post {
     commentCount: number;
     reactionCount: number;
     isSaved: boolean;
+    isReacted: boolean;
 
     User: {
         id: string;
