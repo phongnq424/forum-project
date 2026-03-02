@@ -10,6 +10,7 @@ export const postService = {
         user_id?: string;
         category_id?: string;
         sortBy?: string;
+        q?: string;
     }): Promise<PaginatedPostResponse> {
         return api.get<PaginatedPostResponse>(ENDPOINTS.POSTS.BASE, { params });
     },
@@ -28,10 +29,6 @@ export const postService = {
 
     async updatePost(id: string, formData: FormData) {
         return api.put(`${ENDPOINTS.POSTS.BASE}/${id}`, formData);
-    },
-
-    async search(q: string): Promise<PaginatedPostResponse> {
-        return api.get(`${ENDPOINTS.POSTS.BASE}/search`, { params: { q } });
     },
 
     async deletePost(id: string) {

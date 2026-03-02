@@ -66,12 +66,19 @@
 	async function fetchPosts() {
 		loading = true;
 		try {
-			// Dùng type từ Parameters để tự nội suy type của hàm listPosts
+			// 1. Khởi tạo payload mặc định
 			let payload: Parameters<typeof postService.listPosts>[0] = {
 				page: 1,
 				limit: 10,
+				sortBy: sortBy, // Gửi trực tiếp "Newest" hoặc "Most Favorite"
 			};
 
+			// 2. Nếu đang Search, thêm q vào payload
+			if (searchQuery.trim() !== "") {
+				payload.q = searchQuery.trim();
+			}
+
+			// 3. Nếu đang chọn Category cụ thể (không phải "For You")
 			if (activeCategory !== "For You") {
 				const foundCat = rawCategories.find(
 					(c) => c.name === activeCategory,
@@ -79,20 +86,10 @@
 				if (foundCat) payload.category_id = foundCat.id;
 			}
 
-			if (sortBy) {
-				payload.sortBy = sortBy === "Newest" ? "desc" : "asc";
-			}
+			const res = await postService.listPosts(payload);
 
-			if (searchQuery.trim() !== "") {
-				// Ép kiểu chuẩn cho an toàn
-				const res = (await postService.search(
-					searchQuery,
-				)) as PaginatedPostResponse;
-				posts = Array.isArray(res?.data) ? res.data : [];
-			} else {
-				const res = await postService.listPosts(payload);
-				posts = Array.isArray(res?.data) ? res.data : [];
-			}
+			// 5. Cập nhật danh sách bài viết
+			posts = Array.isArray(res?.data) ? res.data : [];
 		} catch (error) {
 			console.error("Error fetching posts:", error);
 			posts = [];
@@ -132,6 +129,9 @@
 
 	// $effect: Tự gọi lại fetchPosts mỗi khi các state filter bị thay đổi
 	$effect(() => {
+		searchQuery;
+		sortBy;
+		activeCategory;
 		const timeout = setTimeout(() => {
 			fetchPosts();
 		}, 300);
@@ -157,6 +157,8 @@
 			{:else}
 				{#each posts as post}
 					<PostCard {post} />
+				{:else}
+					<div class="empty-state">No posts yet.</div>
 				{/each}
 			{/if}
 		</section>
@@ -189,7 +191,11 @@
 		grid-template-columns: 1fr 340px;
 		gap: 30px;
 	}
-
+	.feed-section {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
 	.chat-fab {
 		position: fixed;
 		bottom: 30px;
@@ -220,6 +226,15 @@
 		background: #10b981;
 		border: 3px solid #14161c;
 		border-radius: 50%;
+	}
+	.empty-state {
+		color: #6b7280;
+		font-size: 14px;
+		padding: 20px 0;
+		text-align: center;
+		background: #14161c;
+		border-radius: 12px;
+		border: 1px dashed #2a2e36;
 	}
 
 	@media (max-width: 900px) {

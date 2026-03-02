@@ -3,10 +3,26 @@
     import type { Post } from "$lib/types/post.type";
     import Badge from "./Badge.svelte";
     import Icon from "./Icon.svelte";
+    import { reactionService } from "$lib/services/reaction.service";
     let { post } = $props<{ post: Post }>();
+    let isReacted = $state(post.isReacted || false);
+    let reactionCount = $state(post.reactionCount || 0);
 
     function getInitial(name?: string) {
         return name ? name.charAt(0).toUpperCase() : "U";
+    }
+    async function handleReaction() {
+        // 1. Cập nhật UI ngay lập tức (Optimistic Update)
+        isReacted = !isReacted;
+        reactionCount += isReacted ? 1 : -1;
+
+        try {
+            await reactionService.toggleReaction(post.id);
+        } catch (error) {
+            console.error("Lỗi khi thả tym:", error);
+            isReacted = !isReacted;
+            reactionCount += isReacted ? 1 : -1;
+        }
     }
 
     const displayName =
@@ -65,9 +81,16 @@
 
             <div class="post-actions">
                 <div class="stats-group">
-                    <button class="action-btn" title="Reactions">
-                        <Icon name="heart" />
-                        {post.reactionCount || 0}
+                    <button
+                        class="action-btn {isReacted ? 'liked' : ''}"
+                        title="Reactions"
+                        onclick={handleReaction}
+                    >
+                        <Icon
+                            name="heart"
+                            fill={isReacted ? "currentColor" : "none"}
+                        />
+                        {reactionCount || 0}
                     </button>
                     <button class="action-btn" title="Comments">
                         <Icon name="message-square" />
@@ -185,6 +208,13 @@
         cursor: pointer;
         transition: 0.2s;
         padding: 0;
+    }
+    .action-btn {
+        color: #9ca3af;
+    }
+
+    .action-btn.liked {
+        color: #ef4444;
     }
 
     .action-btn:hover {

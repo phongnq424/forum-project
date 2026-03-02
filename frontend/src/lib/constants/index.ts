@@ -28,5 +28,11 @@ export const ENDPOINTS = {
     TOPICS: {
         BASE: 'topics',
         BY_ID: (id: string) => `topics/${id}`,
+    },
+    REACTIONS: {
+        TOGGLE: "/reactions/toggle",
+        BY_POST: (postId: string) => `/reactions/post/${postId}`,
+        IS_REACTED: (postId: string) => `/reactions/is-reacted/${postId}`,
+        BY_USER: (userId: string) => `/reactions/user/${userId}`
     }
 };

@@ -26,7 +26,13 @@
     let title = $state("");
     let content = $state("");
     let topicId = $state("");
-    let files = $state<FileList | undefined>();
+    let files = $state<File[]>([]);
+    let previewUrls = $derived(
+        files.map((file) => ({
+            file,
+            url: URL.createObjectURL(file),
+        })),
+    );
     let loading = $state(false);
     let errorMessage = $state(""); // State chứa lỗi để truyền vào ErrorMessage
 
@@ -34,10 +40,9 @@
         { value: "", label: "Select a topic" },
         ...topics.map((t: SimpleTopic) => ({ value: t.id, label: t.name })),
     ]);
-
     async function handleSubmit(e: Event) {
         e.preventDefault();
-        errorMessage = ""; // Reset lỗi
+        errorMessage = "";
 
         if (!title.trim() || !content.trim() || !topicId) {
             errorMessage = "Please fill in all required fields.";
@@ -45,45 +50,50 @@
         }
 
         loading = true;
+
         try {
-            const payload: PostCreatePayload = {
-                title: title,
-                content: content,
-                topic_id: topicId,
-                images: files,
-            };
-
             const formData = new FormData();
-            formData.append("title", payload.title);
-            formData.append("content", payload.content);
-            formData.append("topic_id", payload.topic_id);
+            formData.append("title", title);
+            formData.append("content", content);
+            formData.append("topic_id", topicId);
 
-            if (payload.images && payload.images.length > 0) {
-                Array.from(payload.images).forEach((file) => {
+            if (files.length > 0) {
+                files.forEach((file) => {
                     formData.append("images", file);
                 });
             }
 
             await postService.createPost(formData as any);
 
-            // Reset form
             title = "";
             content = "";
             topicId = "";
-            files = undefined;
+            files = [];
             errorMessage = "";
             open = false;
 
             if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error("Failed to create post:", error);
-            // Bắt lỗi từ API hiển thị ra ErrorMessage
             errorMessage =
                 error?.response?.data?.message ||
                 "Something went wrong. Please try again.";
         } finally {
             loading = false;
         }
+    }
+    function handleFileChange(e: Event) {
+        const input = e.target as HTMLInputElement;
+        if (!input.files || input.files.length === 0) return;
+
+        const newFiles = Array.from(input.files);
+
+        files = [...files, ...newFiles];
+
+        input.value = "";
+    }
+    function removeImage(fileToRemove: File) {
+        files = files.filter((file) => file !== fileToRemove);
     }
 </script>
 
@@ -124,9 +134,25 @@
             label="Attach Images (Optional)"
             accept="image/*"
             multiple
-            bind:files
             disabled={loading}
+            onchange={handleFileChange}
         />
+        {#if previewUrls.length > 0}
+            <div class="image-preview">
+                {#each previewUrls as img}
+                    <div class="preview-item">
+                        <button
+                            type="button"
+                            class="remove-btn"
+                            onclick={() => removeImage(img.file)}
+                        >
+                            ✕
+                        </button>
+                        <img src={img.url} alt="preview" />
+                    </div>
+                {/each}
+            </div>
+        {/if}
 
         <div class="form-actions">
             <Button
@@ -197,5 +223,38 @@
         margin-top: 10px;
         padding-top: 16px;
         border-top: 1px solid #2a2e36;
+    }
+    .image-preview {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .preview-item {
+        position: relative;
+        width: 100px;
+        height: 100px;
+    }
+
+    .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 1px solid #2a2e36;
+    }
+
+    .remove-btn {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        font-size: 12px;
+        cursor: pointer;
     }
 </style>
