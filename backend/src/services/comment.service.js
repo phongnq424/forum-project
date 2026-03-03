@@ -6,7 +6,8 @@ const { NotificationService } = require("./notification.service");
 const userSelect = {
   id: true,
   username: true,
-  Profile: { select: { avatar: true } },
+  avatar: true,
+  fullname: true,
 };
 
 const CommentService = {
@@ -59,9 +60,8 @@ const CommentService = {
         actor_id: userId,
         type: "POST_COMMENT",
         title: "Bình luận mới",
-        message: `${
-          comment?.User?.username ?? "?"
-        } đã bình luận bài viết của bạn`,
+        message: `${comment?.User?.username ?? "?"
+          } đã bình luận bài viết của bạn`,
         ref_id: postId,
         ref_sub_id: comment.id,
       });
@@ -74,9 +74,8 @@ const CommentService = {
         actor_id: userId,
         type: "COMMENT_REPLY",
         title: "Phản hồi bình luận",
-        message: `${
-          comment?.User?.username ?? "? "
-        } đã trả lời bình luận của bạn`,
+        message: `${comment?.User?.username ?? "? "
+          } đã trả lời bình luận của bạn`,
         ref_id: postId,
         ref_sub_id: comment.id,
       });

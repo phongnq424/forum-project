@@ -4,12 +4,12 @@ const CommentController = {
   create: async (req, res) => {
     try {
       const userId = req.user.id;
-      const { postId, comment_detail, parentComment_id } = req.body;
+      const { postId, comment_detail, parent_id } = req.body;
       const comment = await CommentService.createComment(
         userId,
         postId,
         comment_detail,
-        parentComment_id
+        parent_id
       );
       res.status(201).json(comment);
     } catch (e) {
