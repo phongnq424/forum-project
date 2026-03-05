@@ -4,7 +4,7 @@ const redisClient = require('../config/redis');
 const rateLimiter = new RateLimiterRedis({
     storeClient: redisClient,
     keyPrefix: 'rl', // tránh trùng key với OTP
-    points: 5,       // 5 request
+    points: 10,       // 10request
     duration: 60,    // mỗi 60 giây
 });
 

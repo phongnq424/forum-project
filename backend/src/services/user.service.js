@@ -6,11 +6,13 @@ const prisma = new PrismaClient()
 const UserService = {
     list: async function (query, { viewerId = null, blockContext = null } = {}) {
         var take = Number(query.limit) || 50
-        var skip = Number(query.offset) || 0
+        var page = Number(query.page) || 1
+        var skip = Number(query.offset) || (page - 1) * take
+
         var where = {
             status: 'ACTIVE'
-
         }
+
         if (query.search) {
             where.OR = [
                 { username: { contains: query.search, mode: 'insensitive' } },
@@ -26,13 +28,30 @@ const UserService = {
             where.id = { notIn: blockedIds }
         }
 
-        var users = await prisma.user.findMany({
-            where,
-            skip,
-            take,
-            select: { id: true, username: true, email: true, role: true, created_at: true }
-        })
-        return users
+        const [total, users] = await prisma.$transaction([
+            prisma.user.count({ where }),
+            prisma.user.findMany({
+                where,
+                skip,
+                take,
+                orderBy: { created_at: 'desc' }, // Nên có sắp xếp để list không bị lộn xộn
+                select: { id: true, username: true, email: true, role: true, created_at: true, fullname: true, avatar: true }
+            })
+        ])
+
+        const totalPages = Math.ceil(total / take)
+        const currentPage = Math.floor(skip / take) + 1
+        return {
+            data: users,
+            meta: {
+                total,
+                page: currentPage,
+                limit: take,
+                totalPages,
+                hasNextPage: currentPage < totalPages,
+                hasPrevPage: currentPage > 1
+            }
+        }
     },
 
     findById: async function (id, { viewerId = null, blockContext = null } = {}) {
@@ -49,12 +68,14 @@ const UserService = {
         return user
     },
 
-    update: async function (id, data) {
-        var allowed = ['username', 'email']
+    // Đổi tên thành updateBasicInfo cho khớp với Controller
+    updateBasicInfo: async function (id, data) {
+        var allowed = ['username', 'email'] // Ép chặt chỉ cho đổi mấy cái này
         var updateData = {}
         for (var key in data) {
             if (allowed.includes(key)) updateData[key] = data[key]
         }
+
         const user = await prisma.user.findFirst({
             where: { id, status: 'ACTIVE' }
         })
@@ -72,29 +93,14 @@ const UserService = {
             where: { id, status: 'ACTIVE', is_deleted: false }
         })
         if (!user) throw new Error('User not found')
+
         var valid = await bcrypt.compare(oldPassword, user.password_hash)
         if (!valid) throw new Error('Old password is incorrect')
+
         var hashed = await bcrypt.hash(newPassword, 10)
         await prisma.user.update({
             where: { id },
             data: { password_hash: hashed }
-        })
-        return true
-    },
-
-    remove: async function (id) {
-        const user = await prisma.user.findUnique({
-            where: { id, is_deleted: false }
-        })
-        if (!user) throw new Error('User not found')
-
-        await prisma.user.update({
-            where: { id },
-            data: {
-                is_deleted: true,
-                deleted_at: new Date(),
-                status: 'INACTIVE'
-            }
         })
         return true
     }

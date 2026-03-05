@@ -11,7 +11,6 @@ const PostService = {
   _enrichPosts: async (posts, viewerId) => {
     if (!posts.length) return [];
     const postIds = posts.map(p => p.id);
-
     const [commentGroups, reactionGroups, saved, reacted] = await Promise.all([
       prisma.comment.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
       prisma.reaction.groupBy({ by: ['post_id'], where: { post_id: { in: postIds } }, _count: { _all: true } }),
@@ -24,14 +23,24 @@ const PostService = {
     const savedSet = new Set(saved.map(s => s.post_id));
     const reactedSet = new Set(reacted.map(r => r.post_id));
 
-    return posts.map(p => ({
-      ...p,
-      commentCount: commentMap.get(p.id) || 0,
-      reactionCount: reactionMap.get(p.id) || 0,
-      isSaved: savedSet.has(p.id),
-      isReacted: reactedSet.has(p.id),
-      _count: undefined
-    }));
+    return posts.map(p => {
+      const isOwner = viewerId ? p.user_id === viewerId : false;
+
+      return {
+        ...p,
+        commentCount: commentMap.get(p.id) || 0,
+        reactionCount: reactionMap.get(p.id) || 0,
+        isSaved: savedSet.has(p.id),
+        isReacted: reactedSet.has(p.id),
+
+        permissions: {
+          canEdit: isOwner,
+          canDelete: isOwner
+        },
+
+        _count: undefined
+      };
+    });
   },
 
   /**

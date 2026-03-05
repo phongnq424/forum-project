@@ -4,56 +4,50 @@ const prisma = new PrismaClient();
 
 const ProfileService = {
     getProfileByUserId: async (userId, viewerId = null) => {
+        // 1. Lấy profile và thông tin cơ bản trước
         const profile = await prisma.profile.findUnique({
             where: { user_id: userId },
             include: {
                 User: {
                     select: {
-                        InterestedTopic: {
-                            select: {
-                                id: true,
-                                topic_id: true,
-                                Topic: { select: { name: true } }
-                            }
-                        },
-                        id: true,
-                        username: true,
-                        email: true,
-                        role: true,
-                        fullname: true,
-                        avatar: true,
-                        created_at: true,
-                        _count: {
-                            select: {
-                                Post: true,
-                                Comment: true,
-                                FollowerFollowed: true,
-                                FollowerFollow: true
-                            }
-                        }
+                        InterestedTopic: { /* ... giữ nguyên ... */ },
+                        id: true, username: true, email: true,
+                        role: true, fullname: true, avatar: true, created_at: true
                     }
                 }
             }
-        })
+        });
 
-        if (!profile) return null
-
-        let isFollowing = false
-        if (viewerId) {
-            const follow = await prisma.follower.findUnique({
+        if (!profile) return null;
+        const canEdit = viewerId === userId;
+        // 2. Chạy tất cả các lệnh đếm có filter is_deleted song song
+        const [postCount, commentCount, followingCount, followerCount, follow] = await Promise.all([
+            prisma.post.count({
+                where: { user_id: userId, is_deleted: false }
+            }),
+            prisma.comment.count({
+                where: { user_id: userId, is_deleted: false }
+            }),
+            prisma.follower.count({
+                where: { follow_id: userId }
+            }),
+            prisma.follower.count({
+                where: { followed_id: userId }
+            }),
+            viewerId ? prisma.follower.findUnique({
                 where: { follow_id_followed_id: { follow_id: viewerId, followed_id: userId } }
-            })
-            isFollowing = !!follow
-        }
+            }) : null
+        ]);
 
         return {
             ...profile,
-            postCount: profile.User._count.Post,
-            commentCount: profile.User._count.Comment,
-            followingCount: profile.User._count.FollowerFollowed,
-            followerCount: profile.User._count.FollowerFollow,
-            isFollowing
-        }
+            postCount,
+            commentCount,
+            followingCount,
+            followerCount,
+            isFollowing: !!follow,
+            canEdit
+        };
     },
 
     updateProfile: async (userId, data, files = {}) => {

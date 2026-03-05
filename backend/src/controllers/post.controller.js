@@ -51,10 +51,15 @@ const PostController = {
                 const files = req.files?.images || []
                 const postId = req.params.id
                 const userId = req.user.id
-                const { content, topic_id, title, removeImageIds } = req.body
-                const removeIds = removeImageIds
-                    ? (Array.isArray(removeImageIds) ? removeImageIds : String(removeImageIds).split(',').map(s => s.trim()).filter(Boolean))
-                    : []
+                const { content, topic_id, title, delete_images } = req.body
+                let removeIds = [];
+                if (delete_images) {
+                    try {
+                        removeIds = JSON.parse(delete_images);
+                    } catch (e) {
+                        removeIds = String(delete_images).split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                }
 
                 const updated = await PostService.updatePost(userId, postId, {
                     content,
