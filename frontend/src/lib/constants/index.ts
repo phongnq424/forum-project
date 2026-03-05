@@ -15,11 +15,18 @@ export const ENDPOINTS = {
         BY_ID: (id: string) => `profiles/${id}`,
         SEARCH: 'profiles/search/all'
     },
+    USERS: {
+        BASE: 'users',
+        ME: 'users/me',
+        CHANGE_PASSWORD: 'users/me/password',
+        BY_ID: (id: string) => `users/${id}`
+    },
     POSTS: {
         BASE: 'posts',
         BY_ID: (id: string) => `posts/${id}`,
         BY_USER: (userId: string) => `posts/user/${userId}`,
         SEARCH: 'posts/search',
+        SAVED: 'post-saved'
     },
     CATEGORIES: {
         BASE: 'categories',
@@ -34,5 +41,32 @@ export const ENDPOINTS = {
         BY_POST: (postId: string) => `/reactions/post/${postId}`,
         IS_REACTED: (postId: string) => `/reactions/is-reacted/${postId}`,
         BY_USER: (userId: string) => `/reactions/user/${userId}`
+    },
+    COMMENTS: {
+        BASE: 'comments',
+        BY_POST: (postId: string) => `comments/post/${postId}`,
+        BY_COMMENT: (commentId: string) => `comments/${commentId}`,
+    },
+    CONVERSATIONS: {
+        BASE: 'conversations',
+
+        CHAT: {
+            BASE: 'conversations/chat',
+            ME: 'conversations/chat/me',
+            MESSAGES: 'conversations/chat/messages',
+            BY_ID: (conversationId: string) =>
+                `conversations/chat/${conversationId}/messages`
+        },
+
+        GROUP: {
+            BASE: 'conversations/group',
+            ME: 'conversations/group/me',
+            BY_ID: (conversationId: string) =>
+                `conversations/group/${conversationId}/messages`,
+            MESSAGE: (conversationId: string) =>
+                `conversations/group/${conversationId}/message`,
+            LEAVE: (conversationId: string) =>
+                `conversations/group/${conversationId}/leave`
+        }
     }
 };

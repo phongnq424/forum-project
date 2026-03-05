@@ -1,18 +1,22 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
     import Card from "./Card.svelte";
     import type { Post } from "$lib/types/post.type";
     import Badge from "./Badge.svelte";
     import Icon from "./Icon.svelte";
     import { reactionService } from "$lib/services/reaction.service";
+    import { postSaveService } from "$lib/services/postSaved.service";
     let { post } = $props<{ post: Post }>();
     let isReacted = $state(post.isReacted || false);
     let reactionCount = $state(post.reactionCount || 0);
+    let isSaved = $state(post.isSaved || false);
 
     function getInitial(name?: string) {
         return name ? name.charAt(0).toUpperCase() : "U";
     }
-    async function handleReaction() {
-        // 1. Cập nhật UI ngay lập tức (Optimistic Update)
+    async function handleReaction(e: MouseEvent) {
+        e.preventDefault();
+        e.stopPropagation();
         isReacted = !isReacted;
         reactionCount += isReacted ? 1 : -1;
 
@@ -22,6 +26,17 @@
             console.error("Lỗi khi thả tym:", error);
             isReacted = !isReacted;
             reactionCount += isReacted ? 1 : -1;
+        }
+    }
+
+    async function handleSave(e: MouseEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        isSaved = !isSaved;
+        try {
+            await postSaveService.toggleSave(post.id);
+        } catch (error) {
+            isSaved = !isSaved;
         }
     }
 
@@ -97,17 +112,29 @@
                             />
                             {reactionCount || 0}
                         </button>
-                        <button class="action-btn" title="Comments">
+                        <button
+                            class="action-btn"
+                            title="Comments"
+                            onclick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                goto(`/discuss/${post.id}?scrollTo=comments`);
+                            }}
+                        >
                             <Icon name="message-square" />
                             {post.commentCount || 0}
                         </button>
+                        <button class="action-btn">
+                            <Icon name="share" />
+                        </button>
                         <button
-                            class="action-btn {post.isSaved ? 'saved' : ''}"
+                            class="action-btn {isSaved ? 'saved' : ''}"
                             title="Save Post"
+                            onclick={handleSave}
                         >
                             <Icon
                                 name="bookmark"
-                                fill={post.isSaved ? "currentColor" : "none"}
+                                fill={isSaved ? "currentColor" : "none"}
                             />
                         </button>
                     </div>

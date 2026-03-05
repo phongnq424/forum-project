@@ -1,6 +1,6 @@
 import { api } from '$lib/services/api';
 import { ENDPOINTS } from '$lib/constants';
-import { setUser, clearAuth } from '$lib/stores/auth.store';
+import { authState } from '$lib/states/auth.svelte';
 
 export const authService = {
     async login(credentials: any) {
@@ -8,7 +8,7 @@ export const authService = {
             const res: any = await api.post(ENDPOINTS.AUTH.LOGIN, credentials);
 
             if (res.user) {
-                setUser(res.user);
+                authState.setUser(res.user);
             }
             return res;
         } catch (err) {
@@ -44,7 +44,7 @@ export const authService = {
     async register(data: any) {
         const res: any = await api.post(ENDPOINTS.AUTH.REGISTER, data);
         if (res.user) {
-            setUser(res.user);
+            authState.setUser(res.user);
         }
         return res;
     },
@@ -53,7 +53,7 @@ export const authService = {
         try {
             await api.post(ENDPOINTS.AUTH.LOGOUT, {});
         } finally {
-            clearAuth();
+            authState.clearAuth();
         }
     }
 };

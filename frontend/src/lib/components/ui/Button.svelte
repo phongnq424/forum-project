@@ -3,12 +3,18 @@
 
     type Props = HTMLButtonAttributes & {
         variant?: "primary" | "secondary" | "ghost" | "danger";
+        size?: "sm" | "md";
     };
 
-    let { variant = "primary", type = "button", ...rest }: Props = $props();
+    let {
+        variant = "primary",
+        size = "md",
+        type = "button",
+        ...rest
+    }: Props = $props();
 </script>
 
-<button class={`btn ${variant}`} {type} {...rest}>
+<button class={`btn ${variant} ${size}`} {type} {...rest}>
     <slot />
 </button>
 
@@ -26,6 +32,17 @@
         border: none;
         cursor: pointer;
         transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .sm {
+        padding: 6px 12px;
+        font-size: 12px;
+        border-radius: 8px;
+        gap: 4px;
+    }
+
+    .md {
+        padding: 10px 18px;
+        font-size: 14px;
     }
 
     .btn:focus-visible {

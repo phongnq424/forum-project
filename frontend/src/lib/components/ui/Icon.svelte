@@ -21,7 +21,13 @@
         | "message-circle"
         | "share"
         | "plus"
-        | "share-2";
+        | "share-2"
+        | "trending-up"
+        | "reply"
+        | "more-horizontal"
+        | "loader"
+        | "trash"
+        | "menu";
 
     let {
         name,
@@ -69,6 +75,14 @@
         plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
         "share-2":
             '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>',
+        "trending-up":
+            '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+        reply: '<polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',
+        "more-horizontal":
+            '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+        loader: '<path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/>',
+        trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+        menu: '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
     };
 
     // Bảng màu mặc định cho các icon đặc biệt
@@ -79,6 +93,8 @@
         cake: "#ec4899", // Hồng (Sinh nhật)
         "map-pin": "#10b981", // Xanh lá (Địa điểm)
         "help-circle": "#6366f1", // Tím nhạt (Support/Help)
+        "trending-up": "#6366f1",
+        trash: "#ef4444",
     };
 
     let strokeColor = $derived(

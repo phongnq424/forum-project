@@ -1,5 +1,6 @@
 import { PUBLIC_API_URL } from '$env/static/public';
-import { auth, setUser, clearAuth } from '$lib/stores/auth.store';
+import { authState } from '$lib/states/auth.svelte';
+
 
 interface SendOptions<T = unknown> {
     method: string;
@@ -19,9 +20,9 @@ async function processQueue(error: any = null) {
 
 async function send<T>(opts: SendOptions<T>): Promise<T> {
 
-    const { method, path, data, params, fetch: customFetch = fetch } = opts;
+    const { method, path, data, params, fetch: svelteFetch } = opts;
     let url = `${PUBLIC_API_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
-
+    const fetcher = svelteFetch || fetch;
     if (params) {
         const cleanParams = Object.fromEntries(
             Object.entries(params).filter(([_, v]) => v != null)
@@ -46,14 +47,14 @@ async function send<T>(opts: SendOptions<T>): Promise<T> {
         credentials: 'include' // Send cookies automatically
     };
 
-    let response = await customFetch(url, requestOpts);
+    let response = await fetcher(url, requestOpts);
 
     if (response.status === 401 && !path.includes('refresh') && !path.includes('login') && !path.includes('register')) {
         if (!isRefreshing) {
             isRefreshing = true;
             try {
                 // Call refresh endpoint - backend sets new access_token cookie
-                const refreshResponse = await customFetch(`${PUBLIC_API_URL}auth/refresh`, {
+                const refreshResponse = await fetcher(`${PUBLIC_API_URL}auth/refresh`, {
                     method: 'POST',
                     credentials: 'include'
                 });
@@ -63,10 +64,10 @@ async function send<T>(opts: SendOptions<T>): Promise<T> {
                 await processQueue();
 
                 // Retry original request with new token from cookie
-                response = await customFetch(url, requestOpts);
+                response = await fetcher(url, requestOpts);
             } catch (err) {
                 await processQueue(err);
-                clearAuth();
+                authState.clearAuth();
                 throw err;
             } finally {
                 isRefreshing = false;

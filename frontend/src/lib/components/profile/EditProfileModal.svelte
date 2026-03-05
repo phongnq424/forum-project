@@ -5,7 +5,7 @@
     import Select from "$lib/components/ui/Select.svelte";
     import DatePicker from "$lib/components/ui/DatePicker.svelte";
     import { profileService } from "$lib/services/profile.service";
-    import { updateUser } from "$lib/stores/auth.store";
+    import { authState } from "$lib/states/auth.svelte";
     import type { Profile } from "$lib/types/profile.type";
     import Icon from "$lib/components/ui/Icon.svelte";
 
@@ -71,7 +71,7 @@
             const updated = await profileService.updateProfile(submitData);
 
             // Cập nhật store với tất cả thông tin user (avatar, fullname, v.v)
-            updateUser({
+            authState.updateUser({
                 avatar:
                     updated?.User?.avatar ||
                     avatarPreview ||

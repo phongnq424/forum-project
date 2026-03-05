@@ -1,7 +1,11 @@
 <script lang="ts">
     import { page } from "$app/state";
-    import { user } from "$lib/stores/auth.store";
+    import { authState } from "$lib/states/auth.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
+    import Dropdown from "$lib/components/ui/Dropdown.svelte";
+    import { authService } from "$lib/services/auth.service";
+    import Modal from "$lib/components/ui/Modal.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
 
     let { data }: { data?: App.PageData } = $props();
 
@@ -13,14 +17,55 @@
         { name: "Contact", href: "/contact" },
     ];
 
-    let currentUser = $derived($user || data?.user);
+    let currentUser = $derived(authState.user || data?.user);
 
     // Avatar logic gọn gàng hơn
-    let avatarUrl = $derived($user?.avatar || data?.user?.avatar || null);
+    let avatarUrl = $derived(currentUser?.avatar || null);
+    let isUserMenuOpen = $state(false);
+    let isMobileMenuOpen = $state(false);
+    let isLogoutModalOpen = $state(false);
+    let loading = $state(false);
+    async function handleLogout(e: MouseEvent) {
+        e.preventDefault();
+        loading = true;
+        try {
+            await authService.logout();
+            window.location.href = "/login";
+        } catch (error) {
+            console.error("Logout failed:", error);
+        } finally {
+            loading = false;
+        }
+    }
 </script>
 
 <header class="site-header">
     <div class="container nav">
+        <div class="mobile-menu-wrapper">
+            <button
+                class="hamburger-btn"
+                aria-label="Open menu"
+                onclick={(e) => {
+                    e.stopPropagation();
+                    isMobileMenuOpen = !isMobileMenuOpen;
+                }}
+            >
+                <Icon name="menu" size={28} />
+            </button>
+
+            <Dropdown bind:show={isMobileMenuOpen} align="left">
+                {#each navItems as item}
+                    <a
+                        href={item.href}
+                        class="mobile-nav-link"
+                        class:active={page.url.pathname.startsWith(item.href)}
+                        onclick={() => (isMobileMenuOpen = false)}
+                    >
+                        {item.name}
+                    </a>
+                {/each}
+            </Dropdown>
+        </div>
         <a href="/" class="logo">
             <img src="/logo.png" alt="Windflow logo" class="logo-img" />
             <span class="brand">WINDFLOW</span>
@@ -66,10 +111,14 @@
 
                 <div class="user-menu">
                     <span class="greeting">Hi, {currentUser.username}</span>
-                    <a
-                        href="/profile"
-                        class="avatar-link"
-                        aria-label="View profile"
+
+                    <button
+                        class="avatar-btn"
+                        aria-label="Toggle user menu"
+                        onclick={(e) => {
+                            e.stopPropagation(); // Cực kỳ quan trọng để không bị xung đột lúc click
+                            isUserMenuOpen = !isUserMenuOpen;
+                        }}
                     >
                         {#if avatarUrl}
                             <img
@@ -82,12 +131,57 @@
                                 {currentUser.username.charAt(0).toUpperCase()}
                             </div>
                         {/if}
-                    </a>
+                    </button>
+
+                    <Dropdown bind:show={isUserMenuOpen} align="right">
+                        <a
+                            href="/profile"
+                            onclick={() => (isUserMenuOpen = false)}
+                        >
+                            <Icon name="user" size={16} /> Profile
+                        </a>
+                        <a
+                            href="/discuss/saved"
+                            onclick={() => (isUserMenuOpen = false)}
+                        >
+                            <Icon name="bookmark" size={16} /> Saved Posts
+                        </a>
+                        <div
+                            style="height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0;"
+                        ></div>
+                        <button
+                            class="logout-btn"
+                            onclick={() => {
+                                isUserMenuOpen = false;
+                                isLogoutModalOpen = true;
+                            }}
+                        >
+                            <Icon name="log-out" size={16} /> Logout
+                        </button>
+                    </Dropdown>
                 </div>
             {/if}
         </div>
     </div>
 </header>
+<Modal bind:open={isLogoutModalOpen} title="Confirm Logout" maxWidth="400px">
+    <div style="padding: 10px 0; color: #d1d5db; font-size: 15px;">
+        Are you sure you want to log out of WINDFLOW?
+    </div>
+    {#snippet footer()}
+        <div
+            style="display: flex; gap: 12px; justify-content: flex-end; width: 100%;"
+        >
+            <Button
+                variant="secondary"
+                onclick={() => (isLogoutModalOpen = false)}>CANCEL</Button
+            >
+            <Button variant="danger" onclick={handleLogout} disabled={loading}>
+                {loading ? "LOGGING OUT..." : "LOGOUT"}
+            </Button>
+        </div>
+    {/snippet}
+</Modal>
 
 <style>
     /* ... (Giữ nguyên toàn bộ phần CSS của bạn ở đây) ... */
@@ -217,6 +311,33 @@
         pointer-events: none;
         z-index: 2;
     }
+    /* --- MOBILE MENU --- */
+    .mobile-menu-wrapper {
+        display: none; /* Mặc định ẩn trên màn hình bự */
+        position: relative;
+    }
+
+    .hamburger-btn {
+        background: none;
+        border: none;
+        color: #e6e7ea;
+        padding: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s;
+    }
+
+    .hamburger-btn:hover {
+        color: #8b5cf6;
+    }
+
+    .mobile-nav-link.active {
+        color: #8b5cf6 !important;
+        font-weight: 600;
+        background: rgba(139, 92, 246, 0.1);
+    }
 
     /* AUTH */
     .auth {
@@ -280,13 +401,17 @@
         gap: 12px;
     }
 
-    .avatar-link {
+    .avatar-btn {
         display: block;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
         line-height: 0;
         transition: transform 0.2s ease;
     }
 
-    .avatar-link:hover {
+    .avatar-btn:hover {
         transform: scale(1.05);
     }
 
@@ -338,10 +463,6 @@
         transform: translateY(-1px);
     }
 
-    .bell-icon {
-        transition: color 0.2s ease;
-    }
-
     .badge {
         position: absolute;
         top: 4px;
@@ -385,6 +506,16 @@
             display: none;
         }
 
+        .search input {
+            width: 160px;
+        }
+        .mobile-menu-wrapper {
+            display: block;
+        }
+
+        .greeting {
+            display: none;
+        }
         .search input {
             width: 160px;
         }

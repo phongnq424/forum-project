@@ -37,6 +37,11 @@ export interface Post {
         id: string;
         url: string;
     }[];
+
+    permissions: {
+        canEdit: boolean;
+        canDelete: boolean;
+    };
 }
 
 export interface PaginatedPostResponse {

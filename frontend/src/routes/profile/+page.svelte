@@ -3,12 +3,13 @@
     import { profileService } from "$lib/services/profile.service";
     import { postService } from "$lib/services/post.service";
     import { authService } from "$lib/services/auth.service";
-    import { user } from "$lib/stores/auth.store";
+    import { authState } from "$lib/states/auth.svelte";
 
     import ProfileHeader from "$lib/components/profile/ProfileHeader.svelte";
     import ProfileStats from "$lib/components/profile/ProfileStats.svelte";
     import ProfilePost from "$lib/components/profile/ProfilePost.svelte";
     import EditProfileModal from "$lib/components/profile/EditProfileModal.svelte";
+    import Loading from "$lib/components/ui/Loading.svelte";
     import Modal from "$lib/components/ui/Modal.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import Card from "$lib/components/ui/Card.svelte";
@@ -18,19 +19,28 @@
     let posts = $state<any[]>([]);
     let isEditModalOpen = $state(false);
     let isLogoutModalOpen = $state(false);
-    let loading = $state(false);
+    let loading = $state(true);
 
     onMount(async () => {
-        const userId = $user?.id;
-        if (!userId) return;
+        const userId = authState.user?.id;
+        if (!userId) {
+            loading = false;
+            return;
+        }
 
-        const [profData, postsData] = await Promise.all([
-            profileService.getMyProfile(),
-            postService.getByUser(userId, { page: 1, limit: 10 }),
-        ]);
+        try {
+            const [profData, postsData] = await Promise.all([
+                profileService.getMyProfile(),
+                postService.getByUser(userId, { page: 1, limit: 10 }),
+            ]);
 
-        profile = profData;
-        posts = postsData?.data || [];
+            profile = profData;
+            posts = postsData?.data || [];
+        } catch (e) {
+            console.error("Error:", e);
+        } finally {
+            loading = false;
+        }
     });
 
     function handleUpdated(data: any) {
@@ -51,7 +61,9 @@
     }
 </script>
 
-{#if profile}
+{#if loading}
+    <Loading message="Loading profiles..." size="md" />
+{:else if profile}
     <div class="profile-layout">
         <div class="main-content">
             <ProfileHeader

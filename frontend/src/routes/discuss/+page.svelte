@@ -1,37 +1,31 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { postService } from "$lib/services/post.service";
-	import { categoryService } from "$lib/services/category.service";
-	import type { Post, PaginatedPostResponse } from "$lib/types/post.type";
-	import type { Category } from "$lib/types/category.type";
+	import { untrack } from "svelte";
 
 	// Import Components
 	import PostCard from "$lib/components/ui/PostCard.svelte";
+	import Loading from "$lib/components/ui/Loading.svelte";
 	import Icon from "$lib/components/ui/Icon.svelte";
 	import DiscussHeader from "$lib/components/discuss/DiscussHeader.svelte";
 	import DiscussSidebar from "$lib/components/discuss/DiscussSidebar.svelte";
-	import CreatePostModal from "$lib/components/discuss/CreatePostModal.svelte";
+	import CreatePostModal from "$lib/components/discuss/PostFormModal.svelte";
+	import { discussState } from "$lib/states/discuss.svelte";
 
 	type SortOption = { value: string; label: string };
 	type TrendingPost = { id: number; title: string; author: string };
-	type FilterGroup = { name: string; topics: string[] };
 	type SuggestedAuthor = { name: string; role: string };
 
-	// State cho dữ liệu động
-	let posts = $state<any[]>([]);
-	let categories = $state<string[]>(["For You"]);
-	let rawCategories = $state<Category[]>([]);
+	let { data } = $props();
+	let serverPosts = $derived(data.initialPosts?.data || []);
+	let clientPosts = $state<any[] | null>(null);
+	let loading = $state(false);
+	let posts = $derived(clientPosts ?? serverPosts);
 
-	// State UI
-	let loading = $state(true);
 	let activeCategory = $state("For You");
 	let searchQuery = $state("");
 	let sortBy = $state("Newest");
-	let filterGroups = $state<FilterGroup[]>([]);
 	let isCreateModalOpen = $state(false);
-	let availableTopics = $derived(
-		rawCategories.flatMap((cat: any) => cat.Topic || []),
-	);
 
 	// 2. DATA CỨNG CHO SIDEBAR (Giữ nguyên)
 	const sortOptions: SortOption[] = [
@@ -63,77 +57,51 @@
 		{ name: "Tech Lead", role: "Ex-Google Engineer" },
 	];
 
-	async function fetchPosts() {
+	async function fetchPosts(query: string, sort: string, category: string) {
 		loading = true;
 		try {
-			// 1. Khởi tạo payload mặc định
 			let payload: Parameters<typeof postService.listPosts>[0] = {
 				page: 1,
 				limit: 10,
-				sortBy: sortBy, // Gửi trực tiếp "Newest" hoặc "Most Favorite"
+				sortBy: sort,
 			};
 
-			// 2. Nếu đang Search, thêm q vào payload
-			if (searchQuery.trim() !== "") {
-				payload.q = searchQuery.trim();
-			}
+			if (query.trim() !== "") payload.q = query.trim();
 
-			// 3. Nếu đang chọn Category cụ thể (không phải "For You")
-			if (activeCategory !== "For You") {
-				const foundCat = rawCategories.find(
-					(c) => c.name === activeCategory,
+			if (category !== "For You") {
+				const found = discussState.categories.find(
+					(c) => c.name === category,
 				);
-				if (foundCat) payload.category_id = foundCat.id;
+				if (found) payload.category_id = found.id;
 			}
 
 			const res = await postService.listPosts(payload);
-
-			// 5. Cập nhật danh sách bài viết
-			posts = Array.isArray(res?.data) ? res.data : [];
+			clientPosts = res?.data || []; // Cập nhật state Client
 		} catch (error) {
 			console.error("Error fetching posts:", error);
-			posts = [];
+			clientPosts = [];
 		} finally {
 			loading = false;
 		}
 	}
 
-	onMount(async () => {
-		try {
-			const res = await categoryService.listCategories({
-				page: 1,
-				limit: 20,
-			});
+	// 5. EFFECT THEO DÕI RIÊNG BIỆT (KHÔNG BỊ LOOP)
+	let isFirstLoad = true; // Tránh fetch dư thừa lần đầu tiên
 
-			if (res.data && res.data.length > 0) {
-				rawCategories = res.data;
-				const categoryNames = res.data.map((c) => c.name);
-				categories = ["For You", ...categoryNames];
-			}
-			filterGroups = res.data
-				.map((c: any) => {
-					return {
-						name: c.name,
-						topics: c.Topic
-							? c.Topic.map((t: any) =>
-									typeof t === "string" ? t : t.name,
-								)
-							: [],
-					};
-				})
-				.filter((group) => group.topics.length > 0);
-		} catch (error) {
-			console.error("Error fetching categories:", error);
-		}
-	});
-
-	// $effect: Tự gọi lại fetchPosts mỗi khi các state filter bị thay đổi
 	$effect(() => {
-		searchQuery;
-		sortBy;
-		activeCategory;
+		// Chỉ đăng ký theo dõi 3 biến này
+		const q = searchQuery;
+		const s = sortBy;
+		const c = activeCategory;
+
+		if (isFirstLoad) {
+			isFirstLoad = false;
+			return; // Bỏ qua lần đầu vì đã có SSR lo
+		}
+
 		const timeout = setTimeout(() => {
-			fetchPosts();
+			// Dùng untrack để chặn Svelte theo dõi biến bên trong hàm này
+			untrack(() => fetchPosts(q, s, c));
 		}, 300);
 
 		return () => clearTimeout(timeout);
@@ -145,7 +113,7 @@
 		bind:searchQuery
 		bind:sortBy
 		bind:activeCategory
-		{categories}
+		categories={discussState.categoryNames}
 		{sortOptions}
 		onCreatePost={() => (isCreateModalOpen = true)}
 	/>
@@ -153,7 +121,7 @@
 	<main class="discuss-layout">
 		<section class="feed-section">
 			{#if loading}
-				<div class="loading-state">Loading posts...</div>
+				<Loading message="Loading posts..." size="md" />
 			{:else}
 				{#each posts as post}
 					<PostCard {post} />
@@ -164,14 +132,18 @@
 		</section>
 
 		<div class="sidebar-wrapper">
-			<DiscussSidebar {trendingPosts} {filterGroups} {suggestedAuthors} />
+			<DiscussSidebar
+				{trendingPosts}
+				filterGroups={discussState.filterGroups}
+				{suggestedAuthors}
+			/>
 		</div>
 	</main>
 
 	<CreatePostModal
 		bind:open={isCreateModalOpen}
-		topics={availableTopics}
-		onSuccess={fetchPosts}
+		topics={discussState.availableTopics}
+		onSuccess={() => fetchPosts(searchQuery, sortBy, activeCategory)}
 	/>
 </div>
 

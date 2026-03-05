@@ -3,9 +3,9 @@ import { ENDPOINTS } from "$lib/constants/index";
 import type { CategoryCreateManyPayload, CategoryListResponse, CategoryUpdatePayload } from "$lib/types/category.type";
 
 export const categoryService = {
-    listCategories(params?: { page?: number; limit?: number })
+    listCategories(params?: { page?: number; limit?: number }, customFetch?: typeof fetch)
         : Promise<CategoryListResponse> {
-        return api.get(ENDPOINTS.CATEGORIES.BASE, { params });
+        return api.get(ENDPOINTS.CATEGORIES.BASE, { params, fetch: customFetch });
     },
 
     deleteCategories(ids: string[])
