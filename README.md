@@ -58,15 +58,24 @@ Version 2 currently focuses on:
 ### Backend
 - Node.js  
 - Express  
-- RESTful API  
+- RESTful API
+- Redis
+- Socket.IO (real-time)
+- Authentication
 - Background worker design (refactoring phase)  
 
 ### Frontend
-- Modular component structure  
-- Architecture restructuring  
-- State management improvement  
+- Svelte
+- SvelteKit
+- Modular component architecture
+- Server-side rendering (SSR)
+- State management optimization
+
+### Message Broker
+- BullMQ
 
 ### Database
+- PostgreSQL
 - Relational database system  
 - Schema normalization (partially applied)  
 - Index optimization (planned improvements)  
