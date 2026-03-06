@@ -5,64 +5,83 @@
     import Icon from "$lib/components/ui/Icon.svelte";
     import Input from "$lib/components/ui/Input.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
+    import Loading from "$lib/components/ui/Loading.svelte";
 
     let { activeChat } = $props<{ activeChat: any }>();
     let messages = $state<any[]>([]);
     let newMessage = $state("");
     let chatContainer = $state<HTMLElement | null>(null);
+    let isLoading = $state(true);
 
     $effect(() => {
-        if (messages.length && chatContainer) {
-            chatContainer.scrollTo({
-                top: chatContainer.scrollHeight,
-                behavior: "smooth",
-            });
+        if (activeChat && socketService.isConnected) {
+            socketService.joinRoom(activeChat.id);
         }
+
+        return () => {
+            if (activeChat && socketService.isConnected) {
+                socketService.leaveRoom(activeChat.id);
+            }
+        };
     });
 
     $effect(() => {
         async function fetchHistory() {
+            const currentId = activeChat.id;
+            isLoading = true;
             try {
                 const data = (await chatService.getMessages(
-                    activeChat.id,
+                    currentId,
                 )) as any[];
-                messages = data.map((m: any) => ({
-                    id: m.id,
-                    senderId: m.Sender.id,
-                    text: m.content,
-                    time: new Date(m.sent_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    }),
-                }));
+                if (currentId === activeChat.id) {
+                    messages = data.map((m: any) => ({
+                        id: m.id,
+                        senderId: m.Sender.id,
+                        text: m.content,
+                        time: new Date(m.sent_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                        }),
+                    }));
+                }
             } catch (error) {
                 console.error("Lỗi tải lịch sử tin nhắn:", error);
+            } finally {
+                if (currentId === activeChat.id) isLoading = false;
             }
         }
 
         if (activeChat) {
-            messages = []; // Clear tin nhắn của người cũ
+            messages = [];
             fetchHistory();
         }
     });
 
     $effect(() => {
         const unsub = socketService.on("chat:message:new", (data) => {
+            console.log("SOCKET RECEIVE:", data);
             const incomingConvId = data.conversationId || data.conversation_id;
             const msgData = data.message || data;
 
             if (incomingConvId === activeChat.id) {
                 const exists = messages.some((m) => m.id === msgData.id);
                 if (!exists) {
-                    messages.push({
-                        id: msgData.id,
-                        senderId: msgData.sender_id,
-                        text: msgData.content,
-                        time: new Date(msgData.sent_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        }),
-                    });
+                    messages = [
+                        ...messages,
+                        {
+                            id: msgData.id,
+                            senderId: msgData.sender_id,
+                            text: msgData.content,
+                            time: new Date(msgData.sent_at).toLocaleTimeString(
+                                [],
+                                {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                },
+                            ),
+                        },
+                    ];
                 }
             }
         });
@@ -72,65 +91,105 @@
     async function sendMessage() {
         if (!newMessage.trim()) return;
 
-        const tempText = newMessage;
+        const text = newMessage;
         newMessage = "";
+
+        // 1. Tạo một ID tạm thời để quản lý tin nhắn này
+        const tempId = `temp-${Date.now()}`;
+        const currentSocketId = socketService.socket?.id;
         socketService.sendTyping(activeChat.id, false);
 
+        // 2. Tạo đối tượng tin nhắn "lạc quan"
+        const optimisticMsg = {
+            id: tempId,
+            senderId: authState.user?.id,
+            text: text,
+            time: new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            }),
+        };
+
+        messages = [...messages, optimisticMsg];
+
         try {
-            await chatService.sendMessage({
-                toUserId: activeChat.peerId,
-                content: tempText,
+            socketService.emit("chat:message:send", {
+                conversationId: activeChat.id,
+                content: text,
+                tempId,
+                socketId: currentSocketId,
             });
         } catch (error) {
             console.error("Lỗi gửi tin nhắn:", error);
+            messages = messages.map((m) =>
+                m.id === tempId ? { ...m, status: "error" } : m,
+            );
         }
     }
 </script>
 
-<header class="chat-header">
-    <div class="user-meta">
-        <strong>{activeChat.name}</strong>
-        <span class="status {activeChat.online ? 'online' : ''}">
-            {activeChat.online ? "Online" : "Offline"}
-        </span>
+<div class="chat-window">
+    <header class="chat-header">
+        <div class="user-meta">
+            <strong>{activeChat.name}</strong>
+            <span class="status {activeChat.online ? 'online' : ''}">
+                {activeChat.online ? "Online" : "Offline"}
+            </span>
+        </div>
+    </header>
+
+    <div class="messages-container">
+        <ScrollArea scrollToBottom={true} watch={messages} pushToBottom>
+            <div class="message-list">
+                {#if isLoading}
+                    <Loading message="Loading Messages..." size="md" />
+                {/if}
+
+                {#each messages as msg, i}
+                    <div
+                        class="msg-wrapper {msg.senderId === authState.user?.id
+                            ? 'me'
+                            : 'them'}"
+                    >
+                        <div class="msg-bubble">{msg.text}</div>
+                        <span class="time">{msg.time}</span>
+                    </div>
+                {/each}
+            </div>
+        </ScrollArea>
     </div>
-</header>
 
-<div class="message-list" bind:this={chatContainer}>
-    {#each messages as msg}
-        <div
-            class="msg-wrapper {msg.senderId === (authState.user?.id || 1)
-                ? 'me'
-                : 'them'}"
+    <footer class="chat-input-area">
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                sendMessage();
+            }}
         >
-            <div class="msg-bubble">{msg.text}</div>
-            <span class="time">{msg.time}</span>
-        </div>
-    {/each}
+            <div class="input-wrapper">
+                <Input
+                    bind:value={newMessage}
+                    oninput={() =>
+                        socketService.sendTyping(activeChat.id, true)}
+                    placeholder="Type a message..."
+                />
+            </div>
+            <Button type="submit" variant="primary">
+                <Icon name="reply" />
+            </Button>
+        </form>
+    </footer>
 </div>
-
-<footer class="chat-input-area">
-    <form
-        onsubmit={(e) => {
-            e.preventDefault();
-            sendMessage();
-        }}
-    >
-        <div class="input-wrapper">
-            <Input
-                bind:value={newMessage}
-                oninput={() => socketService.sendTyping(activeChat.id, true)}
-                placeholder="Type a message..."
-            />
-        </div>
-        <Button type="submit" variant="primary">
-            <Icon name="reply" />
-        </Button>
-    </form>
-</footer>
 
 <style>
     /* Header */
+    .chat-window {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        background: #16191f;
+    }
     .chat-header {
         padding: 20px 25px;
         border-bottom: 1px solid #2a2e36;
@@ -153,10 +212,20 @@
         color: #10b981;
     }
 
-    /* Message List */
-    .message-list {
+    .messages-container {
         flex: 1;
-        overflow-y: auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .messages-container :global(.scroll-area) {
+        flex: 1;
+        min-height: 0;
+    }
+    .message-list {
+        min-height: 0;
         padding: 25px;
         display: flex;
         flex-direction: column;

@@ -4,19 +4,29 @@
     import Button from "$lib/components/ui/Button.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
+    import Badge from "$lib/components/ui/Badge.svelte";
+    import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
     import { socketService } from "$lib/services/socket.svelte";
     import { userService } from "$lib/services/user.service";
     import type { User } from "$lib/types/user.type";
-    import { onMount } from "svelte";
+    // Xóa import onMount vì không cần nữa
 
-    let { conversations, activeChat = $bindable() } = $props<{
+    let {
+        conversations,
+        activeChat = $bindable(),
+        isLoading = true,
+    } = $props<{
         conversations: any[];
         activeChat: any;
+        isLoading: boolean;
     }>();
 
     let suggestedUsers = $state<User[]>([]);
     let searchQuery = $state("");
     let isSearching = $state(false);
+
+    // Thêm một flag để tránh việc fetch lại nhiều lần
+    let hasLoadedSuggestions = $state(false);
 
     async function loadSuggestedUsers(query = "") {
         isSearching = true;
@@ -33,10 +43,27 @@
         }
     }
 
-    // Load data lần đầu khi mở app
-    onMount(() => {
-        loadSuggestedUsers();
+    // Dùng $effect thay cho onMount
+    $effect(() => {
+        if (
+            isLoading === false &&
+            conversations.length === 0 &&
+            !hasLoadedSuggestions
+        ) {
+            loadSuggestedUsers();
+            hasLoadedSuggestions = true;
+        }
     });
+    $effect(() => {
+        conversations.forEach((conv: any) => {
+            console.log(
+                conv.peerId,
+                socketService.onlineUsers[conv.peerId],
+                conv.online,
+            );
+        });
+    });
+
     function startNewChat(user: any) {
         activeChat = {
             id: `temp_${user.id}`,
@@ -61,8 +88,12 @@
         </div>
     </div>
 
-    <div class="scroll-area">
-        {#if conversations && conversations.length > 0}
+    <ScrollArea class="conversations-list">
+        {#if isLoading}
+            <div class="loading-state">
+                <Loading size="md" message="Loading conversations..." />
+            </div>
+        {:else if conversations.length > 0}
             {#each conversations as conv}
                 <button
                     class="conv-item {activeChat?.id === conv.id
@@ -73,7 +104,15 @@
                     <div class="avatar-wrapper">
                         <Avatar name={conv.name} src={conv.avatar} size="md" />
                         <div
-                            class="status-dot {conv.online ? 'online' : ''}"
+                            class="status-dot {socketService.onlineUsers[
+                                conv.peerId
+                            ] !== undefined
+                                ? socketService.onlineUsers[conv.peerId]
+                                    ? 'online'
+                                    : ''
+                                : conv.online
+                                  ? 'online'
+                                  : ''}"
                         ></div>
                     </div>
                     <div class="conv-info">
@@ -84,6 +123,13 @@
                             <span class="last-msg">{conv.lastMsg}</span>
                         {/if}
                     </div>
+                    {#if conv.unreadCount > 0}
+                        <div class="unread-badge-end">
+                            <Badge color="danger" size="sm">
+                                {conv.unreadCount}
+                            </Badge>
+                        </div>
+                    {/if}
                 </button>
             {/each}
         {:else}
@@ -133,7 +179,7 @@
                 </div>
             </div>
         {/if}
-    </div>
+    </ScrollArea>
 </aside>
 
 <style>
@@ -153,9 +199,10 @@
         font-size: 20px;
         font-weight: 600;
     }
-    .scroll-area {
-        overflow-y: auto;
+    :global(.conversations-list) {
         flex: 1;
+        display: flex;
+        flex-direction: column;
     }
     .conv-item {
         display: flex;
@@ -177,6 +224,13 @@
     .avatar-wrapper {
         position: relative;
     }
+    .unread-badge-end {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+    }
+
     .status-dot {
         position: absolute;
         bottom: 0;
@@ -197,24 +251,33 @@
     }
     .conv-info .name {
         display: block;
-        font-weight: 600;
+        font-weight: 500;
         font-size: 14px;
         margin-bottom: 4px;
+        font-family: Poppins;
     }
     .conv-info .last-msg {
-        font-size: 12px;
+        font-size: 13px;
         color: #9ca3af;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         display: block;
+        font-family: Poppins;
     }
     .typing-text {
         color: #10b981;
         font-size: 12px;
         font-style: italic;
     }
-
+    .loading-state {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        min-height: 200px;
+        color: #9ca3af;
+    }
     /* === CSS MỚI CHO PHẦN EMPTY STATE === */
     .empty-state-list {
         padding: 30px 20px;
@@ -269,14 +332,6 @@
         font-size: 14px;
         font-weight: 500;
         margin-bottom: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .suggested-info .bio {
-        display: block;
-        color: #9ca3af;
-        font-size: 12px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

@@ -4,6 +4,7 @@
 	import Footer from "$lib/components/layout/Footer.svelte";
 	import ChatBotFab from "$lib/components/chat/ChatBotFab.svelte";
 	import { authState } from "$lib/states/auth.svelte";
+	import { socketService } from "$lib/services/socket.svelte";
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { api } from "$lib/services/api";
@@ -14,6 +15,9 @@
 	if (data?.user) {
 		authState.initAuth(data.user);
 	}
+	onMount(() => {
+		socketService.connect();
+	});
 </script>
 
 <div class="app">
