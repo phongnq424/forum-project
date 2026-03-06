@@ -2,6 +2,8 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const { emitToChat, emitToUser } = require("../socket/emitter");
 const { NotificationService } = require("./notification.service");
+const RedisOnlineService = require("./redisOnline.service");
+const redisClient = require("../config/redis");
 
 const ConversationService = {
   createChat: async (userIds, { viewerId, blockContext } = {}) => {
@@ -86,8 +88,16 @@ const ConversationService = {
         Conversation: {
           include: {
             ConversationUser: {
+              where: {
+                User: {
+                  is_deleted: false,
+                  status: "ACTIVE",
+                }
+              },
               include: {
-                User: { select: { id: true, username: true, Profile: true } },
+                User: {
+                  select: { id: true, username: true, avatar: true, fullname: true }
+                },
               },
             },
             Message: {
@@ -95,23 +105,52 @@ const ConversationService = {
               orderBy: { sent_at: "desc" },
               take: 1,
             },
+            _count: {
+              select: {
+                Message: {
+                  where: {
+                    is_deleted: false,
+                    is_read: false,
+                    sender_id: { not: userId },
+                  },
+                },
+              },
+            },
           },
         },
       },
       orderBy: { joined_at: "desc" },
     });
+    const peerIds = [];
+
+    rows.forEach((cu) => {
+      const conv = cu.Conversation;
+
+      if (conv.type === "CHAT") {
+        const peer = conv.ConversationUser
+          .map((cu) => cu.User)
+          .find((u) => u.id !== userId);
+
+        if (peer) peerIds.push(peer.id);
+      }
+    });
+    const onlineKeys = peerIds.map((id) => `online:user:${id}`);
+    const onlineResults =
+      onlineKeys.length > 0 ? await redisClient.mget(onlineKeys) : [];
+
+    const onlineMap = {};
+    peerIds.forEach((id, i) => {
+      onlineMap[id] = !!onlineResults[i];
+    });
 
     return rows.map((cu) => {
       const conv = cu.Conversation;
-
-      // user đối diện (chat 1-1)
       const peerUser =
         conv.type === "CHAT"
           ? conv.ConversationUser.map((cu) => cu.User).find(
-              (u) => u.id !== userId
-            )
+            (u) => u.id !== userId
+          )
           : null;
-
       return {
         conversationId: conv.id,
         type: conv.type,
@@ -119,19 +158,19 @@ const ConversationService = {
         avatar:
           conv.type === "GROUP"
             ? conv.avatar
-            : peerUser?.Profile?.avatar || null,
+            : peerUser.avatar || null,
 
         peer: peerUser
           ? {
-              id: peerUser.id,
-              username: peerUser.username,
-            }
+            id: peerUser.id,
+            username: peerUser.username,
+            fullname: peerUser?.fullname,
+            online: onlineMap[peerUser.id] || false,
+          }
           : null,
 
         latestMsg: conv.Message[0] || null,
-        unreadCount: conv.Message.filter(
-          (m) => !m.is_read && !m.is_deleted && m.sender_id !== userId
-        ).length,
+        unreadCount: conv._count.Message,
       };
     });
   },
@@ -189,7 +228,7 @@ const ConversationService = {
     return messages;
   },
 
-  sendMessage: async (conversationId, senderId, content, { blockContext }) => {
+  sendMessage: async (conversationId, senderId, content, { blockContext, socketId = null }) => {
     const conv = await prisma.conversation.findUnique({
       where: { id: conversationId },
       include: { ConversationUser: true },
@@ -213,34 +252,31 @@ const ConversationService = {
       },
     });
 
-    // 🔔 tạo notification cho user đối diện (chat 1-1)
+
+    emitToChat(conversationId, "chat:message:new", message, socketId);
+
+    const users = conv.ConversationUser.filter(
+      (u) => u.user_id !== senderId && !u.left_at
+    );
+    //eachUser ngoại trừ user hiện tại
+    users.forEach((u) => {
+
+      emitToUser(u.user_id, "chat:message:new", {
+        conversationId,
+        message,
+      });
+    });
+
     if (conv.type === "CHAT") {
-      await NotificationService.create({
+      NotificationService.create({
         user_id: otherUserId,
         actor_id: senderId,
         type: "MESSAGE",
         title: "Tin nhắn mới",
         message: content,
         ref_id: conversationId,
-      });
+      }).catch(console.error);
     }
-
-    // 🔥 emit message mới cho room chat
-    emitToChat(conversationId, "chat:message:new", message);
-    const users = await prisma.conversationUser.findMany({
-      where: {
-        conversation_id: conversationId,
-        user_id: { not: senderId },
-        left_at: null,
-      },
-    });
-
-    users.forEach((u) => {
-      emitToUser(u.user_id, "chat:message:new", {
-        conversationId,
-        message,
-      });
-    });
 
     return message;
   },

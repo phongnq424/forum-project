@@ -1,6 +1,9 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const redisQueue = require('../config/redisQueue');
+const { Queue } = require('bullmq');
+const connection = require('../config/redisQueue');
+
+const judgeQueue = new Queue('judge_queue', { connection });
 
 const SubmissionService = {
     submit: async ({ challenge_id, user_id, code, language_id }) => {
@@ -16,14 +19,18 @@ const SubmissionService = {
         const job = {
             submissionId: submission.id,
             code,
-            time_limit: time_limit,
+            time_limit: time_limit * 1000,
             language: lang.code,
             testcases: testcases.map(t => ({
                 testcaseId: t.id
             }))
         };
-        console.log('Enqueuing job:', job);
-        await redisQueue.lpush('judge_queue', JSON.stringify(job));
+        await judgeQueue.add('judge_task', job, {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 2000 },
+            removeOnComplete: true,
+            removeOnFail: false
+        });
         return submission;
     },
 

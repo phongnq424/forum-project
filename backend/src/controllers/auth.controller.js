@@ -10,7 +10,7 @@ const COOKIE_OPTIONS = {
 
 const ACCESS_TOKEN_OPTIONS = {
     ...COOKIE_OPTIONS,
-    maxAge: 15 * 60 * 1000
+    maxAge: 30 * 60 * 1000
 };
 
 const REFRESH_TOKEN_OPTIONS = {

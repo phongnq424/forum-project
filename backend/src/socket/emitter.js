@@ -9,9 +9,16 @@ function emitToPost(postId, event, payload) {
     io.to(`post:${postId}`).emit(event, payload);
 }
 
-function emitToChat(chatId, event, payload) {
+function emitToChat(chatId, event, payload, excludeSocketId = null) {
     if (!io) return;
-    io.to(`chat:${chatId}`).emit(event, payload);
+
+    let broadcaster = io.to(`chat:${chatId}`);
+
+    if (excludeSocketId) {
+        broadcaster = broadcaster.except(excludeSocketId);
+    }
+
+    broadcaster.emit(event, payload);
 }
 
 function emitToUser(userId, event, payload) {
