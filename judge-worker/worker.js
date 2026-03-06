@@ -1,11 +1,14 @@
 import "dotenv/config";
-import Redis from "ioredis";
+import { Worker } from "bullmq";
 import axios from "axios";
 import { languages } from "./utils/language.js";
 import { compareOutputs } from "./utils/compare.js";
 import { runInSandbox } from "./utils/docker.js";
 
-const redis = new Redis(process.env.REDIS_URL);
+const connection = {
+    url: process.env.REDIS_URL,
+    maxRetriesPerRequest: null
+};
 const TIMEOUT = parseInt(process.env.SANDBOX_TIMEOUT) || 5;
 const BACKEND_API = process.env.BACKEND_API_URL;
 const BACKEND_RESULT_URL = `${BACKEND_API}/submissions/result`;
@@ -37,13 +40,7 @@ function normalizeCase(t) {
     };
 }
 
-async function processJob(jobData) {
-    let job;
-    try {
-        job = JSON.parse(jobData);
-    } catch {
-        return console.error("[Worker] Invalid job JSON");
-    }
+async function processSubmission(job) {
 
     console.log(
         `[Worker] Processing submissionId=${job.submissionId}, language=${job.language}`
@@ -142,18 +139,22 @@ async function sendResult(
 }
 
 async function main() {
-    while (true) {
-        try {
-            const result = await redis.brpop("judge_queue", 0);
-            if (result) {
-                await processJob(result[1]).catch((err) =>
-                    console.error("[Worker] Error:", err)
-                );
-            }
-        } catch {
-            await new Promise((r) => setTimeout(r, 5000));
-        }
-    }
+    const worker = new Worker("judge_queue", async (job) => {
+        await processSubmission(job.data)
+    },
+        {
+            connection,
+            concurrency: 4
+        });
+    worker.on("completed", (job) => {
+        console.log(`✅ [BullMQ] Job ${job.id} (Submission ${job.data.submissionId}) completed successfully.`);
+    });
+    worker.on("failed", (job, err) => {
+        console.error(`❌ [BullMQ] Job ${job?.id} (Submission ${job?.data?.submissionId}) failed:`, err);
+    });
+    worker.on("error", (err) => {
+        console.error(`⚠️ [BullMQ] Internal Worker Error:`, err);
+    });
 }
 
 main().catch((err) => {
