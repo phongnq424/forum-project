@@ -17,6 +17,17 @@
 	}
 	onMount(() => {
 		socketService.connect();
+
+		const interval = setInterval(
+			() => {
+				api.post("/auth/refresh").catch(() => {
+					authState.clearAuth();
+				});
+			},
+			29 * 60 * 1000,
+		);
+
+		return () => clearInterval(interval);
 	});
 </script>
 

@@ -68,5 +68,10 @@ export const ENDPOINTS = {
             LEAVE: (conversationId: string) =>
                 `conversations/group/${conversationId}/leave`
         }
+    },
+    CHALLENGE: {
+        BASE: 'challenges',
+        BY_ID: (id: string) => `challenges/${id}`,
+
     }
 };
