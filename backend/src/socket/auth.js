@@ -13,8 +13,11 @@ module.exports = async (socket, next) => {
         const refreshToken = cookies.refresh_token;
 
         try {
-            // Bước 1: Thử check Access Token như bình thường
             const decoded = await checkToken(token);
+
+            if (!decoded || !decoded.id) {
+                throw new Error('INVALID_TOKEN');
+            }
             socket.user = decoded;
             return next();
         } catch (err) {
@@ -23,16 +26,10 @@ module.exports = async (socket, next) => {
                 console.log("🟡 [Socket Auth] Access Token expired, attempting refresh...");
 
                 try {
-                    // Gọi hàm refresh từ AuthService của bạn
-                    // Lưu ý: req trong Socket handshake là socket.request
-                    const newTokens = await AuthService.refresh(refreshToken, socket.request);
 
-                    // Giải mã token mới để lấy thông tin user gán vào socket
+                    const newTokens = await AuthService.refresh(refreshToken, socket.request);
                     const newDecoded = await checkToken(newTokens.accessToken);
                     socket.user = newDecoded;
-
-                    // Gửi một sự kiện đặc biệt về Client để báo rằng: 
-                    // "Tôi đã cho bạn vào, nhưng Cookie của bạn cũ rồi, hãy gọi API refresh đi"
                     socket.emit('auth_status', {
                         status: 'TOKEN_REFRESHED',
                         message: 'Please update your local cookies'

@@ -71,6 +71,19 @@ enum NotificationType {
   SYSTEM
 }
 
+enum ChallengeType {
+  DSA
+  SQL
+  BACKEND
+  CONTEST
+}
+
+enum ChallengeDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 /**
  * * MODELS **
  */
@@ -176,6 +189,11 @@ model Post {
   Comment    Comment[]
   Reaction   Reaction[]
   ReportPost ReportPost[]
+
+  @@index([user_id])
+  @@index([topic_id])
+  @@index([created_at])
+  @@index([topic_id, created_at])
 }
 
 model PostSaved {
@@ -355,16 +373,17 @@ model Language {
 }
 
 model Challenge {
-  id           String   @id @default(uuid())
-  title        String   @db.VarChar(255)
+  id           String              @id @default(uuid())
+  title        String              @db.VarChar(255)
   description  String?
-  input        String?  @db.Text
-  output       String?  @db.Text
-  constraints  String?  @db.Text
-  difficulty   String?  @db.VarChar(20)
+  input        String?             @db.Text
+  output       String?             @db.Text
+  constraints  String?             @db.Text
+  difficulty   ChallengeDifficulty @default(EASY)
   time_limit   Int?
   memory_limit Int?
-  created_at   DateTime @default(now())
+  created_at   DateTime            @default(now())
+  type         ChallengeType       @default(DSA)
 
   Testcase    Testcase[]
   Submission  Submission[]
@@ -396,6 +415,13 @@ model Submission {
   Challenge Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
   User      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   Language  Language  @relation(fields: [language_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([challenge_id])
+  @@index([user_id, status])
+  @@index([challenge_id, status])
+  @@index([user_id, challenge_id])
+  @@index([submitted_at])
 }
 
 model Leaderboard {

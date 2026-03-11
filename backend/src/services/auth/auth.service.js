@@ -20,13 +20,27 @@ const AuthService = {
         const hashed = hashRefreshToken(refreshToken);
         const expiresAt = new Date(Date.now() + REFRESH_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
-        await prisma.refreshToken.create({
-            data: {
+        const device = deviceInfo ? JSON.stringify(deviceInfo) : "unknown";
+
+        await prisma.refreshToken.upsert({
+            where: {
+                user_id_device_info: {
+                    user_id: userId,
+                    device_info: device
+                }
+            },
+            update: {
+                hashed_token: hashed,
+                expires_at: expiresAt,
+                revoked: false,
+                revoked_at: null
+            },
+            create: {
                 user_id: userId,
                 hashed_token: hashed,
                 expires_at: expiresAt,
-                device_info: deviceInfo ? JSON.stringify(deviceInfo) : null,
-            },
+                device_info: device
+            }
         });
 
         return refreshToken;

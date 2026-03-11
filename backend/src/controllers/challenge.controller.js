@@ -12,7 +12,8 @@ const ChallengeController = {
 
     list: async (req, res) => {
         try {
-            const result = await ChallengeService.list(req.query);
+            const viewerId = req.user?.id || null
+            const result = await ChallengeService.list(req.query, viewerId);
             res.json(result);
         } catch (err) {
             res.status(500).json({ message: err.message });
@@ -21,7 +22,8 @@ const ChallengeController = {
 
     getById: async (req, res) => {
         try {
-            const challenge = await ChallengeService.getById(req.params.id);
+            const viewerId = req.user?.id || null
+            const challenge = await ChallengeService.getById(req.params.id, viewerId);
             if (!challenge) return res.status(404).json({ message: 'Challenge not found' });
             res.json(challenge);
         } catch (err) {
