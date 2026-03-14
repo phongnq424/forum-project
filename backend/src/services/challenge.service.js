@@ -52,7 +52,15 @@ const ChallengeService = {
             solvedIds = new Set(solvedData.map(s => s.challenge_id));
         } else {
             const [challengeList, totalCount] = await Promise.all([
-                prisma.challenge.findMany({ skip, take: limit, where, orderBy }),
+                prisma.challenge.findMany({
+                    skip, take: limit, where, orderBy, select: {
+                        id: true,
+                        title: true,
+                        difficulty: true,
+                        type: true,
+                        created_at: true
+                    }
+                }),
                 prisma.challenge.count({ where })
             ]);
             challenges = challengeList;

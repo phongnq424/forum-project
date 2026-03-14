@@ -1,6 +1,6 @@
 // socket/auth.js
 const { checkToken } = require('../middlewares/auth.middleware');
-const { AuthService } = require("../services/auth/auth.service");
+const { AuthService } = require("../services/auth.service");
 const cookie = require('cookie');
 
 module.exports = async (socket, next) => {

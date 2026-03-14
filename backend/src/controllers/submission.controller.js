@@ -10,7 +10,7 @@ const SubmissionController = {
             }
 
             const submission = await SubmissionService.submit({ challenge_id, user_id, code, language_id });
-            res.status(201).json({ submission });
+            res.status(201).json({ id: submission.id, status: submission.status });
         } catch (err) {
             console.error(err);
             res.status(500).json({ message: 'Internal server error' });

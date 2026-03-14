@@ -1,4 +1,4 @@
-const { AuthService } = require("../services/auth/auth.service");
+const { AuthService } = require("../services/auth.service");
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -116,7 +116,6 @@ const AuthController = {
             return res.status(200).json({ message: "Token refreshed" });
         } catch (error) {
             res.clearCookie('access_token', COOKIE_OPTIONS);
-            res.clearCookie('refresh_token', COOKIE_OPTIONS);
             return res.status(401).json({ error: error.message });
         }
     },

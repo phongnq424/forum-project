@@ -1,14 +1,14 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { sendMail } = require('../../config/mailer');
-const redisClient = require('../../config/redis');
+const { sendMail } = require('../config/mailer');
+const redisClient = require('../config/redis');
 const {
     generateAccessToken,
     generateRefreshToken,
     hashRefreshToken,
     getDeviceInfo
-} = require('./token.utils');
+} = require('../utils/token.utils');
 
 const prisma = new PrismaClient();
 const REFRESH_EXPIRY_DAYS = 30;

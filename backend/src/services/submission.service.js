@@ -19,7 +19,7 @@ const SubmissionService = {
         const job = {
             submissionId: submission.id,
             code,
-            time_limit: time_limit * 1000,
+            time_limit: time_limit,
             language: lang.code,
             testcases: testcases.map(t => ({
                 testcaseId: t.id
@@ -76,12 +76,8 @@ const SubmissionService = {
                         id: true,
                         email: true,
                         username: true,
-                        Profile: {
-                            select: {
-                                fullname: true,
-                                avatar: true
-                            }
-                        }
+                        fullname: true,
+                        avatar: true
                     }
                 },
                 Language: {
@@ -92,7 +88,8 @@ const SubmissionService = {
                     }
                 }
             }
-        })
+        }
+        )
     },
     listByUser: async (user_id) => {
         return await prisma.submission.findMany({
@@ -127,12 +124,8 @@ const SubmissionService = {
                         id: true,
                         email: true,
                         username: true,
-                        Profile: {
-                            select: {
-                                fullname: true,
-                                avatar: true
-                            }
-                        }
+                        fullname: true,
+                        avatar: true
                     }
                 },
                 Challenge: {
@@ -169,12 +162,9 @@ const SubmissionService = {
                         id: true,
                         email: true,
                         username: true,
-                        Profile: {
-                            select: {
-                                fullname: true,
-                                avatar: true
-                            }
-                        }
+
+                        fullname: true,
+                        avatar: true
                     }
                 },
                 Language: {
@@ -185,7 +175,8 @@ const SubmissionService = {
                     }
                 }
             }
-        })
+        }
+        )
     }
 
 };

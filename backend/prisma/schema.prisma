@@ -538,6 +538,7 @@ model RefreshToken {
 
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@unique([user_id, device_info])
   @@index([user_id, expires_at])
   @@index([user_id, revoked])
 }
