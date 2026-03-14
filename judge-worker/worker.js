@@ -45,6 +45,7 @@ async function processSubmission(job) {
     console.log(
         `[Worker] Processing submissionId=${job.submissionId}, language=${job.language}`
     );
+    console.log(job);
 
     const langConfig = languages[job.language];
     if (!langConfig) {
