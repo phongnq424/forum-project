@@ -3,11 +3,11 @@
     let {
         value = $bindable(),
         options = [],
-        label,
+        label = "",
         name = "",
         disabled = false,
         inline = false,
-        style = "", // Cho phép nhận style inline như bản cũ bạn dùng
+        style = "",
         class: className = "",
     } = $props();
 </script>

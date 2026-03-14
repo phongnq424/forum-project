@@ -188,6 +188,7 @@
         flex-direction: column;
         height: 100%;
         min-height: 0;
+        height: 100%;
         background: #16191f;
     }
     .chat-header {

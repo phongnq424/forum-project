@@ -75,7 +75,7 @@
 			<ChallengeList {challenges} {isLoading} {searchQuery} {activeTab} />
 		</div>
 
-		<ChallengeSidebar completed={1} total={totalChallenges} />
+		<ChallengeSidebar completed={0} total={totalChallenges} />
 	</div>
 </div>
 
@@ -96,8 +96,13 @@
 	}
 
 	@media (max-width: 900px) {
+		.page-container {
+			padding: 12px;
+		}
+
 		.main-layout {
 			grid-template-columns: 1fr;
+			gap: 20px; /* Giảm gap giữa list và sidebar khi xếp chồng */
 		}
 	}
 </style>

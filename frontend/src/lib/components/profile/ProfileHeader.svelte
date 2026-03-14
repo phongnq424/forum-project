@@ -185,4 +185,27 @@
         align-items: center;
         gap: 8px;
     }
+    @media (max-width: 600px) {
+        .profile-header-info {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .actions {
+            width: 100%;
+            display: flex;
+            gap: 8px;
+        }
+
+        .actions :global(button) {
+            flex: 1;
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        .actions :global(svg) {
+            width: 14px;
+            height: 14px;
+        }
+    }
 </style>

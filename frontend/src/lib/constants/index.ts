@@ -36,6 +36,10 @@ export const ENDPOINTS = {
         BASE: 'topics',
         BY_ID: (id: string) => `topics/${id}`,
     },
+    LANGUAGES: {
+        BASE: 'languages',
+        BY_ID: (id: string) => `languages/${id}`,
+    },
     REACTIONS: {
         TOGGLE: "/reactions/toggle",
         BY_POST: (postId: string) => `/reactions/post/${postId}`,
@@ -73,5 +77,13 @@ export const ENDPOINTS = {
         BASE: 'challenges',
         BY_ID: (id: string) => `challenges/${id}`,
 
+    },
+    SUBMISSIONS: {
+        BASE: "/submissions",
+        BY_ID: (id: string) => `/submissions/${id}`,
+        BY_CHALLENGE: (id: string) => `/submissions/challenge/${id}`,
+        BY_USER: (id: string) => `/submissions/user/${id}`,
+        BY_USER_AND_CHALLENGE: (userId: string, challengeId: string) =>
+            `/submissions/user/${userId}/challenge/${challengeId}`,
     }
 };

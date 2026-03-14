@@ -6,6 +6,7 @@
     import { postSaveService } from "$lib/services/postSaved.service.js";
     import Icon from "$lib/components/ui/Icon.svelte";
     import Dropdown from "$lib/components/ui/Dropdown.svelte";
+    import Button from "$lib/components/ui/Button.svelte";
     import { formatDistanceToNow } from "date-fns";
     import DiscussSidebar from "$lib/components/discuss/DiscussSidebar.svelte";
     import CommentSection from "$lib/components/discuss/CommentSection.svelte";
@@ -28,7 +29,9 @@
     let openEditModal = $state(false);
     let openDeleteModal = $state(false);
 
-    async function handleAfterEdit(updated: Post) {
+    async function handleAfterEdit(updated?: Post) {
+        if (!updated) return;
+
         await invalidateAll();
         openEditModal = false;
     }
@@ -116,12 +119,13 @@
             <main class="detail-layout">
                 <article>
                     <header class="post-header">
-                        <button
-                            class="icon-btn back-btn"
+                        <Button
+                            variant="secondary"
+                            size="sm"
                             onclick={() => history.back()}
                         >
-                            <Icon name="arrow-left" size={24} color="#d1d5db" />
-                        </button>
+                            <Icon name="arrow-left" />
+                        </Button>
 
                         <div class="author-meta">
                             <img

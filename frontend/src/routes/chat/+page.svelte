@@ -4,6 +4,7 @@
 	import ChatList from "$lib/components/chat/ChatList.svelte";
 	import ChatWindow from "$lib/components/chat/ChatWindow.svelte";
 	import ChatDetails from "$lib/components/chat/ChatDetail.svelte";
+	import Button from "$lib/components/ui/Button.svelte";
 	import Icon from "$lib/components/ui/Icon.svelte";
 	import { chatService } from "$lib/services/chat.service";
 
@@ -87,18 +88,21 @@
 		>
 			{#if activeChat}
 				<div class="mobile-header">
-					<button class="icon-btn" onclick={backToList}>
+					<Button variant="secondary" size="sm" onclick={backToList}>
 						<Icon name="arrow-left" size={24} />
-					</button>
+					</Button>
+
 					<div class="user-info">
-						<span class="name">{activeChat.name}</span>
+						<span class="name">{activeChat?.name}</span>
 					</div>
-					<button
-						class="icon-btn"
+
+					<Button
+						variant="secondary"
+						size="sm"
 						onclick={() => (currentView = "detail")}
 					>
-						<Icon name="share" size={24} />
-					</button>
+						<Icon name="user" size={24} />
+					</Button>
 				</div>
 
 				<ChatWindow {activeChat} />
@@ -118,10 +122,10 @@
 			class:mobile-hidden={currentView !== "detail"}
 		>
 			<div class="mobile-header">
-				<button class="icon-btn" onclick={backToChat}>
+				<Button variant="secondary" size="sm" onclick={backToChat}>
 					<Icon name="arrow-left" size={24} />
-				</button>
-				<span>Details</span>
+				</Button>
+				<span class="detail-title">Details</span>
 				<div style="width: 40px;"></div>
 			</div>
 			<ChatDetails {activeChat} />
@@ -131,7 +135,7 @@
 
 <style>
 	.chat-page {
-		height: calc(100vh - 80px);
+		height: 90dvh;
 		padding: 24px;
 		background: #0f1115;
 		display: flex;
@@ -202,7 +206,7 @@
 		}
 
 		.chat-container {
-			grid-template-columns: 1fr; /* Chỉ 1 cột */
+			grid-template-columns: 1fr;
 			border-radius: 0;
 			display: block;
 		}
@@ -233,18 +237,8 @@
 			padding: 10px 16px;
 			background: #1e222b;
 			border-bottom: 1px solid #2a2e36;
-			height: 60px;
+			height: 40px;
 			flex-shrink: 0;
-		}
-
-		.icon-btn {
-			background: transparent;
-			border: none;
-			color: #9ca3af;
-			cursor: pointer;
-			padding: 8px;
-			display: flex;
-			align-items: center;
 		}
 
 		.user-info {

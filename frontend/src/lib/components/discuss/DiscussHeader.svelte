@@ -105,4 +105,10 @@
         color: white;
         border-color: #6366f1;
     }
+    @media (max-width: 900px) {
+        .search-bar-wrapper {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
 </style>

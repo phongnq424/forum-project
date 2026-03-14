@@ -15,7 +15,7 @@ export interface Challenge {
     description?: string;
     input: string;
     output: string;
-    constraint: string;
+    constraints: string;
     time_limit: number;
     memory_limit: number;
     difficulty: ChallengeDifficulty;
@@ -23,6 +23,7 @@ export interface Challenge {
     score?: number;
     tags?: string[];
     isSolved?: boolean;
+    totalSubmissions?: number;
 }
 
 export interface PaginatedChallengeResponse {

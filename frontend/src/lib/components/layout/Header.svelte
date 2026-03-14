@@ -482,7 +482,11 @@
     }
 
     /* ===== RESPONSIVE ===== */
-
+    @media (max-width: 1180px) {
+        .greeting {
+            display: none;
+        }
+    }
     /* Tablet */
     @media (max-width: 1100px) {
         .main-nav {
@@ -532,6 +536,17 @@
 
         .brand {
             font-size: 16px;
+        }
+        .nav {
+            gap: 12px;
+        }
+
+        .auth {
+            gap: 8px;
+            margin-left: auto;
+        }
+        .join {
+            padding: 8px 12px;
         }
     }
 </style>

@@ -8,6 +8,7 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { api } from "$lib/services/api";
+	import { untrack } from "svelte";
 
 	let { data, children }: { data: App.PageData; children: any } = $props();
 
@@ -16,18 +17,32 @@
 		authState.initAuth(data.user);
 	}
 	onMount(() => {
-		socketService.connect();
-
-		const interval = setInterval(
-			() => {
-				api.post("/auth/refresh").catch(() => {
-					authState.clearAuth();
-				});
-			},
-			29 * 60 * 1000,
-		);
+		const handleRefresh = () => {
+			api.post("/auth/refresh").catch(() => {
+				authState.clearAuth();
+			});
+		};
+		handleRefresh();
+		const interval = setInterval(handleRefresh, 29 * 60 * 1000);
 
 		return () => clearInterval(interval);
+	});
+	$effect(() => {
+		// Chúng ta chỉ muốn theo dõi biến này
+		const user = authState.user;
+
+		// Dùng untrack để bao bọc các logic bên trong
+		untrack(() => {
+			if (user) {
+				// Chỉ kết nối nếu chưa có socket hoặc socket đã bị ngắt
+				if (!socketService.socket?.connected) {
+					console.log("Đang kết nối Socket...");
+					socketService.connect();
+				}
+			} else {
+				console.log("Đang ngắt kết nối Socket...");
+			}
+		});
 	});
 </script>
 
