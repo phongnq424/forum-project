@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+groq
+python-dotenv
+pydantic
+sentence-transformers
+openai
+google-generativeai
+huggingface_hub
+python-multipart
+Pillow
