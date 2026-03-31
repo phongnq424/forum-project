@@ -36,8 +36,10 @@
             <span class="dot">•</span>
 
             <div class="score-display">
-                <span class="label">Points:</span>
-                <span class="value">{challenge.score ?? 0}</span>
+                <span class="label">Your score:</span>
+                <span class="value"
+                    >{challenge.userStats.highestScore ?? 0}</span
+                >
             </div>
         </div>
     </div>

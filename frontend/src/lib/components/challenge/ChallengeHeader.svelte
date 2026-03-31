@@ -31,7 +31,6 @@
                 inline={true}
                 options={sortOptions}
                 bind:value={sortBy}
-                style="width: 180px;"
             />
         </div>
     </div>

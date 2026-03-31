@@ -8,7 +8,7 @@
     import Header from "$lib/components/challenge/ChallengeDetail/Header.svelte";
     import Editor from "$lib/components/challenge/ChallengeDetail/Editor.svelte";
     import Sidebar from "$lib/components/challenge/ChallengeDetail/Sidebar.svelte";
-
+    import { authState } from "$lib/states/auth.svelte";
     import { challengeService } from "$lib/services/challenge.service";
     import { languageService } from "$lib/services/language.service";
     import { submissionService } from "$lib/services/submission.service";
@@ -16,6 +16,7 @@
         Challenge,
         ChallengeDifficulty,
     } from "$lib/types/challenge.type";
+    import type { Leaderboard } from "$lib/types/leaderboard.type";
 
     const difficultyColor: Record<
         ChallengeDifficulty,
@@ -39,7 +40,36 @@
         message: string;
     } | null>(null);
 
+    let recentSubmissions = $state<any[]>([]);
+    let leaderboard = $state<Leaderboard[]>([]);
+
     const challengeId = $derived(page.params.id);
+
+    async function fetchRecentSubmissions() {
+        if (!authState.user?.id || !challengeId) {
+            recentSubmissions = [];
+            return;
+        }
+        try {
+            const res = await submissionService.listByUserAndChallenge(
+                authState.user.id,
+                challengeId,
+            );
+            recentSubmissions = res;
+        } catch (err) {
+            console.error("Lỗi fetch history:", err);
+        }
+    }
+
+    async function fetchLeaderboard() {
+        if (!challengeId) return;
+        try {
+            const res = await submissionService.getLeaderboard(challengeId);
+            leaderboard = res;
+        } catch (err) {
+            console.error("Lỗi fetch leaderboard:", err);
+        }
+    }
 
     async function fetchChallengeDetail(id: string) {
         isLoading = true;
@@ -48,6 +78,9 @@
             const res = await challengeService.getById(id);
             challenge = res;
             userCode = "";
+
+            fetchRecentSubmissions();
+            fetchLeaderboard();
         } catch (err) {
             error = "Không thể tải nội dung thử thách.";
         } finally {
@@ -57,7 +90,6 @@
     async function fetchLanguages() {
         try {
             const res = await languageService.listLanguages();
-            console.log(res);
             languages = res.map((lang) => ({
                 value: lang.id,
                 label: lang.name,
@@ -79,12 +111,17 @@
     });
 
     $effect(() => {
-        const controller = new AbortController();
-        const _id = challengeId;
-        if (challengeId) {
-            untrack(() => fetchChallengeDetail(challengeId));
+        const id = challengeId;
+        const userId = authState.user?.id;
+
+        if (id) {
+            untrack(() => {
+                fetchRecentSubmissions();
+                if (!challenge || challenge.id !== id) {
+                    fetchChallengeDetail(id);
+                }
+            });
         }
-        return () => controller.abort();
     });
 
     async function handleSubmit() {
@@ -106,7 +143,6 @@
                 message: "Submission sent! Judging...",
             };
 
-            console.log("Submission id:", res.id);
             pollSubmission(res.id);
         } catch (err) {
             submissionResult = {
@@ -133,6 +169,8 @@
                         status: sub.status === "ACCEPTED" ? "success" : "error",
                         message: sub.status,
                     };
+                    fetchRecentSubmissions();
+                    fetchLeaderboard();
 
                     clearInterval(interval);
                     return;
@@ -184,7 +222,11 @@
                         </div>
                     {/if}
                 </section>
-                <Sidebar {challenge} />
+                <Sidebar
+                    {challenge}
+                    {recentSubmissions}
+                    leaderboard={leaderboard || []}
+                />
             </main>
         {/if}
     </div>

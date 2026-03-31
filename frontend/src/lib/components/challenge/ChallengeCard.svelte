@@ -45,7 +45,7 @@
     </div>
 
     <div class="col score">
-        <span class="score-val">{challenge.score ?? 0}</span>
+        <span class="score-val">{challenge.point ?? 0}</span>
         <span class="score-label">pts</span>
     </div>
 </a>

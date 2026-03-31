@@ -6,6 +6,7 @@ import type {
     SubmitPayload,
     SubmitResponse
 } from "$lib/types/submission.type";
+import type { Leaderboard } from "$lib/types/leaderboard.type";
 
 export const submissionService = {
 
@@ -34,6 +35,14 @@ export const submissionService = {
     ): Promise<SubmissionListResponse> {
         return api.get(
             ENDPOINTS.SUBMISSIONS.BY_USER_AND_CHALLENGE(userId, challengeId),
+            { fetch: customFetch }
+        );
+    },
+
+    getLeaderboard(challengeId: string,
+        customFetch?: typeof fetch): Promise<Leaderboard[]> {
+        return api.get(
+            ENDPOINTS.LEADERBOARD.BY_CHALLENGE(challengeId),
             { fetch: customFetch }
         );
     }

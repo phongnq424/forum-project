@@ -2,6 +2,11 @@
 export type ChallengeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
 export type ChallengeType = 'DSA' | 'SQL' | 'BACKEND';
 
+export interface UserStats {
+    highestScore: number;
+    totalSubmissions: number;
+}
+
 export interface PaginationMetadata {
     total: number;
     page: number;
@@ -20,10 +25,11 @@ export interface Challenge {
     memory_limit: number;
     difficulty: ChallengeDifficulty;
     type: ChallengeType;
-    score?: number;
+    point?: number;
     tags?: string[];
     isSolved?: boolean;
     totalSubmissions?: number;
+    userStats?: UserStats | null;
 }
 
 export interface PaginatedChallengeResponse {
@@ -39,7 +45,7 @@ export interface ChallengePayload {
     constraint: string;
     time_limit: number;
     memory_limit: number;
+    point: number;
     difficulty: ChallengeDifficulty;
     type: ChallengeType;
-    score: 100;
 }

@@ -17,18 +17,11 @@
 		authState.initAuth(data.user);
 	}
 	onMount(() => {
-		const handleRefresh = () => {
-			api.post("/auth/refresh").catch(() => {
-				authState.clearAuth();
-			});
-		};
-		handleRefresh();
-		const interval = setInterval(handleRefresh, 29 * 60 * 1000);
-
-		return () => clearInterval(interval);
+		api.post("/auth/refresh").catch(() => {
+			console.log("Chưa đăng nhập hoặc Refresh hết hạn");
+		});
 	});
 	$effect(() => {
-		// Chúng ta chỉ muốn theo dõi biến này
 		const user = authState.user;
 
 		// Dùng untrack để bao bọc các logic bên trong
@@ -36,11 +29,8 @@
 			if (user) {
 				// Chỉ kết nối nếu chưa có socket hoặc socket đã bị ngắt
 				if (!socketService.socket?.connected) {
-					console.log("Đang kết nối Socket...");
 					socketService.connect();
 				}
-			} else {
-				console.log("Đang ngắt kết nối Socket...");
 			}
 		});
 	});

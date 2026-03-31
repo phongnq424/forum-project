@@ -85,5 +85,8 @@ export const ENDPOINTS = {
         BY_USER: (id: string) => `/submissions/user/${id}`,
         BY_USER_AND_CHALLENGE: (userId: string, challengeId: string) =>
             `/submissions/user/${userId}/challenge/${challengeId}`,
+    },
+    LEADERBOARD: {
+        BY_CHALLENGE: (id: string) => `/leaderboards/${id}`,
     }
 };
