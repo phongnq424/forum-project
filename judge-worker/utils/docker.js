@@ -76,6 +76,9 @@ export async function runInSandbox(
           "--EXPECTED_SQL_END--"
         ].join("\n");
       }
+      else {
+        stdinForRun = t.input ?? "";  // <- PHẢI THÊM CÁI NÀY!
+      }
 
       const res = await execInside(
         container,
