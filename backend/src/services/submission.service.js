@@ -12,13 +12,21 @@ const SubmissionService = {
         });
 
         const testcases = await prisma.testcase.findMany({ where: { challenge_id } });
-        const time_limit = (await prisma.challenge.findUnique({ where: { id: challenge_id } })).time_limit;
+        const challenge = await prisma.challenge.findUnique({
+            where: { id: challenge_id },
+            select: {
+                time_limit: true,
+                type: true
+            }
+        });
+        const { time_limit, type } = challenge;
         const lang = await prisma.language.findUnique({ where: { id: language_id } });
         if (!lang) throw new Error('Invalid language');
 
         const job = {
             submissionId: submission.id,
             code,
+            type,
             time_limit: time_limit,
             language: lang.code,
             testcases: testcases.map(t => ({
@@ -35,7 +43,7 @@ const SubmissionService = {
     },
 
     updateResult: async ({ submissionId, score, status }) => {
-        const submission = await prisma.submission.findUnique({ where: { id: submissionId } });
+        const submission = await prisma.submission.findUnique({ where: { id: submissionId }, include: { Language: true } });
         if (!submission) throw new Error('Submission not found');
 
         await prisma.submission.update({
@@ -47,13 +55,17 @@ const SubmissionService = {
             where: { challenge_id: submission.challenge_id, user_id: submission.user_id }
         });
 
+        const submissionTime = submission.created_at;
+
         if (!existing) {
             await prisma.leaderboard.create({
                 data: {
                     challenge_id: submission.challenge_id,
                     user_id: submission.user_id,
                     rank: 0,
-                    score // dùng score từ worker
+                    score,
+                    submitted_at: submissionTime,
+                    language: submission.Language?.code || 'unknown',
                 }
             });
         } else if (score > existing.score) {
@@ -118,26 +130,15 @@ const SubmissionService = {
         return await prisma.submission.findMany({
             where: { user_id, challenge_id },
             orderBy: { submitted_at: 'desc' },
-            include: {
-                User: {
-                    select: {
-                        id: true,
-                        email: true,
-                        username: true,
-                        fullname: true,
-                        avatar: true
-                    }
-                },
-                Challenge: {
-                    select: {
-                        id: true,
-                        title: true,
-                        time_limit: true
-                    }
-                },
+            select: {
+                id: true,
+                status: true,
+                score: true,
+                submitted_at: true,
+                language_id: true,
+
                 Language: {
                     select: {
-                        id: true,
                         name: true,
                         code: true
                     }

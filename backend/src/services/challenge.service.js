@@ -1,6 +1,15 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const challengeSelect = {
+    id: true,
+    title: true,
+    difficulty: true,
+    type: true,
+    point: true,
+    created_at: true
+};
+
 const ChallengeService = {
     create: async (data) => {
         return await prisma.challenge.create({ data });
@@ -43,7 +52,7 @@ const ChallengeService = {
                     distinct: ["challenge_id"],
                     select: { challenge_id: true }
                 }),
-                prisma.challenge.findMany({ skip, take: limit, where, orderBy }),
+                prisma.challenge.findMany({ skip, take: limit, where, orderBy, select: challengeSelect }),
                 prisma.challenge.count({ where })
             ]);
 
@@ -53,13 +62,7 @@ const ChallengeService = {
         } else {
             const [challengeList, totalCount] = await Promise.all([
                 prisma.challenge.findMany({
-                    skip, take: limit, where, orderBy, select: {
-                        id: true,
-                        title: true,
-                        difficulty: true,
-                        type: true,
-                        created_at: true
-                    }
+                    skip, take: limit, where, orderBy, select: challengeSelect
                 }),
                 prisma.challenge.count({ where })
             ]);
@@ -82,10 +85,34 @@ const ChallengeService = {
         };
     },
 
-    getById: async (id) => {
-        return await prisma.challenge.findUnique({
-            where: { id },
-        });
+    getById: async (id, viewerId) => {
+        const [challenge, userStats, acceptedSubmission] = await Promise.all([
+            prisma.challenge.findUnique({ where: { id } }),
+            viewerId ? prisma.submission.aggregate({
+                where: { challenge_id: id, user_id: viewerId },
+                _max: { score: true },
+                _count: { _all: true }
+            }) : null,
+            viewerId ? prisma.submission.findFirst({
+                where: {
+                    challenge_id: id,
+                    user_id: viewerId,
+                    status: "ACCEPTED"
+                },
+                select: { id: true }
+            }) : null,
+        ]);
+
+        if (!challenge) return null;
+
+        return {
+            ...challenge,
+            isSolved: !!acceptedSubmission,
+            userStats: viewerId ? {
+                highestScore: userStats?._max?.score || 0,
+                totalSubmissions: userStats?._count?._all || 0
+            } : null
+        };
     },
 
     update: async (id, data) => {

@@ -10,10 +10,14 @@ const { parseTestcases } = require('../utils/testcase-parser.util');
 
 const TestcaseService = {
     createFromZip: async (challenge_id, zipPath) => {
-
         const challengeDir = path.dirname(zipPath);
 
-        await fsp.mkdir(challengeDir, { recursive: true });
+        const challenge = await prisma.challenge.findUnique({
+            where: { id: challenge_id }
+        });
+        if (!challenge) throw new Error('Challenge not found');
+
+        const totalPoint = challenge.point;
 
         await new Promise((resolve, reject) => {
             fs.createReadStream(zipPath)
@@ -25,35 +29,27 @@ const TestcaseService = {
         await fsp.unlink(zipPath).catch(() => { });
 
         const files = await walkFiles(challengeDir);
-
-        if (!files.length)
-            throw new Error('Zip extracted but no files found');
-
         const testcases = parseTestcases(files);
 
-        if (!testcases.length)
-            throw new Error('No input/output pairs found');
+        if (!testcases.length) throw new Error('No input/output pairs found');
 
         const n = testcases.length;
-        const baseScore = Math.floor(100 / n);
+        const baseScore = Math.floor(totalPoint / n);
+        const extraScore = totalPoint % n;
 
-        const created = [];
+        const dataToInsert = testcases.map((tc, index) => ({
+            challenge_id,
+            input_path: tc.input_path,
+            expected_output_path: tc.expected_output_path,
+            schema_path: tc.schema_path || null,
+            score: index === n - 1 ? (baseScore + extraScore) : baseScore
+        }));
 
-        for (const tc of testcases) {
+        await prisma.testcase.createMany({
+            data: dataToInsert
+        });
 
-            const c = await prisma.testcase.create({
-                data: {
-                    challenge_id,
-                    input_path: tc.input_path,
-                    expected_output_path: tc.expected_output_path,
-                    score: baseScore
-                }
-            });
-
-            created.push(c);
-        }
-
-        return created;
+        return await prisma.testcase.findMany({ where: { challenge_id } });
     },
 
     listByChallenge: async (challenge_id) => {

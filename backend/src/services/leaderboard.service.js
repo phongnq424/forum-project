@@ -5,30 +5,25 @@ const LeaderboardService = {
     getByChallenge: async (challenge_id) => {
         const boards = await prisma.leaderboard.findMany({
             where: { challenge_id },
-            orderBy: { score: 'desc' },
+            orderBy: [
+                { score: 'desc' },
+                { submitted_at: 'asc' }
+            ],
             include: {
                 User: {
                     select: {
                         email: true,
                         username: true,
-                        Profile: {
-                            select: {
-                                avatar: true,
-                                fullname: true
-                            }
-                        }
+                        avatar: true,
+                        fullname: true
                     }
                 }
             }
         })
 
-        let rank = 1
-        let lastScore = null
 
-        for (const b of boards) {
-            if (lastScore !== null && b.score < lastScore) rank++
-            b.rank = rank
-            lastScore = b.score
+        for (let i = 0; i < boards.length; i++) {
+            boards[i].rank = i + 1
         }
 
         return boards

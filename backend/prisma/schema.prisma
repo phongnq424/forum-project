@@ -380,6 +380,7 @@ model Challenge {
   output       String?             @db.Text
   constraints  String?             @db.Text
   difficulty   ChallengeDifficulty @default(EASY)
+  point        Int?                @default(100)
   time_limit   Int?
   memory_limit Int?
   created_at   DateTime            @default(now())
@@ -398,6 +399,7 @@ model Testcase {
 
   input_path           String
   expected_output_path String
+  schema_path          String?
 
   Challenge Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
 }
@@ -429,7 +431,9 @@ model Leaderboard {
   challenge_id String
   user_id      String
   score        Int
+  language     String   @default("Not found")
   rank         Int
+  submitted_at DateTime @default(now())
   updated_at   DateTime @default(now())
 
   Challenge Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)

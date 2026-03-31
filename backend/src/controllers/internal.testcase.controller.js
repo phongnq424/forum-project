@@ -8,7 +8,6 @@ const InternalTestcaseController = {
             // UUID string → không parseInt
             const ids = (req.query.ids || '').split(',').map(s => s.trim()).filter(Boolean);
             if (!ids.length) return res.json({ testcases: [] });
-
             const dbCases = await TestcaseService.listByIds(ids);
 
             const testcases = await Promise.all(dbCases.map(async t => {
@@ -20,8 +19,12 @@ const InternalTestcaseController = {
                     console.error(`[TestcaseController] Failed reading expected_output for testcase ${t.id}:`, err.message);
                     return '';
                 });
+                const schema = t.schema_path ? await fs.readFile(path.resolve(t.schema_path), 'utf8').catch(err => {
+                    console.error(`[TestcaseController] Failed reading schema for testcase ${t.id}:`, err.message);
+                    return '';
+                }) : null;
                 if (!input && !expected_output) return null; // skip testcase rỗng
-                return { testcaseId: t.id, input, expected_output, score: t.score };
+                return { testcaseId: t.id, input, expected_output, score: t.score, schema };
             }));
 
             res.json({ testcases: testcases.filter(Boolean) });
@@ -35,7 +38,6 @@ const InternalTestcaseController = {
         try {
             const challengeId = req.params.challengeId; // giữ nguyên string nếu UUID
             const dbCases = await TestcaseService.listByChallenge(challengeId);
-
             const testcases = await Promise.all(dbCases.map(async t => {
                 const input = await fs.readFile(path.resolve(t.input_path), 'utf8').catch(err => {
                     console.error(`[TestcaseController] Failed reading input for testcase ${t.id}:`, err.message);
@@ -45,8 +47,12 @@ const InternalTestcaseController = {
                     console.error(`[TestcaseController] Failed reading expected_output for testcase ${t.id}:`, err.message);
                     return '';
                 });
+                const schema = t.schema_path ? await fs.readFile(path.resolve(t.schema_path), 'utf8').catch(err => {
+                    console.error(`[TestcaseController] Failed reading schema for testcase ${t.id}:`, err.message);
+                    return '';
+                }) : null;
                 if (!input && !expected_output) return null;
-                return { testcaseId: t.id, input, expected_output, score: t.score };
+                return { testcaseId: t.id, input, expected_output, score: t.score, schema };
             }));
 
             res.json({ testcases: testcases.filter(Boolean) });
