@@ -13,6 +13,11 @@ services:
       context: .
       dockerfile: sandbox/judge-python.Dockerfile
     image: judge-python
+  sandbox-sql:
+    build:
+      context: .
+      dockerfile: sandbox/judge-sql.Dockerfile
+    image: judge-sql
 
   judge-worker:
     build: .
@@ -20,6 +25,7 @@ services:
     depends_on:
       - sandbox-cpp
       - sandbox-python
+      - sandbox-sql
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

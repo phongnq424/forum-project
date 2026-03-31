@@ -37,7 +37,33 @@ function normalizeCase(t) {
         input: (t.input ?? "").toString().replace(/\r/g, ""),
         expected_output: (t.expected_output ?? "").toString().replace(/\r/g, ""),
         score: typeof t.score === "number" ? t.score : 1,
+        schema: (t.schema ?? "").toString().replace(/\r/g, "")
     };
+}
+
+function parseSqlAnalyst(stdout) {
+    // Lấy VM Step của User
+    const userStatsPart = stdout.split("__USER_STATS__")[1]?.split("__EXPECTED_STATS__")[0] || "";
+    const userSteps = parseInt(userStatsPart.match(/Virtual Machine Steps:\s+(\d+)/)?.[1] || "0");
+
+    // Lấy VM Step của câu mẫu (Tối ưu nhất)
+    const expectedStatsPart = stdout.split("__EXPECTED_STATS__")[1] || "";
+    const expectedSteps = parseInt(expectedStatsPart.match(/Virtual Machine Steps:\s+(\d+)/)?.[1] || "0");
+
+    // Tách kết quả thực thi
+    const parts = stdout.split("__EXPECTED_RESULT_START__");
+    const userResult = parts[0].trim();
+    const expectedResult = (parts[1] || "").split("__EXPECTED_RESULT_END__")[0].trim();
+
+    return { userResult, expectedResult, userSteps, expectedSteps };
+}
+
+function calculateSqlEfficiency(userSteps, expectedSteps, maxPerfScore) {
+    if (userSteps <= expectedSteps || expectedSteps === 0) return maxPerfScore;
+    const ratio = userSteps / expectedSteps;
+    if (ratio >= 5.0) return 0;
+    const factor = (5.0 - ratio) / (5.0 - 1.0);
+    return Math.floor(maxPerfScore * factor);
 }
 
 async function processSubmission(job) {
@@ -45,7 +71,7 @@ async function processSubmission(job) {
     console.log(
         `[Worker] Processing submissionId=${job.submissionId}, language=${job.language}`
     );
-    console.log(job);
+
 
     const langConfig = languages[job.language];
     if (!langConfig) {
@@ -82,20 +108,45 @@ async function processSubmission(job) {
         console.log(
             `[Worker] Testcase ${t.testcaseId}: stdout="${stdoutStr}", stderr="${r.stderr}", error=${r.error}`
         );
-        let result = "IE",
-            score = 0;
+        let result = "WA";
+        let currentTcScore = 0;
+        const maxScore = t.score || 0;
+        let finalStdoutForCompare = "";
+        let expectedForCompare = "";
+        let userSteps = 0;
+        let expectedSteps = 0;
+
+        if (job.language === 'sql') {
+            const parsed = parseSqlAnalyst(stdoutStr);
+            finalStdoutForCompare = parsed.userResult;
+            expectedForCompare = parsed.expectedResult;
+            userSteps = parsed.userSteps;
+            expectedSteps = parsed.expectedSteps;
+        } else {
+            finalStdoutForCompare = stdoutStr.trim();
+            expectedForCompare = t.expected_output.trim();
+        }
+
         if (!t.input && !t.expected_output) result = "IE";
         else if (r.error === "CE") result = "CE";
+        else if (r.error === "RE") result = "RE";
         else if (r.error === "TLE") result = "TLE";
         else if (r.error === "MLE") result = "MLE";
-        else if (compareOutputs(stdoutStr.trim(), t.expected_output.trim())) {
+        else if (compareOutputs(finalStdoutForCompare, expectedForCompare)) {
             result = "AC";
-            score = t.score;
-            totalScore += score;
+            if (job.language === 'sql') {
+                const correctnessScore = maxScore / 2;
+                const perfBonus = calculateSqlEfficiency(userSteps, expectedSteps, maxScore / 2);
+                currentTcScore = correctnessScore + perfBonus;
+            } else {
+                currentTcScore = maxScore;
+            }
+            totalScore += currentTcScore;
         } else result = "WA";
 
-        testcaseResults.push({ testcaseId: t.testcaseId, result, score });
+        testcaseResults.push({ testcaseId: t.testcaseId, result, score: currentTcScore });
     }
+
 
     let finalStatus = "ACCEPTED";
 

@@ -25,12 +25,18 @@ export async function runInSandbox(
         MemorySwap: 256 * 1024 * 1024,
         NanoCpus: 1000000000,
         PidsLimit: 64,
+        CapDrop: ["ALL"],
       },
     });
     await container.start();
 
     const pack = tar.pack();
     pack.entry({ name: langConfig.filename, mode: 0o777 }, code);
+    if (langConfig.filename === "query.sql") {
+      const t0 = testcases[0];
+      pack.entry({ name: "schema.sql" }, t0.schema || "");
+    }
+
     pack.finalize();
     await container.putArchive(pack, { path: "/sandbox" });
 
@@ -50,17 +56,36 @@ export async function runInSandbox(
       }
     }
 
+
     for (const t of testcases) {
+
+      if (langConfig.filename === "query.sql") {
+        const dataPack = tar.pack();
+        dataPack.entry({ name: "data.sql" }, t.input ?? "");
+        dataPack.finalize();
+
+        await container.putArchive(dataPack, { path: "/sandbox" });
+      }
+
+      let stdinForRun = "";
+
+      if (langConfig.filename === "query.sql") {
+        stdinForRun = [
+          "--EXPECTED_SQL_START--",
+          t.expected_output ?? "",
+          "--EXPECTED_SQL_END--"
+        ].join("\n");
+      }
+
       const res = await execInside(
         container,
         langConfig.runCmd,
-        t.input,
+        stdinForRun,
         timeoutMs
       );
 
       let error = null;
       if (res.timeout) error = "TLE";
-      // Docker Exit Code 137 thường là OOM Killer (MLE)
       else if (res.exitCode === 137) error = "MLE";
       else if (res.exitCode !== 0) error = "RE";
 
@@ -69,7 +94,7 @@ export async function runInSandbox(
   } catch (e) {
     throw e;
   } finally {
-    if (container) await container.remove({ force: true }).catch(() => {});
+    if (container) await container.remove({ force: true }).catch(() => { });
   }
   return results;
 }
@@ -86,15 +111,23 @@ async function execInside(container, cmd, stdin, timeoutMs) {
 
   let stdout = "",
     stderr = "";
+  const MAX_OUTPUT = 1024 * 1024;
+
   const outStream = new Writable({
     write(chunk, _, cb) {
-      stdout += chunk.toString();
+      if (stdout.length < MAX_OUTPUT) {
+        const remaining = MAX_OUTPUT - stdout.length;
+        stdout += chunk.toString().slice(0, remaining);
+      }
       cb();
     },
   });
   const errStream = new Writable({
     write(chunk, _, cb) {
-      stderr += chunk.toString();
+      if (stderr.length < MAX_OUTPUT) {
+        const remaining = MAX_OUTPUT - stderr.length;
+        stderr += chunk.toString().slice(0, remaining);
+      }
       cb();
     },
   });
@@ -120,7 +153,7 @@ async function execInside(container, cmd, stdin, timeoutMs) {
       setTimeout(() => {
         isTimeout = true;
         stream.destroy();
-        resolve({ exitCode: 124 }); // Mã lỗi timeout chuẩn Linux
+        resolve({ exitCode: 124 });
       }, timeoutMs);
     }),
   ]);
