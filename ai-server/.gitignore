@@ -19,3 +19,5 @@ Thumbs.db
 
 .cache/
 .huggingface/
+
+data/

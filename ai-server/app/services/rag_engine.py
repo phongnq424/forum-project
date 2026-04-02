@@ -1,18 +1,33 @@
 # app/services/rag_engine.py
-from groq import Groq
-from openai import OpenAI
+from groq import AsyncGroq
+from openai import AsyncOpenAI
 from core.config import settings
+from app.services.vector_db import search_relevant_context
 
-# Khởi tạo client 1 lần
-groq_client = Groq(api_key=settings.GROQ_API_KEY)
-openrouter_client = OpenAI(
+# Initialize clients once
+groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+openrouter_client = AsyncOpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=settings.OPENROUTER_API_KEY
 )
 
 async def get_chatbot_response(messages: list):
+    user_query = messages[-1]["content"] if messages else ""
+    context = search_relevant_context(user_query)
+    
+    system_prompt = f"""You are an intelligent AI assistant of the WindFlow system.
+    Please answer the user's question based on the following internal information:
+    ---
+    {context}
+    ---
+    If the internal information above does not contain the answer, respond using your general knowledge."""
+
+    messages = [
+        {"role": "system", "content": system_prompt}
+    ] + messages
+
     try:
-        response = groq_client.chat.completions.create(
+        response = await groq_client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=messages
         )
@@ -21,7 +36,7 @@ async def get_chatbot_response(messages: list):
         print(f"Groq Chat failed: {e}")
 
     try:
-        response = openrouter_client.chat.completions.create(
+        response = await openrouter_client.chat.completions.create(
             model="stepfun/step-3.5-flash:free", 
             messages=messages
         )
@@ -29,4 +44,4 @@ async def get_chatbot_response(messages: list):
     except Exception as e:
         print(f"OpenRouter failed: {e}")
 
-    return "Hệ thống đang bảo trì, mình sẽ quay lại sau ít phút!"
+    return "The system is currently under maintenance. Please try again in a few minutes!"

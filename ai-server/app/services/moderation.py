@@ -1,5 +1,5 @@
 # app/services/moderation.py
-from groq import Groq
+from groq import AsyncGroq
 from huggingface_hub import InferenceClient
 import google.generativeai as genai
 from PIL import Image
@@ -8,7 +8,7 @@ import io
 from core.config import settings
 
 # Khởi tạo client 1 lần ở ngoài (tiết kiệm tài nguyên)
-groq_client = Groq(api_key=settings.GROQ_API_KEY)
+groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
 hf_client = InferenceClient(token=settings.HF_TOKEN)
 genai.configure(api_key=settings.GEMINI_API_KEY)
 

@@ -9,3 +9,5 @@ google-generativeai
 huggingface_hub
 python-multipart
 Pillow
+chromadb
+langchain-text-splitters
