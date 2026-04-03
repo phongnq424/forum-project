@@ -10,4 +10,6 @@ huggingface_hub
 python-multipart
 Pillow
 chromadb
+pymupdf
 langchain-text-splitters
+python-docx

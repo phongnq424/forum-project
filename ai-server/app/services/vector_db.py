@@ -10,11 +10,11 @@ collection = chroma_client.get_or_create_collection(name="forum_knowledge")
 
 # 2. Cấu hình bộ cắt chữ (Tránh nhồi đoạn text quá dài)
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500, # Mỗi đoạn khoảng 500 ký tự
-    chunk_overlap=50 # Các đoạn gối lên nhau 50 ký tự để không mất ngữ cảnh
+    chunk_size=500, 
+    chunk_overlap=50 
 )
 
-def add_knowledge_to_db(text: str, source_name: str = "manual"):
+def add_knowledge_to_db(text: str,  metadata: dict):
     chunks = text_splitter.split_text(text)
     
     documents = []
@@ -24,9 +24,9 @@ def add_knowledge_to_db(text: str, source_name: str = "manual"):
     
     for chunk in chunks:
         documents.append(chunk)
-        embeddings.append(get_embedding(chunk)) # Biến chunk thành vector
-        metadatas.append({"source": source_name})
-        ids.append(str(uuid.uuid4())) # Tạo ID ngẫu nhiên
+        embeddings.append(get_embedding(chunk))
+        metadatas.append(metadata)
+        ids.append(str(uuid.uuid4()))
         
     # Lưu vào ChromaDB
     if documents:
@@ -39,7 +39,6 @@ def add_knowledge_to_db(text: str, source_name: str = "manual"):
     return len(chunks)
 
 def search_relevant_context(query: str, n_results: int = 3):
-    """Hàm để tìm kiếm thông tin khi User hỏi"""
     query_vector = get_embedding(query)
     
     results = collection.query(
@@ -50,5 +49,11 @@ def search_relevant_context(query: str, n_results: int = 3):
     if not results['documents'] or not results['documents'][0]:
         return ""
         
-    # Gộp các đoạn tìm được thành 1 chuỗi dài
-    return "\n---\n".join(results['documents'][0])
+    context_parts = []
+    # results['metadatas'] sẽ chứa list các dict metadata tương ứng
+    for doc, meta in zip(results['documents'][0], results['metadatas'][0]):
+        source = meta.get("source", "N/A")
+        page = meta.get("page", "N/A")
+        context_parts.append(f"--- Source: {source} (Page {page}) ---\nContent: {doc}")
+        
+    return "\n\n".join(context_parts)
