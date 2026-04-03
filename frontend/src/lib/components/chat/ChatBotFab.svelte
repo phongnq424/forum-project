@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { socketService } from "$lib/services/socket.svelte";
     import { AiService } from "$lib/services/ai.service";
     import { authState } from "$lib/states/auth.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
@@ -27,15 +26,12 @@
     onMount(async () => {
         try {
             const response = await AiService.getHistory();
-            if (response?) {
-                messages = response?.map((msg: any) => ({
-                    id: msg.id || `msg-${Date.now()}`,
-                    senderId:
-                        msg.senderId ||
-                        (msg.role === "user" ? authState.user?.id : "bot"),
-                    text: msg.content || msg.text,
-                    time: msg.createdAt
-                        ? new Date(msg.createdAt).toLocaleTimeString([], {
+            if (Array.isArray(response)) {
+                messages = response.map((msg: any) => ({
+                    senderId: msg.role === "user" ? authState.user?.id : "bot",
+                    text: msg.content,
+                    time: msg.timestamp
+                        ? new Date(msg.timestamp).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                           })
@@ -48,7 +44,7 @@
                 {
                     id: "start",
                     senderId: "bot",
-                    text: "Chào bạn! Mình là AI Assistant. Bạn cần mình hỗ trợ gì không?",
+                    text: "Hi! I'm WindFlow AI Assistant. You need any help?",
                     time: "AI",
                 },
             ];
@@ -73,7 +69,6 @@
             minute: "2-digit",
         });
 
-        // User gửi tin nhắn - Optimistic UI
         messages = [
             ...messages,
             {
@@ -84,19 +79,19 @@
             },
         ];
 
-        isTyping = true; // Bot bắt đầu "suy nghĩ"
+        isTyping = true;
 
         try {
             // Gọi API thật đến backend/AI service
-            const response = await AiService.sendMessage({ content: text });
+            const response = await AiService.sendMessage({ message: text });
 
-            if (response.content || response.content) {
+            if (response.reply) {
                 messages = [
                     ...messages,
                     {
                         id: `bot-${Date.now()}`,
                         senderId: "bot",
-                        text: response.content,
+                        text: response.reply,
                         time: "AI",
                     },
                 ];
@@ -108,7 +103,7 @@
                 {
                     id: `bot-${Date.now()}`,
                     senderId: "bot",
-                    text: "Xin lỗi, đã có lỗi khi gửi tin nhắn. Vui lòng thử lại!",
+                    text: "Sorry, something went wrong. Please try again later.",
                     time: "AI",
                 },
             ];

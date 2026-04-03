@@ -6,7 +6,7 @@ export const AiService = {
         return api.get(ENDPOINTS.AI.HISTORY);
     },
 
-    async sendMessage(payload: { content: string }): Promise<{ content: string }> {
+    async sendMessage(payload: { message: string }): Promise<{ reply: string }> {
         return api.post(ENDPOINTS.AI.CHAT, payload);
     },
 };
