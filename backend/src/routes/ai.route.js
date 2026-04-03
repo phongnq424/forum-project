@@ -6,5 +6,6 @@ const { AIController } = require('../controllers/ai.controller')
 const router = Router()
 
 router.post('/chat', rateLimitMiddleware, verifyToken, AIController.chat)
+router.get('/history', rateLimitMiddleware, verifyToken, AIController.getChatHistory)
 
 module.exports = router

@@ -1,4 +1,8 @@
 export const ENDPOINTS = {
+    AI: {
+        CHAT: 'ai/chat',
+        HISTORY: 'ai/history'
+    },
     AUTH: {
         LOGIN: 'auth/login',
         REGISTER: 'auth/register',

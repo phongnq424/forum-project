@@ -2,7 +2,7 @@ const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5005/';
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL;
 const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN;
 
 const AIService = {
@@ -20,11 +20,12 @@ const AIService = {
                     role: msg.role || (msg.is_from_ai ? 'assistant' : 'user'),
                     content: msg.content
                 }));
+            formattedHistory.push({ role: 'user', content: userQuestion });
             const resp = await axios.post(
-                `${AI_SERVICE_URL}ask`,
+                `${AI_SERVICE_URL}chat`,
                 {
-                    question: userQuestion,
-                    history: formattedHistory
+                    message: userQuestion,
+                    messages: formattedHistory
                 },
                 {
                     timeout: 60000,
@@ -32,7 +33,12 @@ const AIService = {
                 }
             );
 
-            const aiAnswer = resp.data.answer;
+            if (!resp.data.success) {
+                console.error('[AIService] AI Server returned error:', resp.data.error);
+                throw new Error(resp.data.error || 'AI Server failed processing');
+            }
+
+            const aiAnswer = resp.data.reply;
             await prisma.$transaction([
                 prisma.alMessage.create({
                     data: { user_id: userId, content: userQuestion, role: 'user' }
@@ -46,6 +52,23 @@ const AIService = {
         } catch (err) {
             console.error('[AIService] Error:', err.message);
             throw new Error('AI service unavailable');
+        }
+    },
+    getChatHistory: async (userId) => {
+        try {
+            const historyData = await prisma.alMessage.findMany({
+                where: { user_id: userId },
+                orderBy: { sent_at: 'asc' },
+                take: 50
+            });
+            return historyData.map(msg => ({
+                role: msg.role || (msg.is_from_ai ? 'assistant' : 'user'),
+                content: msg.content,
+                timestamp: msg.sent_at
+            }));
+        } catch (err) {
+            console.error('[AIService] Error fetching history:', err.message);
+            throw new Error('Failed to fetch chat history');
         }
     }
 };

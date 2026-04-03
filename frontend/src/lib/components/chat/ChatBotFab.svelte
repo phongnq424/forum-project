@@ -1,5 +1,6 @@
 <script lang="ts">
     import { socketService } from "$lib/services/socket.svelte";
+    import { AiService } from "$lib/services/ai.service";
     import { authState } from "$lib/states/auth.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
     import Input from "$lib/components/ui/Input.svelte";
@@ -7,6 +8,7 @@
     import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
     import { fade, fly } from "svelte/transition";
     import { page } from "$app/state";
+    import { onMount } from "svelte";
 
     // 1. Quản lý trạng thái ẩn/hiện
     const hiddenRoutes = ["/login", "/register", "/admin"];
@@ -16,23 +18,51 @@
     let isOpen = $state(false);
 
     // 2. Quản lý tin nhắn
-    let messages = $state<any[]>([
-        {
-            id: "start",
-            senderId: "bot",
-            text: "Chào bạn! Mình là AI Assistant. Bạn cần mình hỗ trợ gì về các thử thách không?",
-            time: "AI",
-        },
-    ]);
+    let messages = $state<any[]>([]);
     let newMessage = $state("");
     let isTyping = $state(false);
+    let isLoadingHistory = $state(true);
+
+    // Load history khi component mount
+    onMount(async () => {
+        try {
+            const response = await AiService.getHistory();
+            if (response?) {
+                messages = response?.map((msg: any) => ({
+                    id: msg.id || `msg-${Date.now()}`,
+                    senderId:
+                        msg.senderId ||
+                        (msg.role === "user" ? authState.user?.id : "bot"),
+                    text: msg.content || msg.text,
+                    time: msg.createdAt
+                        ? new Date(msg.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                          })
+                        : "AI",
+                }));
+            }
+        } catch (error) {
+            console.error("Failed to load chat history:", error);
+            messages = [
+                {
+                    id: "start",
+                    senderId: "bot",
+                    text: "Chào bạn! Mình là AI Assistant. Bạn cần mình hỗ trợ gì không?",
+                    time: "AI",
+                },
+            ];
+        } finally {
+            isLoadingHistory = false;
+        }
+    });
 
     // Toggle đóng mở
     function toggleChat() {
         isOpen = !isOpen;
     }
 
-    // 3. Logic gửi tin nhắn (Bắt chước kiểu Optimistic UI của bạn)
+    // 3. Logic gửi tin nhắn thật đến backend
     async function sendMessage() {
         if (!newMessage.trim()) return;
 
@@ -43,7 +73,7 @@
             minute: "2-digit",
         });
 
-        // User gửi tin nhắn
+        // User gửi tin nhắn - Optimistic UI
         messages = [
             ...messages,
             {
@@ -56,22 +86,35 @@
 
         isTyping = true; // Bot bắt đầu "suy nghĩ"
 
-        // Ở đây bạn có thể emit socket hoặc gọi API AI của bạn
-        // socketService.emit("ai:ask", { content: text });
+        try {
+            // Gọi API thật đến backend/AI service
+            const response = await AiService.sendMessage({ content: text });
 
-        // Giả lập bot trả lời sau 1s
-        setTimeout(() => {
+            if (response.content || response.content) {
+                messages = [
+                    ...messages,
+                    {
+                        id: `bot-${Date.now()}`,
+                        senderId: "bot",
+                        text: response.content,
+                        time: "AI",
+                    },
+                ];
+            }
+        } catch (error) {
+            console.error("Failed to send message:", error);
             messages = [
                 ...messages,
                 {
                     id: `bot-${Date.now()}`,
                     senderId: "bot",
-                    text: `Cảm ơn bạn đã hỏi về "${text}". Hiện tại mình đang được nâng cấp để trả lời thông minh hơn!`,
+                    text: "Xin lỗi, đã có lỗi khi gửi tin nhắn. Vui lòng thử lại!",
                     time: "AI",
                 },
             ];
+        } finally {
             isTyping = false;
-        }, 1000);
+        }
     }
 </script>
 
