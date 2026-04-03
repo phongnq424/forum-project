@@ -14,7 +14,7 @@ openrouter_client = AsyncOpenAI(
 async def get_chatbot_response(messages: list):
     user_query = messages[-1]["content"] if messages else ""
     context = search_relevant_context(user_query)
-
+    print(f"--- DEBUG CONTEXT FOUND ---\n{context}\n---------------------------")
     system_prompt = f"""You are the WindFlow Advanced AI Assistant. 
         You are provided with specialized internal context (IT theory, technical docs, and internal regulations).
 
@@ -24,7 +24,7 @@ async def get_chatbot_response(messages: list):
         ---
 
         STRICT INSTRUCTIONS:
-        1. LANGUAGE: Respond in the same language as the user's query (usually Vietnamese).
+        1. LANGUAGE: Respond in the same language as the user's query.
         2. TECHNICAL ACCURACY: For IT theory (TYPE: technical), prioritize the provided context. Use professional terminology.
         3. CITATION: If the information comes from the context, you MUST cite it at the end of the paragraph. 
         Example: [Source: Sei.pdf, Page 5] or [Source: network_theory.docx].

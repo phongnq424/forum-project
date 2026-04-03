@@ -30,7 +30,10 @@ def ingest_all(directory="data/raw_docs"):
                 metadata = {
                     "source": file,
                     "page": item["page"],
-                    "category": category # Quan trọng để AI phân loại kiến thức
+                    "category": category
                 }
                 add_knowledge_to_db(item["text"], metadata)
     print("Done!")
+
+if __name__ == "__main__":
+    ingest_all("data/raw_docs")

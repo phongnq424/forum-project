@@ -1,7 +1,9 @@
 # app/api/endpoints.py
 import os
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Header
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends
 from pydantic import BaseModel
 from typing import List, Dict
 
@@ -11,7 +13,7 @@ from app.services.moderation import moderate_text, moderate_image
 from core.config import settings
 
 router = APIRouter()
-    
+security = HTTPBearer()
 
 # Định nghĩa cấu trúc dữ liệu chặt chẽ
 class ChatPayload(BaseModel):
@@ -30,8 +32,8 @@ class ImageModResponse(BaseModel):
     error: str = ""
 
 @router.post("/chat")
-async def chat_endpoint(payload: ChatPayload, x_api_key: str = Header(None)):
-    if x_api_key != settings.AI_SERVER_SECRET_KEY:
+async def chat_endpoint(payload: ChatPayload, auth: HTTPAuthorizationCredentials = Depends(security)):
+    if auth.credentials != settings.AI_SERVER_SECRET_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
     mod_result = await moderate_text(payload.message)
     if not mod_result.get("is_safe"):
@@ -43,8 +45,8 @@ async def chat_endpoint(payload: ChatPayload, x_api_key: str = Header(None)):
         return ChatResponse(success=False, error=f"AI Engine Error: {str(e)}")
 
 @router.post("/moderate/image")
-async def moderate_image_endpoint(file: UploadFile = File(...), x_api_key: str = Header(None)):
-    if x_api_key != settings.AI_SERVER_SECRET_KEY:
+async def moderate_image_endpoint(file: UploadFile = File(...), auth: HTTPAuthorizationCredentials = Depends(security)):
+    if auth.credentials != settings.AI_SERVER_SECRET_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     if not file.content_type.startswith("image/"):

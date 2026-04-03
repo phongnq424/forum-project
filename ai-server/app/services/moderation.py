@@ -1,6 +1,6 @@
 # app/services/moderation.py
 from groq import AsyncGroq
-from huggingface_hub import InferenceClient
+from huggingface_hub import AsyncInferenceClient
 import google.generativeai as genai
 from PIL import Image
 import io
@@ -9,12 +9,12 @@ from core.config import settings
 
 # Khởi tạo client 1 lần ở ngoài (tiết kiệm tài nguyên)
 groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-hf_client = InferenceClient(token=settings.HF_TOKEN)
+hf_client = AsyncInferenceClient(token=settings.HF_TOKEN)
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
 async def moderate_text(text: str):
     try:
-        completion = groq_client.chat.completions.create(
+        completion = await groq_client.chat.completions.create(
             model="openai/gpt-oss-safeguard-20b",
             messages=[{"role": "user", "content": text}]
         )
@@ -27,7 +27,7 @@ async def moderate_text(text: str):
         print(f"Groq Text Mod failed: {e}. Fallback to HF...")
 
     try:
-        response = hf_client.text_classification(text, model="unitary/toxic-bert")
+        response = await hf_client.text_classification(text, model="unitary/toxic-bert")
         is_toxic = any(r['label'] == 'toxic' and r['score'] > 0.7 for r in response)
         return {"is_safe": not is_toxic, "source": "hf_toxic_bert"}
         
@@ -41,7 +41,7 @@ async def moderate_image(image_bytes: bytes):
         model = genai.GenerativeModel('gemini-1.5-flash')
         # Chuyển bytes thành ảnh cho Gemini hiểu
         img = Image.open(io.BytesIO(image_bytes)) 
-        response = model.generate_content(["Is this image safe? Answer 'safe' or 'unsafe'.", img])
+        response = await model.generate_content(["Is this image safe? Answer 'safe' or 'unsafe'.", img])
         
         if "unsafe" in response.text.lower():
             return False
@@ -51,7 +51,7 @@ async def moderate_image(image_bytes: bytes):
         
         try:
             # Fallback gọi model HF kiểm duyệt ảnh
-            response = hf_client.image_classification(image_bytes, model="Falconsai/nsfw_image_detection")
+            response = await hf_client.image_classification(image_bytes, model="Falconsai/nsfw_image_detection")
             # response trả về list dict, vd: [{'label': 'nsfw', 'score': 0.9}, ...]
             is_nsfw = any(r['label'] == 'nsfw' and r['score'] > 0.6 for r in response)
             return not is_nsfw

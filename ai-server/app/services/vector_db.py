@@ -38,7 +38,7 @@ def add_knowledge_to_db(text: str,  metadata: dict):
         )
     return len(chunks)
 
-def search_relevant_context(query: str, n_results: int = 3):
+def search_relevant_context(query: str, n_results: int = 6):
     query_vector = get_embedding(query)
     
     results = collection.query(
@@ -48,12 +48,20 @@ def search_relevant_context(query: str, n_results: int = 3):
     
     if not results['documents'] or not results['documents'][0]:
         return ""
-        
-    context_parts = []
+    internal_info = []
+    tech_info = []
     # results['metadatas'] sẽ chứa list các dict metadata tương ứng
     for doc, meta in zip(results['documents'][0], results['metadatas'][0]):
         source = meta.get("source", "N/A")
-        page = meta.get("page", "N/A")
-        context_parts.append(f"--- Source: {source} (Page {page}) ---\nContent: {doc}")
-        
-    return "\n\n".join(context_parts)
+        category = meta.get("category", "unknown")
+        content = f"[Source: {source}] {doc}"
+        if "internal" in category:
+            internal_info.append(content)
+        else:
+            tech_info.append(content)
+    
+    context_output = "=== THÔNG TIN NỘI BỘ / DỰ ÁN (ƯU TIÊN) ===\n"
+    context_output += "\n".join(internal_info) if internal_info else "Not found internal info."        
+    context_output += "\n\n=== KIẾN THỨC KỸ THUẬT / LÝ THUYẾT ===\n"
+    context_output += "\n".join(tech_info) if tech_info else "Not found technical info."
+    return context_output
