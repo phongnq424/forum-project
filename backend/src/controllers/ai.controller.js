@@ -17,7 +17,7 @@ const AIController = {
         try {
             const userId = req.user.id
             const history = await AIService.getChatHistory(userId)
-            res.json({ history })
+            res.json(history)
         } catch (error) {
             res.status(500).json({ error: error.message })
         }
