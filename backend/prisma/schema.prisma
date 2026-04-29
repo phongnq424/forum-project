@@ -84,6 +84,20 @@ enum ChallengeDifficulty {
   HARD
 }
 
+enum ReportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ReportSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 /**
  * * MODELS **
  */
@@ -460,11 +474,15 @@ model Notification {
 }
 
 model Report {
-  id          String   @id @default(uuid())
+  id          String         @id @default(uuid())
   reporter_id String
+  title       String?        @db.VarChar(255)
   reason      String
-  created_at  DateTime @default(now())
-  is_deleted  Boolean  @default(false)
+  status      ReportStatus   @default(OPEN)
+  severity    ReportSeverity @default(MEDIUM)
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @default(now()) @updatedAt
+  is_deleted  Boolean        @default(false)
 
   Reporter      User            @relation("reporter", fields: [reporter_id], references: [id], onDelete: Cascade)
   ReportUser    ReportUser?
@@ -472,6 +490,10 @@ model Report {
   ReportComment ReportComment?
   ReportReply   ReportReply[]
   ReportMessage ReportMessage[]
+
+  @@index([status])
+  @@index([severity])
+  @@index([created_at])
 }
 
 model ReportUser {

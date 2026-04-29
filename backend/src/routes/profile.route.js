@@ -8,9 +8,9 @@ const { cache } = require("../middlewares/cache.middleware");
 const router = Router();
 
 router.get('/me', verifyToken, ProfileController.getMyProfile)
+router.get('/search/all', cache, ProfileController.searchUsers)
+router.get('/', ProfileController.listProfiles)
 router.get('/:userId', verifyTokenOptional, ProfileController.getProfileByUserId)
 router.put('/me', rateLimitMiddleware, verifyToken, ProfileController.updateMyProfile)
-router.get('/', ProfileController.listProfiles)
-router.get('/search/all', cache, ProfileController.searchUsers)
 
 module.exports = router;

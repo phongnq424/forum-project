@@ -23,6 +23,7 @@ const CommentRatesRoutes = require("./commentRate.route.js");
 const InternalTestcaseRoutes = require("./internal.testcase.route.js");
 const ConversationRoutes = require("./conversation.route.js");
 const NotificationRoutes = require("./notification.route.js");
+const ReportRoutes = require("./report.route.js");
 
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
@@ -46,5 +47,6 @@ router.use("/comment-rates", CommentRatesRoutes);
 router.use("/internal", InternalTestcaseRoutes);
 router.use("/conversations", ConversationRoutes);
 router.use("/notifications", NotificationRoutes);
+router.use("/reports", ReportRoutes);
 
 module.exports = router;

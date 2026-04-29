@@ -1,4 +1,3 @@
-const { get } = require('../routes/ai.route')
 const { AIService } = require('../services/ai.service')
 
 const AIController = {

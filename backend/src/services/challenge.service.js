@@ -7,7 +7,9 @@ const challengeSelect = {
     difficulty: true,
     type: true,
     point: true,
-    created_at: true
+    created_at: true,
+    time_limit: true,
+    memory_limit: true
 };
 
 const ChallengeService = {
@@ -52,7 +54,20 @@ const ChallengeService = {
                     distinct: ["challenge_id"],
                     select: { challenge_id: true }
                 }),
-                prisma.challenge.findMany({ skip, take: limit, where, orderBy, select: challengeSelect }),
+                prisma.challenge.findMany({
+                    skip,
+                    take: limit,
+                    where,
+                    orderBy,
+                    select: {
+                        ...challengeSelect,
+                        _count: {
+                            select: {
+                                Submission: true
+                            }
+                        }
+                    }
+                }),
                 prisma.challenge.count({ where })
             ]);
 
@@ -71,7 +86,8 @@ const ChallengeService = {
         }
         const data = challenges.map(challenge => ({
             ...challenge,
-            isSolved: solvedIds.has(challenge.id)
+            isSolved: solvedIds.has(challenge.id),
+            totalSubmissions: challenge._count?.Submission || 0
         }));
 
         return {

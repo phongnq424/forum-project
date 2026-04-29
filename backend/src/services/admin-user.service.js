@@ -3,9 +3,11 @@ const prisma = new PrismaClient()
 
 const AdminUserService = {
     listAll: async function (query) {
-        var take = Number(query.limit) || 50
-        var skip = Number(query.offset) || 0
-        var where = {}
+        const page = Number(query.page) || 1
+        const limit = Number(query.limit) || 10
+        const skip = (page - 1) * limit
+
+        const where = {}
 
         if (query.search) {
             where.OR = [
@@ -18,21 +20,34 @@ const AdminUserService = {
             where.status = query.status
         }
 
-        return prisma.user.findMany({
-            where,
-            skip,
-            take,
-            select: {
-                id: true,
-                username: true,
-                email: true,
-                role: true,
-                status: true, // Thêm status để admin dễ quản lý
-                is_deleted: true,
-                created_at: true
-            },
-            orderBy: { created_at: 'desc' }
-        })
+        const [users, total] = await Promise.all([
+            prisma.user.findMany({
+                where,
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    username: true,
+                    email: true,
+                    role: true,
+                    status: true,
+                    is_deleted: true,
+                    created_at: true
+                },
+                orderBy: { created_at: 'desc' }
+            }),
+            prisma.user.count({ where })
+        ])
+
+        return {
+            data: users,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        }
     },
 
     // Admin update có thể đổi cả role và status

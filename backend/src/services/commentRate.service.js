@@ -45,6 +45,27 @@ const CommentRateService = {
             }
         })
     },
+    getAllRatingsByComment: async (commentId) => {
+        return prisma.comment_Rate.findMany({
+            where: {
+                comment_id: commentId,
+                Comment: {
+                    is_deleted: false
+                }
+            },
+            include: {
+                User: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                        fullname: true
+                    }
+                }
+            },
+            orderBy: { created_at: 'desc' }
+        })
+    },
 
     // Lấy tổng, trung bình rating của comment
     getCommentStats: async (commentId) => {
