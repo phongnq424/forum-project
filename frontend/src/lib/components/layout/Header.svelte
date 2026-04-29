@@ -9,15 +9,18 @@
 
     let { data }: { data?: App.PageData } = $props();
 
-    // Quản lý menu tập trung
-    const navItems = [
+    let currentUser = $derived(authState.user || data?.user);
+
+    // Quản lý menu tập trung - Dynamic based on user role
+    let navItems = $derived([
         { name: "Discuss", href: "/discuss" },
         { name: "Challenges", href: "/challenges" },
         { name: "Chat", href: "/chat" },
         { name: "Contact", href: "/contact" },
-    ];
-
-    let currentUser = $derived(authState.user || data?.user);
+        ...(currentUser?.role === "ADMIN"
+            ? [{ name: "Admin", href: "/admin" }]
+            : []),
+    ]);
 
     // Avatar logic gọn gàng hơn
     let avatarUrl = $derived(currentUser?.avatar || null);
@@ -146,6 +149,17 @@
                         >
                             <Icon name="bookmark" size={16} /> Saved Posts
                         </a>
+                        {#if currentUser?.role === "ADMIN"}
+                            <div
+                                style="height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0;"
+                            ></div>
+                            <a
+                                href="/admin"
+                                onclick={() => (isUserMenuOpen = false)}
+                            >
+                                <Icon name="settings" size={16} /> Admin Panel
+                            </a>
+                        {/if}
                         <div
                             style="height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0;"
                         ></div>

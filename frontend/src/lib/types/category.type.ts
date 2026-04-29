@@ -1,3 +1,5 @@
+import type { Pagination } from "./common.type";
+
 export interface Topic {
     id: string;
     name: string;
@@ -7,16 +9,11 @@ export interface Category {
     id: string;
     name: string;
     description: string;
-    is_deleted: boolean; // bắt buộc vì BE trả
+    is_deleted: boolean;
+    created_at: string;
     Topic: Topic[];
 }
 
-export interface Pagination {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-}
 
 export interface CategoryListResponse {
     data: Category[];

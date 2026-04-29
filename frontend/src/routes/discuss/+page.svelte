@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { onMount } from "svelte";
 	import { postService } from "$lib/services/post.service";
 	import { untrack } from "svelte";
+	import type { PageData } from "./$types";
 
-	// Import Components
 	import PostCard from "$lib/components/ui/PostCard.svelte";
 	import Loading from "$lib/components/ui/Loading.svelte";
 	import Icon from "$lib/components/ui/Icon.svelte";
@@ -16,16 +15,24 @@
 	type TrendingPost = { id: number; title: string; author: string };
 	type SuggestedAuthor = { name: string; role: string };
 
-	let { data } = $props();
-	let serverPosts = $derived(data.initialPosts?.data || []);
+	let { data }: { data: PageData } = $props();
+
+	let serverPosts = $derived(data.initialPosts.data ?? []);
 	let clientPosts = $state<any[] | null>(null);
 	let loading = $state(false);
+	let error = $state<string | null>(null);
 	let posts = $derived(clientPosts ?? serverPosts);
 
 	let activeCategory = $state("For You");
 	let searchQuery = $state("");
 	let sortBy = $state("Newest");
 	let isCreateModalOpen = $state(false);
+
+	// Abort controller để cancel request cũ
+	let abortController: AbortController | null = null;
+	let retryCount = $state(0);
+	const MAX_RETRIES = 2;
+	const RETRY_DELAY = 1000; // 1s
 
 	// 2. DATA CỨNG CHO SIDEBAR (Giữ nguyên)
 	const sortOptions: SortOption[] = [
@@ -57,8 +64,21 @@
 		{ name: "Tech Lead", role: "Ex-Google Engineer" },
 	];
 
-	async function fetchPosts(query: string, sort: string, category: string) {
+	async function fetchPosts(
+		query: string,
+		sort: string,
+		category: string,
+		attempt = 0,
+	) {
+		// Cancel previous request để avoid race condition
+		if (abortController) {
+			abortController.abort();
+		}
+		abortController = new AbortController();
+
 		loading = true;
+		error = null;
+
 		try {
 			let payload: Parameters<typeof postService.listPosts>[0] = {
 				page: 1,
@@ -75,10 +95,47 @@
 				if (found) payload.category_id = found.id;
 			}
 
-			const res = await postService.listPosts(payload);
-			clientPosts = res?.data || []; // Cập nhật state Client
-		} catch (error) {
-			console.error("Error fetching posts:", error);
+			// Timeout 6s
+			const timeoutPromise = new Promise((_, reject) => {
+				setTimeout(() => reject(new Error("Request timeout")), 6000);
+			});
+
+			type PostListResult = PageData["initialPosts"];
+
+			const res = await Promise.race<PostListResult>([
+				postService.listPosts(payload),
+				new Promise<PostListResult>((_, reject) => {
+					setTimeout(
+						() => reject(new Error("Request timeout")),
+						6000,
+					);
+				}),
+			]);
+
+			clientPosts = res.data ?? [];
+			retryCount = 0; // Reset retry count on success
+		} catch (err: any) {
+			// Ignore abort errors (user changed filter while pending)
+			if (err.name === "AbortError") {
+				return;
+			}
+
+			console.error(
+				`Error fetching posts (attempt ${attempt + 1}):`,
+				err,
+			);
+
+			// Retry logic - exponential backoff
+			if (attempt < MAX_RETRIES) {
+				const delayMs = RETRY_DELAY * Math.pow(2, attempt);
+				console.log(`Retrying in ${delayMs}ms...`);
+
+				await new Promise((resolve) => setTimeout(resolve, delayMs));
+				return fetchPosts(query, sort, category, attempt + 1);
+			}
+
+			// Show user-friendly error message
+			error = "Failed to load posts. Please try again.";
 			clientPosts = [];
 		} finally {
 			loading = false;
@@ -102,9 +159,15 @@
 		const timeout = setTimeout(() => {
 			// Dùng untrack để chặn Svelte theo dõi biến bên trong hàm này
 			untrack(() => fetchPosts(q, s, c));
-		}, 300);
+		}, 300); // Debounce 300ms
 
-		return () => clearTimeout(timeout);
+		return () => {
+			clearTimeout(timeout);
+			// Cleanup: cancel pending request khi component unmount
+			if (abortController) {
+				abortController.abort();
+			}
+		};
 	});
 </script>
 
@@ -120,14 +183,28 @@
 
 	<main class="discuss-layout">
 		<section class="feed-section">
-			{#if loading}
+			{#if error}
+				<div class="error-alert">
+					<Icon name="help-circle" size={20} color="#ef4444" />
+					<div class="error-content">
+						<p class="error-text">{error}</p>
+						<button
+							class="retry-btn"
+							onclick={() =>
+								fetchPosts(searchQuery, sortBy, activeCategory)}
+						>
+							Retry
+						</button>
+					</div>
+				</div>
+			{:else if loading}
 				<Loading message="Loading posts..." size="md" />
-			{:else}
+			{:else if posts.length > 0}
 				{#each posts as post}
 					<PostCard {post} />
-				{:else}
-					<div class="empty-state">No posts yet.</div>
 				{/each}
+			{:else}
+				<div class="empty-state">No posts yet.</div>
 			{/if}
 		</section>
 
@@ -163,6 +240,44 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
+	}
+	.error-alert {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		padding: 16px;
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: 12px;
+		color: #fca5a5;
+	}
+	.error-content {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+	.error-text {
+		margin: 0;
+		font-size: 14px;
+		font-weight: 500;
+	}
+	.retry-btn {
+		padding: 8px 16px;
+		background: rgba(239, 68, 68, 0.2);
+		border: 1px solid rgba(239, 68, 68, 0.4);
+		border-radius: 8px;
+		color: #fca5a5;
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 0.2s;
+	}
+	.retry-btn:hover {
+		background: rgba(239, 68, 68, 0.3);
+		border-color: rgba(239, 68, 68, 0.6);
 	}
 	.empty-state {
 		color: #6b7280;

@@ -1,3 +1,5 @@
+import type { Pagination } from "./common.type";
+
 export interface TopicCategory {
     id: string;
     name: string;
@@ -12,17 +14,19 @@ export interface Topic {
     Category: TopicCategory;
 }
 
-export interface Pagination {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-}
-
 export interface TopicListResponse {
     data: Topic[];
     pagination: Pagination;
 }
+
+export interface TopicListParams {
+    page?: number;
+    limit?: number;
+    category_id?: string;
+    q?: string;
+    sortBy?: string;
+}
+
 
 export interface TopicDetailResponse {
     data: Topic;

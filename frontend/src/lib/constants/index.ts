@@ -23,7 +23,9 @@ export const ENDPOINTS = {
         BASE: 'users',
         ME: 'users/me',
         CHANGE_PASSWORD: 'users/me/password',
-        BY_ID: (id: string) => `users/${id}`
+        BY_ID: (id: string) => `users/${id}`,
+        ADMIN_USERS: "/users/admin/users",
+        ADMIN_BY_ID: (id: string) => `/users/admin/users/${id}`
     },
     POSTS: {
         BASE: 'posts',
@@ -92,5 +94,9 @@ export const ENDPOINTS = {
     },
     LEADERBOARD: {
         BY_CHALLENGE: (id: string) => `/leaderboards/${id}`,
-    }
+    },
+    REPORTS: {
+        BASE: "reports",
+        BY_ID: (id: string) => `reports/${id}`
+    },
 };

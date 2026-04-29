@@ -1,9 +1,4 @@
-export interface PaginationMetadata {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-}
+import type { Pagination } from "./common.type";
 
 export interface Post {
     id: string;
@@ -46,7 +41,7 @@ export interface Post {
 
 export interface PaginatedPostResponse {
     data: Post[];
-    pagination: PaginationMetadata;
+    pagination: Pagination;
 }
 
 export interface PostCreatePayload {

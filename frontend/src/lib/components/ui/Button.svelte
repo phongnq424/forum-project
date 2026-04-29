@@ -4,18 +4,20 @@
     type Props = HTMLButtonAttributes & {
         variant?: "primary" | "secondary" | "ghost" | "danger";
         size?: "sm" | "md";
+        children?: () => any;
     };
 
     let {
         variant = "primary",
         size = "md",
         type = "button",
+        children,
         ...rest
     }: Props = $props();
 </script>
 
 <button class={`btn ${variant} ${size}`} {type} {...rest}>
-    <slot />
+    {@render children?.()}
 </button>
 
 <style>

@@ -30,6 +30,7 @@ export interface Challenge {
     isSolved?: boolean;
     totalSubmissions?: number;
     userStats?: UserStats | null;
+    created_at: string;
 }
 
 export interface PaginatedChallengeResponse {
@@ -42,7 +43,7 @@ export interface ChallengePayload {
     description?: string;
     input: string;
     output: string;
-    constraint: string;
+    constraints: string;
     time_limit: number;
     memory_limit: number;
     point: number;
