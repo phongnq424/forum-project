@@ -2,6 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const { emitToPost } = require("../socket/emitter");
 const { NotificationService } = require("./notification.service");
+const { AIService } = require("./ai.service");
 
 const userSelect = {
   id: true,
@@ -21,6 +22,8 @@ const CommentService = {
       throw new Error("EMPTY_COMMENT");
     }
 
+    await AIService.assertTextSafe(commentDetail);
+
     const post = await prisma.post.findFirst({
       where: { id: postId, is_deleted: false },
       select: { id: true, user_id: true },
@@ -28,8 +31,8 @@ const CommentService = {
 
     if (!post) throw new Error("POST_NOT_FOUND");
 
-    // validate parent comment (nếu có)
     let parentComment = null;
+
     if (parentCommentId) {
       parentComment = await prisma.comment.findFirst({
         where: { id: parentCommentId, is_deleted: false },
@@ -53,35 +56,30 @@ const CommentService = {
       },
     });
 
-    // Case 1: comment vào post
     if (!parentCommentId && post.user_id !== userId) {
       await NotificationService.create({
         user_id: post.user_id,
         actor_id: userId,
         type: "POST_COMMENT",
         title: "Bình luận mới",
-        message: `${comment?.User?.username ?? "?"
-          } đã bình luận bài viết của bạn`,
+        message: `${comment?.User?.username ?? "?"} đã bình luận bài viết của bạn`,
         ref_id: postId,
         ref_sub_id: comment.id,
       });
     }
 
-    // Case 2: reply comment
     if (parentCommentId && parentComment.user_id !== userId) {
       await NotificationService.create({
         user_id: parentComment.user_id,
         actor_id: userId,
         type: "COMMENT_REPLY",
         title: "Phản hồi bình luận",
-        message: `${comment?.User?.username ?? "? "
-          } đã trả lời bình luận của bạn`,
+        message: `${comment?.User?.username ?? "?"} đã trả lời bình luận của bạn`,
         ref_id: postId,
         ref_sub_id: comment.id,
       });
     }
 
-    // emit realtime
     emitToPost(postId, "comment:new", {
       postId,
       comment,
@@ -167,6 +165,7 @@ const CommentService = {
     if (!existing) throw new Error("COMMENT_NOT_FOUND");
     if (existing.user_id !== userId) throw new Error("UNAUTHORIZED");
 
+    await AIService.assertTextSafe(commentDetail);
     const comment = await prisma.comment.update({
       where: { id: commentId, is_deleted: false },
       data: { comment_detail: commentDetail },
