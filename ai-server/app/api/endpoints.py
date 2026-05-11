@@ -4,6 +4,7 @@ import os
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Depends
+from app.schemas import TextModPayload 
 from pydantic import BaseModel
 from typing import List, Dict
 
@@ -43,6 +44,30 @@ async def chat_endpoint(payload: ChatPayload, auth: HTTPAuthorizationCredentials
         return ChatResponse(success=True, reply=response)
     except Exception as e:
         return ChatResponse(success=False, error=f"AI Engine Error: {str(e)}")
+    
+@router.post("/moderate/text")
+async def moderate_text_endpoint(
+    payload: TextModPayload,
+    auth: HTTPAuthorizationCredentials = Depends(security)
+):
+    if auth.credentials != settings.AI_SERVER_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if not payload.text or not payload.text.strip():
+        return TextModResponse(success=True, is_safe=True)
+
+    try:
+        result = await moderate_text(payload.text)
+        return TextModResponse(
+            success=True,
+            is_safe=bool(result.get("is_safe", True))
+        )
+    except Exception as e:
+        return TextModResponse(
+            success=False,
+            is_safe=False,
+            error=str(e)
+        )
 
 @router.post("/moderate/image")
 async def moderate_image_endpoint(file: UploadFile = File(...), auth: HTTPAuthorizationCredentials = Depends(security)):

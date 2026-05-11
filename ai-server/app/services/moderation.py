@@ -38,7 +38,7 @@ async def moderate_text(text: str):
 
 async def moderate_image(image_bytes: bytes):
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         # Chuyển bytes thành ảnh cho Gemini hiểu
         img = Image.open(io.BytesIO(image_bytes)) 
         response = await model.generate_content(["Is this image safe? Answer 'safe' or 'unsafe'.", img])
