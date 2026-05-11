@@ -3,7 +3,6 @@ const { ChallengeController } = require('../controllers/challenge.controller');
 const { verifyToken, verifyTokenOptional } = require('../middlewares/auth.middleware');
 const { requireRole } = require("../middlewares/role.middleware");
 const { rateLimitMiddleware } = require("../middlewares/rateLimit.middleware");
-const { cache } = require("../middlewares/cache.middleware");
 
 const router = Router();
 
