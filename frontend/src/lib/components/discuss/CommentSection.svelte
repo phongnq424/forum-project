@@ -60,6 +60,11 @@
                 newCommentText = "";
             }
         } catch (e) {
+            if (e instanceof Error) {
+                alert(e.message);
+            } else {
+                alert("Failed to post comment. Please try again.");
+            }
             console.error("Failed to post comment:", e);
         } finally {
             sending = false;

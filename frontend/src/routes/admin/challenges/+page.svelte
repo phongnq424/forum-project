@@ -429,22 +429,6 @@
         align-items: center;
     }
 
-    .select {
-        width: 100%;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: #111318;
-        color: #f9fafb;
-        padding: 10px 12px;
-        font-size: 14px;
-        outline: none;
-    }
-
-    .select:focus {
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
-    }
-
     .alert {
         padding: 12px 14px;
         border-radius: 12px;
@@ -545,7 +529,6 @@
         color: #9ca3af;
         line-height: 1.45;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }

@@ -123,8 +123,7 @@
             open = false;
             if (onSuccess) onSuccess(result);
         } catch (error: any) {
-            errorMessage =
-                error?.response?.data?.message || "Something went wrong.";
+            errorMessage = error || "Something went wrong.";
         } finally {
             loading = false;
         }
