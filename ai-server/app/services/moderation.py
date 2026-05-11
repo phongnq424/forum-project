@@ -13,29 +13,122 @@ hf_client = AsyncInferenceClient(token=settings.HF_TOKEN)
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
 async def moderate_text(text: str):
+    normalized = (text or "").strip()
+
+    if not normalized:
+        return {
+            "is_safe": True,
+            "source": "empty_text",
+            "category": "none",
+            "reason": ""
+        }
+
     try:
         completion = await groq_client.chat.completions.create(
             model="openai/gpt-oss-safeguard-20b",
-            messages=[{"role": "user", "content": text}]
+            messages=[
+                {
+                    "role": "system",
+                    "content": """
+You are a strict Vietnamese social forum moderation classifier.
+
+Classify the user's text as SAFE or UNSAFE.
+
+Mark UNSAFE if the text contains any of these:
+- insults, humiliation, verbal abuse, or personal attacks
+- harassment or bullying
+- threats or intimidation
+- hate speech against protected groups
+- sexual harassment or explicit sexual content
+- encouragement of self-harm or violence
+- scams, phishing, or requests for passwords/OTP/tokens
+
+Important:
+Vietnamese insults such as "ngu", "rác rưởi", "vô dụng", "cút", "biến đi", "đồ chó", "đồ ngu" are UNSAFE when used to attack a person.
+
+Return only one word:
+SAFE
+or
+UNSAFE
+"""
+                },
+                {
+                    "role": "user",
+                    "content": normalized
+                }
+            ],
+            temperature=0
         )
-        result = completion.choices[0].message.content
-        if "unsafe" in result.lower():
-            return {"is_safe": False, "source": "groq_llama_guard"}
-        return {"is_safe": True, "source": "groq_llama_guard"}
-        
+
+        result = completion.choices[0].message.content.strip().upper()
+
+        if result == "UNSAFE" or "UNSAFE" in result:
+            return {
+                "is_safe": False,
+                "source": "groq_safeguard",
+                "category": "harassment_or_toxicity",
+                "reason": "Detected unsafe abusive or harassing language"
+            }
+
+        if result == "SAFE" or "SAFE" in result:
+            return {
+                "is_safe": True,
+                "source": "groq_safeguard",
+                "category": "safe",
+                "reason": ""
+            }
+
+        return {
+            "is_safe": False,
+            "source": "groq_safeguard_unclear",
+            "category": "unclear",
+            "reason": f"Unclear moderation output: {result}"
+        }
+
     except Exception as e:
         print(f"Groq Text Mod failed: {e}. Fallback to HF...")
 
     try:
-        response = await hf_client.text_classification(text, model="unitary/toxic-bert")
-        is_toxic = any(r['label'] == 'toxic' and r['score'] > 0.7 for r in response)
-        return {"is_safe": not is_toxic, "source": "hf_toxic_bert"}
-        
+        response = await hf_client.text_classification(
+            normalized,
+            model="unitary/toxic-bert"
+        )
+
+        labels = response
+        if labels and isinstance(labels[0], list):
+            labels = labels[0]
+
+        toxic_labels = {
+            "toxic",
+            "insult",
+            "threat",
+            "identity_hate",
+            "obscene",
+            "severe_toxic"
+        }
+
+        is_toxic = any(
+            str(r.get("label", "")).lower() in toxic_labels
+            and float(r.get("score", 0)) > 0.55
+            for r in labels
+        )
+
+        return {
+            "is_safe": not is_toxic,
+            "source": "hf_toxic_bert",
+            "category": "toxic" if is_toxic else "safe",
+            "reason": "Detected by toxic-bert fallback" if is_toxic else ""
+        }
+
     except Exception as e:
         print(f"HF Text Mod failed: {e}")
-        
-    return {"is_safe": False, "source": "default_strict"}
 
+    return {
+        "is_safe": False,
+        "source": "default_strict",
+        "category": "moderation_unavailable",
+        "reason": "All moderation providers failed"
+    }
 async def moderate_image(image_bytes: bytes):
     try:
         model = genai.GenerativeModel('gemini-2.5-flash')
