@@ -28,7 +28,7 @@ export const languages = {
         image: process.env.DOCKER_IMAGE_NODE || "judge-node",
         filename: "app.js",
         compileCmd: null,
-        runCmd: ["sh", "/runner/run-node-api.sh"],
+        runCmd: ["sh", "/runner/run-node-server.sh"],
     },
 
     backend: {
@@ -36,6 +36,6 @@ export const languages = {
         image: process.env.DOCKER_IMAGE_NODE || "judge-node",
         filename: "app.js",
         compileCmd: null,
-        runCmd: ["sh", "/runner/run-node-api.sh"],
+        runCmd: ["sh", "/runner/run-node-server.sh"],
     },
 };

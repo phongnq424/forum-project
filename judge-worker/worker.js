@@ -90,13 +90,21 @@ function normalizeTimeoutMs(job) {
 }
 
 function getFinalStatus(testcaseResults) {
+    if (testcaseResults.every((t) => t.result === "AC")) return "ACCEPTED";
+
+    const totalScore = testcaseResults.reduce(
+        (sum, t) => sum + Number(t.score || 0),
+        0
+    );
+
+    if (totalScore > 0) return "PARTIAL";
+
     if (testcaseResults.some((t) => t.result === "CE")) return "CE";
     if (testcaseResults.some((t) => t.result === "TLE")) return "TLE";
     if (testcaseResults.some((t) => t.result === "MLE")) return "MLE";
     if (testcaseResults.some((t) => t.result === "RE")) return "RE";
     if (testcaseResults.every((t) => t.result === "IE")) return "IE";
-    if (testcaseResults.every((t) => t.result === "AC")) return "ACCEPTED";
-    if (testcaseResults.some((t) => t.score > 0)) return "PARTIAL";
+
     return "WA";
 }
 
@@ -156,15 +164,15 @@ async function processSubmission(job) {
             };
 
             const result = apiResult.result || "IE";
-            const score = result === "AC" ? t.score || 0 : apiResult.score || 0;
+            const score = Number(apiResult.score || 0);
 
-            if (result === "AC") totalScore += score;
+            totalScore += score;
 
             testcaseResults.push({
                 testcaseId: t.testcaseId,
                 result,
                 score,
-                maxScore: t.score || 0,
+                maxScore: apiResult.maxScore || t.score || 0,
                 message: apiResult.message || "",
                 stdout: r.stdout || "",
                 stderr: r.stderr || "",

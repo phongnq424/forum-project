@@ -1,6 +1,6 @@
 const fs = require("fs");
 
-const BASE_URL = `http://127.0.0.1:${process.env.PORT || 3000}`;
+const BASE_URL = process.env.TARGET_URL || `http://127.0.0.1:${process.env.PORT || 3000}`;
 
 function normalizeJson(value) {
   if (value === null || value === undefined) return value;
@@ -232,30 +232,66 @@ async function run() {
     const vars = {};
     const steps = testcase.steps || [];
 
-    let result = "AC";
-    let message = "";
+    let earnedScore = 0;
+    let maxScore = 0;
+    let failedCount = 0;
+    let passedCount = 0;
+    const stepResults = [];
 
     if (!steps.length) {
-      result = "IE";
-      message = "No API steps found";
+      results.push({
+        testcaseId: testcase.testcaseId,
+        result: "IE",
+        score: 0,
+        maxScore: testcase.score || 0,
+        message: "No API steps found",
+        steps: []
+      });
+      continue;
     }
 
     for (const step of steps) {
+      const stepScore = Number(step.score ?? 1);
+      maxScore += stepScore;
+
       const stepResult = await runStep(step, vars);
 
-      if (!stepResult.ok) {
-        result = stepResult.status;
-        message = `[${step.name || step.path}] ${stepResult.message || "Failed"}`;
-        break;
+      if (stepResult.ok) {
+        earnedScore += stepScore;
+        passedCount++;
+      } else {
+        failedCount++;
       }
+
+      stepResults.push({
+        stepId: step.stepId,
+        name: step.name || step.path,
+        result: stepResult.ok ? "AC" : stepResult.status,
+        score: stepResult.ok ? stepScore : 0,
+        maxScore: stepScore,
+        message: stepResult.message || ""
+      });
+    }
+
+    let result = "WA";
+
+    if (passedCount === steps.length) {
+      result = "AC";
+    } else if (passedCount > 0) {
+      result = "PARTIAL";
+    } else if (stepResults.some(s => ["RE", "TLE"].includes(s.result))) {
+      result = stepResults.find(s => ["RE", "TLE"].includes(s.result)).result;
     }
 
     results.push({
       testcaseId: testcase.testcaseId,
       result,
-      score: result === "AC" ? testcase.score : 0,
-      maxScore: testcase.score,
-      message,
+      score: earnedScore,
+      maxScore,
+      message: failedCount > 0
+        ? `${passedCount}/${steps.length} steps passed`
+        : "",
+      steps: stepResults
     });
   }
 

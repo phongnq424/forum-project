@@ -15,10 +15,10 @@ RUN adduser -D -h /sandbox judgeuser
 WORKDIR /sandbox
 RUN chown -R judgeuser:judgeuser /sandbox
 
-COPY runner/run-node-api.sh /runner/run-node-api.sh
+COPY runner/run-node-server.sh /runner/run-node-server.sh
 COPY runner/api-test-runner.cjs /runner/api-test-runner.cjs
 
-RUN chmod +x /runner/run-node-api.sh
+RUN chmod +x /runner/run-node-server.sh
 
 USER judgeuser
 
