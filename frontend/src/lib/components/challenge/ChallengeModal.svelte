@@ -112,8 +112,16 @@
 
     function validate(payload: ChallengePayload) {
         if (!payload.title) return "Title is required";
-        if (!payload.input) return "Input is required";
-        if (!payload.output) return "Output is required";
+
+        if (payload.type === "BACKEND") {
+            if (!payload.description) return "Description is required";
+            if (!payload.input) return "API requirements are required";
+            if (!payload.output) return "Expected behavior is required";
+        } else {
+            if (!payload.input) return "Input is required";
+            if (!payload.output) return "Output is required";
+        }
+
         if (!payload.constraints) return "Constraints are required";
         if (!payload.time_limit || payload.time_limit <= 0) {
             return "Time limit must be greater than 0";
@@ -161,7 +169,7 @@
                     payload,
                 );
 
-                if (testCaseFile) {
+                if (testCaseFile && payload.type !== "BACKEND") {
                     await challengeService.uploadTestcaseZip(
                         challengeId,
                         testCaseFile,
@@ -173,7 +181,11 @@
 
                 const newChallengeId = savedChallenge.id;
 
-                if (testCaseFile && newChallengeId) {
+                if (
+                    testCaseFile &&
+                    newChallengeId &&
+                    payload.type !== "BACKEND"
+                ) {
                     await challengeService.uploadTestcaseZip(
                         newChallengeId,
                         testCaseFile,
@@ -279,23 +291,31 @@
                     placeholder="Enter constraints"
                 ></textarea>
             </div>
-            <div class="form-group">
-                <label for="testcase-file">Testcase ZIP *</label>
-                <input
-                    id="testcase-file"
-                    type="file"
-                    accept=".zip,application/zip,application/x-zip-compressed"
-                    onchange={handleTestCaseFileChange}
-                />
+            {#if form.type !== "BACKEND"}
+                <div class="form-group">
+                    <label for="testcase-file">Testcase ZIP</label>
+                    <input
+                        id="testcase-file"
+                        type="file"
+                        accept=".zip,application/zip,application/x-zip-compressed"
+                        onchange={handleTestCaseFileChange}
+                    />
 
-                {#if testCaseFile}
-                    <p class="file-name">{testCaseFile.name}</p>
-                {:else if isEdit}
-                    <p class="helper-text">
-                        Leave empty to keep existing testcase file.
-                    </p>
-                {/if}
-            </div>
+                    {#if testCaseFile}
+                        <p class="file-name">{testCaseFile.name}</p>
+                    {:else if isEdit}
+                        <p class="helper-text">
+                            Leave empty to keep existing testcase file.
+                        </p>
+                    {/if}
+                </div>
+            {:else}
+                <div class="backend-testcase-note">
+                    Backend challenges use API step testcases. Create the
+                    challenge first, then add API testcase steps from the
+                    testcase manager.
+                </div>
+            {/if}
             <div class="grid-3">
                 <div class="form-group">
                     <label for="time-limit">Time limit *</label>

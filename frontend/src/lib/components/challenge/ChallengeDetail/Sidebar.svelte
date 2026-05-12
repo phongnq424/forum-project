@@ -114,21 +114,32 @@
 
                     <div class="list-wrapper">
                         {#each leaderboard.slice(0, 5) as item}
+                            {@const user = item.User ?? item.user}
+
                             <div class="list-item-clean">
                                 <div class="item-left">
-                                    <span class="rank-tag">#{item.rank}</span>
+                                    <span class="rank-tag"
+                                        >#{item.rank ?? "-"}</span
+                                    >
+
                                     <Avatar
-                                        src={item.User.avatar || undefined}
-                                        name={item.User.username}
+                                        src={user?.avatar || undefined}
+                                        name={user?.username ||
+                                            user?.fullname ||
+                                            "Unknown user"}
                                         size="sm"
                                     />
-                                    <span class="text-sm username-text"
-                                        >{item.User.username}</span
-                                    >
+
+                                    <span class="text-sm username-text">
+                                        {user?.username ||
+                                            user?.fullname ||
+                                            "Unknown user"}
+                                    </span>
                                 </div>
-                                <span class="text-sm weight-500 color-indigo"
-                                    >{item.score}</span
-                                >
+
+                                <span class="text-sm weight-500 color-indigo">
+                                    {item.score ?? 0}
+                                </span>
                             </div>
                         {/each}
                     </div>

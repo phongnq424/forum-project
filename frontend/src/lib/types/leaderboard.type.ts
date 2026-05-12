@@ -5,7 +5,7 @@ export interface Leaderboard {
     submitted_at: String;
     language: String;
     updated_at: string;
-    User: {
+    user: {
         username: string;
         avatar: string | null;
         fullname: string | null;

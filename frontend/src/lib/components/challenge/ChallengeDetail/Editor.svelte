@@ -12,6 +12,7 @@
         languageOptions = [],
         isSubmitting,
         onSubmit,
+        challengeType = "DSA",
     } = $props();
 
     // Fix lỗi nút submit: Chỉ cho bấm khi có code và không đang gửi
@@ -65,7 +66,11 @@
         <TextArea
             bind:value={userCode}
             rows={15}
-            placeholder="// Typing your code here..."
+            placeholder={challengeType === "BACKEND"
+                ? "// Build an Express app here. Must listen on process.env.PORT and expose GET /health"
+                : challengeType === "SQL"
+                  ? "-- Write your SQL query here"
+                  : "// Type your code here"}
             spellcheck="false"
             onkeydown={handleKeyDown}
         />

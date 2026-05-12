@@ -38,7 +38,7 @@
             <div class="score-display">
                 <span class="label">Your score:</span>
                 <span class="value"
-                    >{challenge.userStats.highestScore ?? 0}</span
+                    >{challenge.userStats?.highestScore || 0}</span
                 >
             </div>
         </div>

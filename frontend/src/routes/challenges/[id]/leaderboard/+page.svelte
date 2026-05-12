@@ -76,12 +76,12 @@
                 <div class="podium-item silver">
                     <div class="rank-crown">2</div>
                     <Avatar
-                        src={leaderboard[1].User.avatar || undefined}
-                        name={leaderboard[1].User.username}
+                        src={leaderboard[1].user.avatar || undefined}
+                        name={leaderboard[1].user.username}
                         size="lg"
                     />
                     <span class="p-username"
-                        >{leaderboard[1].User.username}</span
+                        >{leaderboard[1].user.username}</span
                     >
                     <span class="p-score">{leaderboard[1].score} pts</span>
                     <span class="p-time"
@@ -94,12 +94,12 @@
                         <Icon name="trophy" size={24} />
                     </div>
                     <Avatar
-                        src={leaderboard[0].User.avatar || undefined}
-                        name={leaderboard[0].User.username}
+                        src={leaderboard[0].user.avatar || undefined}
+                        name={leaderboard[0].user.username}
                         size="md"
                     />
                     <span class="p-username"
-                        >{leaderboard[0].User.username}</span
+                        >{leaderboard[0].user.username}</span
                     >
                     <span class="p-score">{leaderboard[0].score} pts</span>
                     <span class="p-time"
@@ -110,12 +110,12 @@
                 <div class="podium-item bronze">
                     <div class="rank-crown">3</div>
                     <Avatar
-                        src={leaderboard[2].User.avatar || undefined}
-                        name={leaderboard[2].User.username}
+                        src={leaderboard[2].user.avatar || undefined}
+                        name={leaderboard[2].user.username}
                         size="lg"
                     />
                     <span class="p-username"
-                        >{leaderboard[2].User.username}</span
+                        >{leaderboard[2].user.username}</span
                     >
                     <span class="p-score">{leaderboard[2].score} pts</span>
                     <span class="p-time"
@@ -153,12 +153,12 @@
                                 <td>
                                     <div class="user-info">
                                         <Avatar
-                                            src={entry.User.avatar || undefined}
-                                            name={entry.User.username}
+                                            src={entry.user.avatar || undefined}
+                                            name={entry.user.username}
                                             size="sm"
                                         />
                                         <span class="username"
-                                            >{entry.User.username}</span
+                                            >{entry.user.username}</span
                                         >
                                     </div>
                                 </td>

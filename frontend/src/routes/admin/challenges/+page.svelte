@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { goto } from "$app/navigation";
     import Button from "$lib/components/ui/Button.svelte";
     import Input from "$lib/components/ui/Input.svelte";
     import Badge from "$lib/components/ui/Badge.svelte";
@@ -292,6 +293,16 @@
 
                                 <td>
                                     <div class="actions">
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onclick={() =>
+                                                goto(
+                                                    `/admin/challenges/${challenge.id}/testcases`,
+                                                )}
+                                        >
+                                            API Testcases
+                                        </Button>
                                         <button
                                             type="button"
                                             class="icon-btn"

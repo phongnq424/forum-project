@@ -18,14 +18,27 @@
             </div>
         {/if}
         <div class="io-blocks">
-            <div class="section-block">
-                <h4>Sample Input:</h4>
-                <div class="code-block">{challenge.input}</div>
-            </div>
-            <div class="section-block">
-                <h4>Sample Output:</h4>
-                <div class="code-block">{challenge.output}</div>
-            </div>
+            {#if challenge.type === "BACKEND"}
+                <div class="section-block">
+                    <h4>API Requirements:</h4>
+                    <div class="code-block">{challenge.input}</div>
+                </div>
+
+                <div class="section-block">
+                    <h4>Expected Behavior:</h4>
+                    <div class="code-block">{challenge.output}</div>
+                </div>
+            {:else}
+                <div class="section-block">
+                    <h4>Sample Input:</h4>
+                    <div class="code-block">{challenge.input}</div>
+                </div>
+
+                <div class="section-block">
+                    <h4>Sample Output:</h4>
+                    <div class="code-block">{challenge.output}</div>
+                </div>
+            {/if}
         </div>
     </div>
 </Card>

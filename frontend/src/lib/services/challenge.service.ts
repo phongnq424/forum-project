@@ -5,6 +5,10 @@ import type {
     Challenge,
     ChallengePayload
 } from "$lib/types/challenge.type";
+import type {
+    ApiTestcase,
+    ApiTestcasePayload,
+} from "$lib/types/testcase.type";
 
 export const challengeService = {
     async listChallenges(params: {
@@ -49,5 +53,35 @@ export const challengeService = {
             `testcases/${challengeId}/upload-zip`,
             formData
         );
-    }
+    },
+
+    async listTestcases(challengeId: string): Promise<ApiTestcase[]> {
+        return api.get<ApiTestcase[]>(`testcases/${challengeId}`);
+    },
+
+    async createApiTestcase(
+        challengeId: string,
+        data: ApiTestcasePayload
+    ): Promise<ApiTestcase> {
+        return api.post<ApiTestcase>(
+            `testcases/${challengeId}/api`,
+            data
+        );
+    },
+
+    async updateTestcase(
+        testcaseId: string,
+        data: Partial<ApiTestcasePayload>
+    ): Promise<ApiTestcase> {
+        return api.put<ApiTestcase>(
+            `testcases/${testcaseId}`,
+            data
+        );
+    },
+
+    async deleteTestcase(testcaseId: string): Promise<{ message: string }> {
+        return api.delete<{ message: string }>(
+            `testcases/${testcaseId}`
+        );
+    },
 };

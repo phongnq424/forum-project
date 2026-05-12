@@ -210,6 +210,7 @@
                         {isSubmitting}
                         onSubmit={handleSubmit}
                         languageOptions={languages}
+                        challengeType={challenge.type}
                     />
                     {#if submissionResult}
                         <div class="result-banner {submissionResult.status}">
