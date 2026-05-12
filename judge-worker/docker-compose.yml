@@ -19,6 +19,12 @@ services:
       dockerfile: sandbox/judge-sql.Dockerfile
     image: judge-sql
 
+  sandbox-node:
+    build:
+      context: .
+      dockerfile: sandbox/judge-node.Dockerfile
+    image: judge-node
+
   judge-worker:
     build: .
     env_file: .env
@@ -26,6 +32,7 @@ services:
       - sandbox-cpp
       - sandbox-python
       - sandbox-sql
+      - sandbox-node
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

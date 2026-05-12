@@ -1,20 +1,41 @@
 export const languages = {
     cpp: {
-        image: process.env.DOCKER_IMAGE_CPP || 'sandbox-cpp',
-        filename: 'code.cpp',
-        compileCmd: ['g++', 'code.cpp', '-o', 'main', '-O2', '-static'],
-        runCmd: ['timeout', '2s', './main'],
+        type: "stdio",
+        image: process.env.DOCKER_IMAGE_CPP || "judge-cpp",
+        filename: "code.cpp",
+        compileCmd: ["g++", "code.cpp", "-o", "main", "-O2", "-static"],
+        runCmd: ["./main"],
     },
+
     py: {
-        image: process.env.DOCKER_IMAGE_PYTHON || 'sandbox-python',
-        filename: 'code.py',
+        type: "stdio",
+        image: process.env.DOCKER_IMAGE_PYTHON || "judge-python",
+        filename: "code.py",
         compileCmd: null,
-        runCmd: ['timeout', '2s', 'python3', 'code.py']
+        runCmd: ["python3", "code.py"],
     },
+
     sql: {
-        image: process.env.DOCKER_IMAGE_SQL || 'sandbox-sql',
-        filename: 'query.sql',
+        type: "sql",
+        image: process.env.DOCKER_IMAGE_SQL || "judge-sql",
+        filename: "query.sql",
         compileCmd: null,
-        runCmd: ['sh', '/runner/run-sql.sh']
-    }
+        runCmd: ["sh", "/runner/run-sql.sh"],
+    },
+
+    node_api: {
+        type: "node_api",
+        image: process.env.DOCKER_IMAGE_NODE || "judge-node",
+        filename: "app.js",
+        compileCmd: null,
+        runCmd: ["sh", "/runner/run-node-api.sh"],
+    },
+
+    backend: {
+        type: "node_api",
+        image: process.env.DOCKER_IMAGE_NODE || "judge-node",
+        filename: "app.js",
+        compileCmd: null,
+        runCmd: ["sh", "/runner/run-node-api.sh"],
+    },
 };
