@@ -1,10 +1,8 @@
 const { TestcaseService } = require('../services/testcase.service');
 
-
 const TestcaseController = {
     createFromZip: async (req, res) => {
         try {
-
             if (!req.file)
                 return res.status(400).json({ message: 'No zip uploaded' });
 
@@ -17,10 +15,27 @@ const TestcaseController = {
             );
 
             res.status(201).json(result);
-
         } catch (err) {
             console.error(err);
             res.status(500).json({ message: err.message });
+        }
+    },
+
+    createApiTestcase: async (req, res) => {
+        try {
+            if (!req.params.challenge_id) {
+                return res.status(400).json({ message: 'Missing challenge_id' });
+            }
+
+            const result = await TestcaseService.createApiTestcase(
+                req.params.challenge_id,
+                req.body
+            );
+
+            res.status(201).json(result);
+        } catch (err) {
+            console.error(err);
+            res.status(400).json({ message: err.message });
         }
     },
 

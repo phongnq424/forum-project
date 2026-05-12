@@ -3,33 +3,77 @@ const { SubmissionService } = require('../services/submission.service');
 const SubmissionController = {
     submit: async (req, res) => {
         try {
-            const { challenge_id, code, language_id } = req.body;
+            const {
+                challenge_id,
+                code,
+                language_id,
+                kind = "CODE",
+                file_path
+            } = req.body;
+
             const user_id = req.user.id;
-            if (!challenge_id || !user_id || !code || !language_id) {
+
+            if (!challenge_id || !user_id || !language_id) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
 
-            const submission = await SubmissionService.submit({ challenge_id, user_id, code, language_id });
-            res.status(201).json({ id: submission.id, status: submission.status });
+            if (kind === "CODE" && !code) {
+                return res.status(400).json({ message: 'Code is required for CODE submission' });
+            }
+
+            if (kind === "ZIP" && !file_path) {
+                return res.status(400).json({ message: 'file_path is required for ZIP submission' });
+            }
+
+            const submission = await SubmissionService.submit({
+                challenge_id,
+                user_id,
+                code,
+                file_path,
+                kind,
+                language_id
+            });
+
+            res.status(201).json({
+                id: submission.id,
+                status: submission.status
+            });
         } catch (err) {
             console.error(err);
-            res.status(500).json({ message: 'Internal server error' });
+            res.status(500).json({ message: err.message || 'Internal server error' });
         }
     },
 
     receiveResult: async (req, res) => {
         try {
-            const { submissionId, score, status } = req.body;
+            const {
+                submissionId,
+                score,
+                status,
+                testcases = [],
+                runtime_ms,
+                memory_kb,
+                error_message
+            } = req.body;
+
             if (!submissionId || score === undefined || !status) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
 
-            await SubmissionService.updateResult({ submissionId, score, status });
+            await SubmissionService.updateResult({
+                submissionId,
+                score,
+                status,
+                testcases,
+                runtime_ms,
+                memory_kb,
+                error_message
+            });
 
             res.status(200).json({ message: 'Result saved' });
         } catch (err) {
             console.error(err);
-            res.status(500).json({ message: 'Internal server error' });
+            res.status(500).json({ message: err.message || 'Internal server error' });
         }
     },
 
@@ -61,6 +105,7 @@ const SubmissionController = {
             res.status(500).json({ message: err.message });
         }
     },
+
     listByUserAndChallenge: async (req, res) => {
         try {
             const user_id = req.user.id;

@@ -12,13 +12,38 @@ const challengeSelect = {
     memory_limit: true
 };
 
+function splitChallengePayload(data) {
+    const {
+        config,
+        ...challengeData
+    } = data;
+
+    return {
+        challengeData,
+        configData: config || null
+    };
+}
+
 const ChallengeService = {
     create: async (data) => {
-        return await prisma.challenge.create({ data });
+        const { challengeData, configData } = splitChallengePayload(data);
+
+        return await prisma.challenge.create({
+            data: {
+                ...challengeData,
+                config: configData
+                    ? {
+                        create: configData
+                    }
+                    : undefined
+            },
+            include: {
+                config: true
+            }
+        });
     },
 
     list: async (query, viewerId) => {
-
         const page = parseInt(query.page) || 1;
         const limit = parseInt(query.limit) || 10;
         const skip = (page - 1) * limit;
@@ -33,16 +58,13 @@ const ChallengeService = {
                         { description: { contains: query.q, mode: 'insensitive' } }
                     ]
                 }
-            ]
-        }
-        let orderBy = { created_at: 'desc' };
-        if (query.sortBy === "difficulty-asc") {
-            orderBy = { difficulty: 'asc' }
+            ];
         }
 
-        if (query.sortBy === "difficulty-desc") {
-            orderBy = { difficulty: 'desc' }
-        }
+        let orderBy = { created_at: 'desc' };
+        if (query.sortBy === "difficulty-asc") orderBy = { difficulty: 'asc' };
+        if (query.sortBy === "difficulty-desc") orderBy = { difficulty: 'desc' };
+
         let challenges = [];
         let total = 0;
         let solvedIds = new Set();
@@ -77,13 +99,19 @@ const ChallengeService = {
         } else {
             const [challengeList, totalCount] = await Promise.all([
                 prisma.challenge.findMany({
-                    skip, take: limit, where, orderBy, select: challengeSelect
+                    skip,
+                    take: limit,
+                    where,
+                    orderBy,
+                    select: challengeSelect
                 }),
                 prisma.challenge.count({ where })
             ]);
+
             challenges = challengeList;
             total = totalCount;
         }
+
         const data = challenges.map(challenge => ({
             ...challenge,
             isSolved: solvedIds.has(challenge.id),
@@ -103,7 +131,12 @@ const ChallengeService = {
 
     getById: async (id, viewerId) => {
         const [challenge, userStats, acceptedSubmission] = await Promise.all([
-            prisma.challenge.findUnique({ where: { id } }),
+            prisma.challenge.findUnique({
+                where: { id },
+                include: {
+                    config: true
+                }
+            }),
             viewerId ? prisma.submission.aggregate({
                 where: { challenge_id: id, user_id: viewerId },
                 _max: { score: true },
@@ -132,10 +165,28 @@ const ChallengeService = {
     },
 
     update: async (id, data) => {
+        const { challengeData, configData } = splitChallengePayload(data);
+
         try {
-            return await prisma.challenge.update({ where: { id }, data });
+            return await prisma.challenge.update({
+                where: { id },
+                data: {
+                    ...challengeData,
+                    config: configData
+                        ? {
+                            upsert: {
+                                create: configData,
+                                update: configData
+                            }
+                        }
+                        : undefined
+                },
+                include: {
+                    config: true
+                }
+            });
         } catch (err) {
-            if (err.code === 'P2025') return null; // record not found
+            if (err.code === 'P2025') return null;
             throw err;
         }
     },
@@ -148,7 +199,6 @@ const ChallengeService = {
             throw err;
         }
     }
-
 };
 
 module.exports = { ChallengeService };
