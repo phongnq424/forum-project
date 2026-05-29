@@ -61,14 +61,15 @@ const PostController = {
 
                 validateFiles(req.files, ["images"]);
 
-                const { content, topic_id, title } = req.body;
+                const { content, topic_id, topicId, topic_ids, topicIds, title } = req.body;
 
                 await AIService.assertTextSafe(`${title || ""}\n${content || ""}`);
                 await AIService.assertImagesSafe(files);
 
                 const newPost = await PostService.createPost(req.user.id, {
                     content,
-                    topic_id,
+                    topic_id: topic_id || topicId,
+                    topic_ids: topic_ids || topicIds,
                     title,
                     files,
                 });
@@ -124,7 +125,7 @@ const PostController = {
 
                 const postId = req.params.id;
                 const userId = req.user.id;
-                const { content, topic_id, title, delete_images } = req.body;
+                const { content, topic_id, topicId, topic_ids, topicIds, title, delete_images } = req.body;
 
                 await AIService.assertTextSafe(`${title || ""}\n${content || ""}`);
                 await AIService.assertImagesSafe(files);
@@ -144,7 +145,8 @@ const PostController = {
 
                 const updated = await PostService.updatePost(userId, postId, {
                     content,
-                    topic_id,
+                    topic_id: topic_id || topicId,
+                    topic_ids: topic_ids || topicIds,
                     title,
                     files,
                     removeImageIds: removeIds,

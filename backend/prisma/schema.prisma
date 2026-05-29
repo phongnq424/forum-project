@@ -123,6 +123,21 @@ enum ReportSeverity {
   CRITICAL
 }
 
+enum CONVERSATION_SCOPE {
+  GENERAL
+  TOPIC_DISCUSSION
+  CHALLENGE_HELP
+  STUDY_GROUP
+  CLASS_GROUP
+  AI_TUTOR
+}
+
+enum ConversationRole {
+  OWNER
+  MODERATOR
+  MEMBER
+}
+
 /**
  * * MODELS **
  */
@@ -141,28 +156,30 @@ model User {
   deleted_at       DateTime?
   status           USER_STATUS_TYPE @default(ACTIVE)
 
-  Profile          Profile?
-  Post             Post[]
-  PostSaved        PostSaved[]
-  Comment          Comment[]
-  Reaction         Reaction[]
-  FollowerFollowed Follower[]         @relation("followed")
-  FollowerFollow   Follower[]         @relation("follower")
-  ConversationUser ConversationUser[]
-  MessageSent      Message[]          @relation("sender")
-  AlMessage        AlMessage[]
-  Notification     Notification[]
-  ReportCreated    Report[]           @relation("reporter")
-  InterestedTopic  InterestedTopic[]
-  Submission       Submission[]
-  Leaderboard      Leaderboard[]
-  ReportUser       ReportUser[]
-  ActivityLogs     ActivityLogs[]
-  Comment_Rate     Comment_Rate[]
-  blocks           Block[]            @relation("blocker")
-  blockedBy        Block[]            @relation("blocked")
-  refreshTokens    RefreshToken[]
-  attachments      Attachment[]
+  Profile                 Profile?
+  Post                    Post[]
+  PostSaved               PostSaved[]
+  Comment                 Comment[]
+  Reaction                Reaction[]
+  FollowerFollowed        Follower[]               @relation("followed")
+  FollowerFollow          Follower[]               @relation("follower")
+  ConversationUser        ConversationUser[]
+  MessageSent             Message[]                @relation("sender")
+  AlMessage               AlMessage[]
+  Notification            Notification[]
+  ReportCreated           Report[]                 @relation("reporter")
+  InterestedTopic         InterestedTopic[]
+  Submission              Submission[]
+  Leaderboard             Leaderboard[]
+  ReportUser              ReportUser[]
+  ActivityLogs            ActivityLogs[]
+  Comment_Rate            Comment_Rate[]
+  blocks                  Block[]                  @relation("blocker")
+  blockedBy               Block[]                  @relation("blocked")
+  refreshTokens           RefreshToken[]
+  attachments             Attachment[]
+  learningRecommendations LearningRecommendation[]
+  userTopicMasteries      UserTopicMastery[]
 }
 
 model Profile {
@@ -191,6 +208,28 @@ model InterestedTopic {
   @@unique([user_id, topic_id])
 }
 
+model UserTopicMastery {
+  id       String @id @default(uuid())
+  user_id  String
+  topic_id String
+
+  mastery_score  Float @default(0)
+  weakness_score Float @default(0)
+
+  solved_count Int @default(0)
+  failed_count Int @default(0)
+
+  last_practiced_at DateTime?
+  updated_at        DateTime  @updatedAt
+
+  User  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Topic Topic @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, topic_id])
+  @@index([topic_id])
+  @@index([user_id, mastery_score])
+}
+
 model Category {
   id          String  @id @default(uuid())
   name        String  @db.VarChar(100)
@@ -200,20 +239,35 @@ model Category {
 }
 
 model Topic {
-  id              String            @id @default(uuid())
-  name            String            @db.VarChar(100)
-  category_id     String
-  description     String?
-  is_deleted      Boolean           @default(false)
-  Category        Category          @relation(fields: [category_id], references: [id], onDelete: Cascade)
-  Post            Post[]
-  InterestedTopic InterestedTopic[]
+  id          String  @id @default(uuid())
+  name        String  @db.VarChar(100)
+  slug        String  @unique @db.VarChar(150)
+  category_id String
+  parent_id   String?
+  description String?
+  is_deleted  Boolean @default(false)
+
+  Category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  Parent   Topic?  @relation("TopicTree", fields: [parent_id], references: [id])
+  Children Topic[] @relation("TopicTree")
+
+  PostTopics              PostTopic[]
+  ChallengeTopics         ChallengeTopic[]
+  InterestedTopic         InterestedTopic[]
+  posts                   Post[]
+  conversations           Conversation[]
+  submissionAITopics      SubmissionAITopic[]
+  learningRecommendations LearningRecommendation[]
+  userTopicMasteries      UserTopicMastery[]
+
+  @@index([category_id])
+  @@index([parent_id])
 }
 
 model Post {
   id         String    @id @default(uuid())
   user_id    String
-  topic_id   String
   title      String
   content    String
   created_at DateTime  @default(now())
@@ -222,17 +276,29 @@ model Post {
   deleted_at DateTime?
 
   User       User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  Topic      Topic        @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+  PostTopics PostTopic[]
   PostSaved  PostSaved[]
   Image      Image[]
   Comment    Comment[]
   Reaction   Reaction[]
   ReportPost ReportPost[]
+  topic      Topic?       @relation(fields: [topicId], references: [id])
+  topicId    String?
 
   @@index([user_id])
-  @@index([topic_id])
   @@index([created_at])
-  @@index([topic_id, created_at])
+}
+
+model PostTopic {
+  id       String @id @default(uuid())
+  post_id  String
+  topic_id String
+
+  Post  Post  @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  Topic Topic @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+
+  @@unique([post_id, topic_id])
+  @@index([topic_id])
 }
 
 model PostSaved {
@@ -327,24 +393,37 @@ model Block {
 }
 
 model Conversation {
-  id         String            @id @default(uuid())
-  type       CONVERSATION_TYPE @default(CHAT)
-  name       String?
-  avatar     String?
-  created_at DateTime          @default(now())
-  updated_at DateTime          @default(now()) @updatedAt
+  id    String             @id @default(uuid())
+  type  CONVERSATION_TYPE  @default(CHAT)
+  scope CONVERSATION_SCOPE @default(GENERAL)
+
+  name   String?
+  avatar String?
+
+  topic_id     String?
+  challenge_id String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  Topic     Topic?     @relation(fields: [topic_id], references: [id], onDelete: SetNull)
+  Challenge Challenge? @relation(fields: [challenge_id], references: [id], onDelete: SetNull)
 
   ConversationUser ConversationUser[]
   Message          Message[]
   Call             Call[]
+
+  @@index([scope])
+  @@index([topic_id])
+  @@index([challenge_id])
 }
 
 model ConversationUser {
-  id              String    @id @default(uuid())
+  id              String           @id @default(uuid())
   conversation_id String
   user_id         String
-  role            String    @default("member")
-  joined_at       DateTime  @default(now())
+  role            ConversationRole @default(MEMBER)
+  joined_at       DateTime         @default(now())
   left_at         DateTime?
 
   Conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
@@ -435,14 +514,29 @@ model Challenge {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  config      ChallengeConfig?
-  Testcase    Testcase[]
-  Submission  Submission[]
-  Leaderboard Leaderboard[]
+  config          ChallengeConfig?
+  Testcase        Testcase[]
+  Submission      Submission[]
+  Leaderboard     Leaderboard[]
+  challengeTopics ChallengeTopic[]
+  conversations   Conversation[]
 
   @@index([type])
   @@index([difficulty])
   @@index([created_at])
+}
+
+model ChallengeTopic {
+  id           String @id @default(uuid())
+  challenge_id String
+  topic_id     String
+  weight       Float  @default(1.0)
+
+  Challenge Challenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  Topic     Topic     @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+
+  @@unique([challenge_id, topic_id])
+  @@index([topic_id])
 }
 
 model ChallengeConfig {
@@ -546,8 +640,10 @@ model Submission {
   User      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   Language  Language  @relation(fields: [language_id], references: [id], onDelete: Cascade)
 
-  testcase_results SubmissionTestcaseResult[]
-  leaderboard      Leaderboard?
+  testcase_results        SubmissionTestcaseResult[]
+  leaderboard             Leaderboard?
+  submissionAIInsight     SubmissionAIInsight?
+  learningRecommendations LearningRecommendation[]
 
   @@index([user_id])
   @@index([challenge_id])
@@ -716,4 +812,85 @@ model RefreshToken {
   @@unique([user_id, device_info])
   @@index([user_id, expires_at])
   @@index([user_id, revoked])
+}
+
+model SubmissionAIInsight {
+  id            String @id @default(uuid())
+  submission_id String @unique
+
+  summary       String? @db.Text
+  mistake_type  String? @db.VarChar(100)
+  mistake_level String? @db.VarChar(50)
+
+  explanation String? @db.Text
+  suggestion  String? @db.Text
+
+  confidence     Float?
+  model_name     String? @db.VarChar(100)
+  prompt_version String? @db.VarChar(50)
+
+  created_at DateTime @default(now())
+
+  Submission Submission @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+
+  topics SubmissionAITopic[]
+
+  @@index([mistake_type])
+  @@index([created_at])
+}
+
+model SubmissionAITopic {
+  id         String @id @default(uuid())
+  insight_id String
+  topic_id   String
+  confidence Float?
+
+  Insight SubmissionAIInsight @relation(fields: [insight_id], references: [id], onDelete: Cascade)
+  Topic   Topic               @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+
+  @@unique([insight_id, topic_id])
+  @@index([topic_id])
+}
+
+model LearningRecommendation {
+  id            String  @id @default(uuid())
+  user_id       String
+  submission_id String?
+  topic_id      String?
+
+  reason     String?  @db.Text
+  priority   Int      @default(0)
+  status     String   @default("ACTIVE")
+  created_at DateTime @default(now())
+
+  User                        User                         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Submission                  Submission?                  @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+  Topic                       Topic?                       @relation(fields: [topic_id], references: [id], onDelete: SetNull)
+  learningRecommendationItems LearningRecommendationItem[]
+
+  @@index([user_id, status])
+  @@index([topic_id])
+}
+
+enum RecommendationTargetType {
+  POST
+  CHALLENGE
+  TOPIC
+  CONVERSATION
+}
+
+model LearningRecommendationItem {
+  id                String @id @default(uuid())
+  recommendation_id String
+
+  target_type RecommendationTargetType
+  target_id   String
+
+  rank   Int     @default(0)
+  reason String? @db.Text
+
+  Recommendation LearningRecommendation @relation(fields: [recommendation_id], references: [id], onDelete: Cascade)
+
+  @@index([recommendation_id])
+  @@index([target_type, target_id])
 }
