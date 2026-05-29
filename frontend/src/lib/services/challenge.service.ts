@@ -15,6 +15,8 @@ export const challengeService = {
         page?: number;
         limit?: number;
         type?: string;
+        difficulty?: string;
+        topic_id?: string;
         sortBy?: string;
         q?: string;
     }): Promise<PaginatedChallengeResponse> {
@@ -39,9 +41,10 @@ export const challengeService = {
         return api.put<Challenge>(ENDPOINTS.CHALLENGE.BY_ID(id), data);
     },
 
-    async deleteChallenge(id: string): Promise<{ count: number }> {
-        return api.delete<{ count: number }>(ENDPOINTS.CHALLENGE.BY_ID(id));
+    async deleteChallenge(id: string): Promise<{ message: string }> {
+        return api.delete<{ message: string }>(ENDPOINTS.CHALLENGE.BY_ID(id));
     },
+
     async uploadTestcaseZip(
         challengeId: string,
         file: File

@@ -1,6 +1,17 @@
-// $lib/types/challenge.ts
-export type ChallengeDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
-export type ChallengeType = 'DSA' | 'SQL' | 'BACKEND';
+export type ChallengeDifficulty = "EASY" | "MEDIUM" | "HARD";
+export type ChallengeType = "DSA" | "SQL" | "BACKEND" | "CONTEST";
+
+export interface ChallengeTopic {
+    id: string;
+    name: string;
+    slug?: string;
+}
+
+export interface ChallengeTopicPivot {
+    topic_id: string;
+    weight?: number;
+    Topic?: ChallengeTopic;
+}
 
 export interface UserStats {
     highestScore: number;
@@ -26,7 +37,10 @@ export interface Challenge {
     difficulty: ChallengeDifficulty;
     type: ChallengeType;
     point?: number;
-    tags?: string[];
+
+    topics?: ChallengeTopic[];
+    challengeTopics?: ChallengeTopicPivot[];
+
     isSolved?: boolean;
     totalSubmissions?: number;
     userStats?: UserStats | null;
@@ -49,4 +63,10 @@ export interface ChallengePayload {
     point: number;
     difficulty: ChallengeDifficulty;
     type: ChallengeType;
+
+    topicIds?: string[];
+    topics?: {
+        topic_id: string;
+        weight?: number;
+    }[];
 }

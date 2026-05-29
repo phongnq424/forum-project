@@ -63,12 +63,12 @@
             <span class="val">{challenge.type}</span>
         </div>
 
-        {#if challenge.tags && challenge.tags.length > 0}
+        {#if challenge.topics && challenge.topics.length > 0}
             <div class="tags-section">
-                <span class="tiny-label">Tags</span>
+                <span class="tiny-label">Topics</span>
                 <div class="tags-list">
-                    {#each challenge.tags as tag}
-                        <Badge color="outline" size="sm">{tag}</Badge>
+                    {#each challenge.topics as topic}
+                        <Badge color="outline" size="sm">{topic.name}</Badge>
                     {/each}
                 </div>
             </div>

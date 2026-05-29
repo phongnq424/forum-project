@@ -1,19 +1,21 @@
 import type { Pagination } from "./common.type";
 
-export interface Topic {
+export interface CategoryTopic {
     id: string;
     name: string;
+    slug?: string;
+    category_id?: string;
+    parent_id?: string | null;
 }
 
 export interface Category {
     id: string;
     name: string;
-    description: string;
-    is_deleted: boolean;
-    created_at: string;
-    Topic: Topic[];
+    description?: string | null;
+    is_deleted?: boolean;
+    created_at?: string;
+    Topic?: CategoryTopic[];
 }
-
 
 export interface CategoryListResponse {
     data: Category[];
@@ -21,7 +23,8 @@ export interface CategoryListResponse {
 }
 
 export type DeleteManyResponse = {
-    count: number;
+    deletedCount?: number;
+    count?: number;
 };
 
 export interface CategoryDetailResponse {
@@ -30,7 +33,7 @@ export interface CategoryDetailResponse {
 
 export interface CategoryCreatePayload {
     name: string;
-    description: string;
+    description?: string;
 }
 
 export interface CategoryUpdatePayload {

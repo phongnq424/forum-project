@@ -3,6 +3,7 @@
     import Input from "$lib/components/ui/Input.svelte";
     import Modal from "$lib/components/ui/Modal.svelte";
     import { challengeService } from "$lib/services/challenge.service";
+    import { adminTopicService } from "$lib/services/topic.service";
     import type {
         Challenge,
         ChallengeDifficulty,
@@ -41,6 +42,8 @@
         type: "DSA" as ChallengeType,
     });
     let testCaseFile = $state<File | null>(null);
+    let topicOptions = $state<{ id: string; name: string }[]>([]);
+    let selectedTopicIds = $state<string[]>([]);
 
     function handleTestCaseFileChange(event: Event) {
         const input = event.currentTarget as HTMLInputElement;
@@ -60,6 +63,8 @@
             difficulty: (data.difficulty ?? "EASY") as ChallengeDifficulty,
             type: (data.type ?? "DSA") as ChallengeType,
         };
+
+        selectedTopicIds = data.topics?.map((topic) => topic.id) ?? [];
     }
 
     function closeModal() {
@@ -73,6 +78,7 @@
         if (!open) return;
 
         modalError = "";
+        loadTopics();
 
         if (isEdit && challengeId) {
             loadChallengeDetail(challengeId);
@@ -95,6 +101,18 @@
         }
     }
 
+    async function loadTopics() {
+        try {
+            const result = await adminTopicService.listTopics({
+                page: 1,
+                limit: 100,
+            });
+            topicOptions = result.data ?? [];
+        } catch (e) {
+            topicOptions = [];
+        }
+    }
+
     function buildPayload(): ChallengePayload {
         return {
             title: form.title.trim(),
@@ -107,6 +125,7 @@
             point: Number(form.point),
             difficulty: form.difficulty,
             type: form.type,
+            topicIds: selectedTopicIds,
         };
     }
 
@@ -131,6 +150,9 @@
         }
         if (!payload.point || payload.point <= 0) {
             return "Point must be greater than 0";
+        }
+        if (payload.topicIds && payload.topicIds.length === 0) {
+            return "At least one topic is required";
         }
         return "";
     }
@@ -247,6 +269,40 @@
                         <option value="MEDIUM">Medium</option>
                         <option value="HARD">Hard</option>
                     </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="topics">Topics *</label>
+
+                <div class="topic-grid">
+                    {#each topicOptions as topic}
+                        <label class="topic-option">
+                            <input
+                                type="checkbox"
+                                value={topic.id}
+                                checked={selectedTopicIds.includes(topic.id)}
+                                onchange={(e) => {
+                                    const checked = (
+                                        e.currentTarget as HTMLInputElement
+                                    ).checked;
+
+                                    if (checked) {
+                                        selectedTopicIds = [
+                                            ...selectedTopicIds,
+                                            topic.id,
+                                        ];
+                                    } else {
+                                        selectedTopicIds =
+                                            selectedTopicIds.filter(
+                                                (id) => id !== topic.id,
+                                            );
+                                    }
+                                }}
+                            />
+                            <span>{topic.name}</span>
+                        </label>
+                    {/each}
                 </div>
             </div>
 
@@ -453,6 +509,28 @@
         justify-content: flex-end;
         gap: 10px;
         width: 100%;
+    }
+    .topic-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .topic-option {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 10px;
+        border: 1px solid #2a2e36;
+        border-radius: 999px;
+        background: #14161c;
+        color: #d1d5db;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .topic-option input {
+        accent-color: #6366f1;
     }
 
     @media (max-width: 768px) {

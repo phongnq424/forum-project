@@ -16,6 +16,7 @@
         MEDIUM: "warning",
         HARD: "danger",
     };
+    const topics = $derived(challenge.topics ?? []);
 </script>
 
 <a href="/challenges/{challenge.id}" class="challenge-row">
@@ -32,8 +33,8 @@
     <div class="col title">
         <h3 class="challenge-title">{challenge.title}</h3>
         <div class="tag-list">
-            {#each challenge.tags ?? [] as tag}
-                <Badge color="outline" size="sm">#{tag}</Badge>
+            {#each topics as topic}
+                <Badge color="outline" size="sm">#{topic.name}</Badge>
             {/each}
         </div>
     </div>

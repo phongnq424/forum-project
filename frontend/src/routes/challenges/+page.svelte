@@ -6,7 +6,6 @@
 	import ChallengeList from "$lib/components/challenge/ChallengeList.svelte";
 	import ChallengeSidebar from "$lib/components/challenge/ChallengeSidebar.svelte";
 
-	// 1. State
 	let activeTab = $state<ChallengeType>("DSA");
 	let searchQuery = $state("");
 	let sortBy = $state("newest");
@@ -18,6 +17,7 @@
 		{ id: "DSA", label: "DSA / Algorithm" },
 		{ id: "SQL", label: "SQL Database" },
 		{ id: "BACKEND", label: "Backend System" },
+		{ id: "CONTEST", label: "Contest" },
 	];
 
 	const sortOptions = [
@@ -30,10 +30,9 @@
 		isLoading = true;
 
 		try {
-			// Gọi qua service với các params từ state
 			const response = await challengeService.listChallenges({
 				type: activeTab,
-				sortBy: sortBy,
+				sortBy,
 				q: searchQuery,
 				page: 1,
 				limit: 20,
@@ -44,13 +43,13 @@
 		} catch (error) {
 			console.error("Lỗi khi tải danh sách thử thách:", error);
 			challenges = [];
+			totalChallenges = 0;
 		} finally {
 			isLoading = false;
 		}
 	}
 
 	$effect(() => {
-		// Theo dõi sự thay đổi
 		const _trigger = [activeTab, searchQuery, sortBy];
 
 		const timeout = setTimeout(() => {
@@ -102,7 +101,7 @@
 
 		.main-layout {
 			grid-template-columns: 1fr;
-			gap: 20px; /* Giảm gap giữa list và sidebar khi xếp chồng */
+			gap: 20px;
 		}
 	}
 </style>

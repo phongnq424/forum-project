@@ -1,62 +1,35 @@
 import { api } from "./api";
-import { ENDPOINTS } from "$lib/constants";
-import { cacheService } from "./cache.service";
+import { ENDPOINTS } from "$lib/constants/index";
 import type {
+    DeleteManyResponse,
     TopicCreatePayload,
     TopicListParams,
     TopicListResponse,
-    TopicUpdatePayload
+    TopicUpdatePayload,
 } from "$lib/types/topic.type";
 
 export const adminTopicService = {
-    async listTopics(
-        params?: TopicListParams,
-        customFetch?: typeof fetch
-    ): Promise<TopicListResponse> {
-        const cacheKey = `admin_topics_${JSON.stringify(params ?? {})}`;
-        const cached = cacheService.get<TopicListResponse>(cacheKey);
-        if (cached) return cached;
-
-        const data = await api.get<TopicListResponse>(
-            ENDPOINTS.TOPICS.BASE,
-            { params, fetch: customFetch }
-        );
-
-        cacheService.set(cacheKey, data, 60);
-        return data;
+    listTopics(params?: TopicListParams): Promise<TopicListResponse> {
+        return api.get(ENDPOINTS.TOPICS.BASE, { params });
     },
 
-    async createTopic(
-        payload: TopicCreatePayload
-    ): Promise<{ count: number }> {
-        const result = await api.post<{ count: number }>(
-            ENDPOINTS.TOPICS.BASE,
-            payload
-        );
-
-        cacheService.clear();
-        return result;
+    createTopic(payload: TopicCreatePayload): Promise<{ count: number }> {
+        return api.post(ENDPOINTS.TOPICS.BASE, [payload]);
     },
 
-    async updateTopic(
-        id: string,
-        payload: TopicUpdatePayload
-    ): Promise<{ count: number }> {
-        const result = await api.put<{ count: number }>(
-            ENDPOINTS.TOPICS.BY_ID(id),
-            payload
-        );
-
-        cacheService.clear();
-        return result;
+    createTopics(payload: TopicCreatePayload[]): Promise<{ count: number }> {
+        return api.post(ENDPOINTS.TOPICS.BASE, payload);
     },
 
-    async deleteTopic(id: string): Promise<{ count: number }> {
-        const result = await api.delete<{ count: number }>(
-            ENDPOINTS.TOPICS.BY_ID(id)
-        );
+    updateTopic(id: string, payload: TopicUpdatePayload): Promise<unknown> {
+        return api.put(ENDPOINTS.TOPICS.BY_ID(id), payload);
+    },
 
-        cacheService.clear();
-        return result;
-    }
+    deleteTopics(ids: string[]): Promise<DeleteManyResponse> {
+        return api.delete(ENDPOINTS.TOPICS.BASE, { ids });
+    },
+
+    deleteTopic(id: string): Promise<DeleteManyResponse> {
+        return api.delete(ENDPOINTS.TOPICS.BASE, { ids: [id] });
+    },
 };

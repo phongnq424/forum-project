@@ -7,7 +7,7 @@
     import CategoryModal from "$lib/components/admin/category/CategoryModal.svelte";
     import AddTopicModal from "$lib/components/admin/category/AddTopicModal.svelte";
     import EditTopicModal from "$lib/components/admin/category/EditTopicModal.svelte";
-
+    import TopicTreeNode from "$lib/components/admin/category/TopicTreeNode.svelte";
     import { categoryService } from "$lib/services/category.service";
     import { adminTopicService } from "$lib/services/topic.service";
     import type { Category } from "$lib/types/category.type";
@@ -15,6 +15,7 @@
 
     interface CategoryRow extends Category {
         topics: Topic[];
+        topicCount: number;
     }
 
     const limitOptions = [
@@ -43,6 +44,7 @@
 
     let showAddTopicsModal = $state(false);
     let selectedCategory = $state<Category | null>(null);
+    let selectedParentTopicId = $state<string | null>(null);
 
     let showEditTopicModal = $state(false);
     let editingTopic = $state<Partial<Topic>>({});
@@ -66,16 +68,58 @@
         });
     });
 
+    function buildTopicTree(topicList: Topic[]): Topic[] {
+        const map = new Map<string, Topic>();
+        const roots: Topic[] = [];
+
+        topicList.forEach((topic) => {
+            map.set(topic.id, {
+                ...topic,
+                children: [],
+            });
+        });
+
+        map.forEach((topic) => {
+            if (topic.parent_id && map.has(topic.parent_id)) {
+                map.get(topic.parent_id)?.children?.push(topic);
+            } else {
+                roots.push(topic);
+            }
+        });
+
+        const sortTree = (items: Topic[]) => {
+            items.sort((a, b) => a.name.localeCompare(b.name));
+            items.forEach((item) => sortTree(item.children ?? []));
+        };
+
+        sortTree(roots);
+        return roots;
+    }
+
+    function countTree(items: Topic[]): number {
+        return items.reduce(
+            (sum, item) => sum + 1 + countTree(item.children ?? []),
+            0,
+        );
+    }
+
     function mergeData(
         categoryList: Category[],
         topicList: Topic[],
     ): CategoryRow[] {
-        return categoryList.map((category) => ({
-            ...category,
-            topics: topicList.filter(
+        return categoryList.map((category) => {
+            const categoryTopics = topicList.filter(
                 (topic) => topic.category_id === category.id,
-            ),
-        }));
+            );
+
+            const tree = buildTopicTree(categoryTopics);
+
+            return {
+                ...category,
+                topics: tree,
+                topicCount: countTree(tree),
+            };
+        });
     }
 
     async function loadData() {
@@ -87,6 +131,7 @@
                 categoryService.listCategories({
                     page,
                     limit,
+                    q: search || undefined,
                 }),
                 adminTopicService.listTopics({
                     page: 1,
@@ -156,13 +201,23 @@
         }
     }
 
-    function openAddTopicsModal(category: Category) {
+    function openAddTopicsModal(
+        category: Category,
+        parentTopicId: string | null = null,
+    ) {
         selectedCategory = category;
+        selectedParentTopicId = parentTopicId;
         showAddTopicsModal = true;
     }
 
     async function deleteTopic(id: string, name: string) {
-        if (!confirm(`Delete topic "${name}"?`)) return;
+        if (
+            !confirm(
+                `Delete topic "${name}"? Child topics may also be affected.`,
+            )
+        ) {
+            return;
+        }
 
         loading = true;
         error = "";
@@ -258,73 +313,57 @@
 
                                 <td>
                                     <div class="topics-cell">
-                                        <div class="topic-list">
-                                            {#if row.topics.length > 0}
-                                                {#each row.topics as topic (topic.id)}
-                                                    <div class="topic-chip">
-                                                        <span
-                                                            class="topic-chip-name"
-                                                        >
-                                                            {topic.name}
-                                                        </span>
+                                        <div class="topics-header-row">
+                                            <span class="topic-count">
+                                                {row.topicCount} topic{row.topicCount ===
+                                                1
+                                                    ? ""
+                                                    : "s"}
+                                            </span>
 
-                                                        <div
-                                                            class="topic-chip-actions"
-                                                        >
-                                                            <button
-                                                                type="button"
-                                                                class="icon-btn small"
-                                                                aria-label={`Edit topic ${topic.name}`}
-                                                                title="Edit topic"
-                                                                onclick={() =>
-                                                                    openEditTopicModal(
-                                                                        topic,
-                                                                    )}
-                                                            >
-                                                                <Icon
-                                                                    name="pencil"
-                                                                    size={13}
-                                                                />
-                                                            </button>
-
-                                                            <button
-                                                                type="button"
-                                                                class="icon-btn small danger"
-                                                                aria-label={`Delete topic ${topic.name}`}
-                                                                title="Delete topic"
-                                                                onclick={() =>
-                                                                    deleteTopic(
-                                                                        topic.id,
-                                                                        topic.name,
-                                                                    )}
-                                                            >
-                                                                <Icon
-                                                                    name="trash"
-                                                                    size={13}
-                                                                />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                {/each}
-                                            {:else}
-                                                <span class="muted"
-                                                    >No topics</span
-                                                >
-                                            {/if}
+                                            <button
+                                                type="button"
+                                                class="add-topic-button"
+                                                onclick={() =>
+                                                    openAddTopicsModal(
+                                                        row,
+                                                        null,
+                                                    )}
+                                            >
+                                                <Icon name="plus" size={14} />
+                                                Add root topic
+                                            </button>
                                         </div>
 
-                                        <button
-                                            type="button"
-                                            class="add-topic-button"
-                                            onclick={() =>
-                                                openAddTopicsModal(row)}
-                                        >
-                                            <Icon name="plus" size={14} />
-                                            Add topics
-                                        </button>
+                                        {#if row.topics.length > 0}
+                                            <div class="topic-tree">
+                                                {#each row.topics as topic (topic.id)}
+                                                    <TopicTreeNode
+                                                        {topic}
+                                                        category={row}
+                                                        {openAddTopicsModal}
+                                                        {openEditTopicModal}
+                                                        {deleteTopic}
+                                                    />
+                                                {/each}
+                                            </div>
+                                        {:else}
+                                            <div class="empty-topic-box">
+                                                <span>No topics yet</span>
+                                                <button
+                                                    type="button"
+                                                    onclick={() =>
+                                                        openAddTopicsModal(
+                                                            row,
+                                                            null,
+                                                        )}
+                                                >
+                                                    Create first topic
+                                                </button>
+                                            </div>
+                                        {/if}
                                     </div>
                                 </td>
-
                                 <td>
                                     <div class="row-actions">
                                         <button
@@ -418,6 +457,11 @@
     <AddTopicModal
         bind:open={showAddTopicsModal}
         category={selectedCategory}
+        topics={selectedCategory
+            ? (rows.find((row) => row.id === selectedCategory?.id)?.topics ??
+              [])
+            : []}
+        defaultParentId={selectedParentTopicId}
         onSave={loadData}
     />
 {/if}
@@ -426,6 +470,10 @@
     <EditTopicModal
         bind:open={showEditTopicModal}
         topic={editingTopic}
+        topics={editingTopic.category_id
+            ? (rows.find((row) => row.id === editingTopic.category_id)
+                  ?.topics ?? [])
+            : []}
         onSave={loadData}
     />
 {/if}
@@ -602,44 +650,6 @@
         gap: 10px;
     }
 
-    .topic-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .topic-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        max-width: 100%;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: #111318;
-        border-radius: 999px;
-        padding: 5px 7px 5px 10px;
-    }
-
-    .topic-chip-name {
-        color: #e5e7eb;
-        font-size: 13px;
-        line-height: 1.2;
-        max-width: 180px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .topic-chip-actions {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .muted {
-        color: #6b7280;
-        font-size: 13px;
-    }
-
     .add-topic-button {
         display: inline-flex;
         align-items: center;
@@ -680,12 +690,6 @@
             border-color 0.2s ease,
             color 0.2s ease,
             transform 0.2s ease;
-    }
-
-    .icon-btn.small {
-        width: 24px;
-        height: 24px;
-        border-radius: 8px;
     }
 
     .icon-btn:hover {
@@ -748,6 +752,49 @@
 
     .empty-icon {
         font-size: 36px;
+    }
+
+    .topics-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .topic-count {
+        color: #6b7280;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .topic-tree {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        max-width: 640px;
+    }
+
+    .empty-topic-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: #111318;
+        border: 1px dashed rgba(148, 163, 184, 0.22);
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    .empty-topic-box button {
+        border: none;
+        background: transparent;
+        color: #a78bfa;
+        cursor: pointer;
+        font-weight: 800;
     }
 
     @media (max-width: 900px) {
