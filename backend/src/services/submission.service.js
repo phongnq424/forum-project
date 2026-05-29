@@ -3,6 +3,7 @@ const prisma = new PrismaClient();
 
 const { Queue } = require('bullmq');
 const connection = require('../config/redisQueue');
+const { SubmissionInsightService } = require("./submissionInsight.service");
 
 const judgeQueue = new Queue('judge_queue', { connection });
 
@@ -198,6 +199,10 @@ const SubmissionService = {
             }
         });
 
+        SubmissionInsightService.analyzeAfterJudging(submissionId).catch((err) => {
+            console.error("[SubmissionInsightService] analyzeAfterJudging failed:", err.message);
+        });
+
         return {
             submissionId,
             score,
@@ -323,6 +328,75 @@ const SubmissionService = {
                 }
             }
         });
+    },
+    getInsight: async (submissionId, userId, isAdmin = false) => {
+        const submission = await prisma.submission.findUnique({
+            where: { id: submissionId },
+            select: {
+                id: true,
+                user_id: true,
+                submissionAIInsight: {
+                    include: {
+                        topics: {
+                            include: {
+                                Topic: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        slug: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!submission) return null;
+
+        if (!isAdmin && submission.user_id !== userId) {
+            throw new Error("Forbidden");
+        }
+
+        return submission.submissionAIInsight;
+    },
+
+    getRecommendations: async (submissionId, userId) => {
+        const submission = await prisma.submission.findUnique({
+            where: { id: submissionId },
+            select: {
+                id: true,
+                user_id: true
+            }
+        });
+
+        if (!submission) return [];
+
+        if (submission.user_id !== userId) {
+            throw new Error("Forbidden");
+        }
+
+        return await prisma.learningRecommendation.findMany({
+            where: {
+                user_id: userId,
+                submission_id: submissionId
+            },
+            orderBy: [
+                { priority: "desc" },
+                { created_at: "desc" }
+            ],
+            include: {
+                Topic: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true
+                    }
+                },
+                learningRecommendationItems: true
+            }
+        });
     }
 };
 
@@ -332,5 +406,7 @@ function normalizeTestcaseStatus(status) {
     if (["WA", "CE", "RE", "TLE", "MLE", "IE", "SKIPPED"].includes(status)) return status;
     return "IE";
 }
+
+
 
 module.exports = { SubmissionService };

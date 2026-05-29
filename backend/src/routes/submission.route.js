@@ -29,6 +29,8 @@ router.get("/challenge/:challenge_id", SubmissionController.listByChallenge);
 router.get("/user/:user_id", verifyToken, SubmissionController.listByUser);
 router.get("/user/:user_id/challenge/:challenge_id", verifyToken, SubmissionController.listByUserAndChallenge);
 router.post("/result", verifyInternalToken, SubmissionController.receiveResult);
+router.get("/:id/insight", verifyToken, SubmissionController.getInsight);
+router.get("/:id/recommendations", verifyToken, SubmissionController.getRecommendations);
 
 
 module.exports = router;

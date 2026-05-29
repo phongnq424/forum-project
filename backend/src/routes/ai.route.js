@@ -7,5 +7,6 @@ const router = Router()
 
 router.post('/chat', rateLimitMiddleware, verifyToken, AIController.chat)
 router.get('/history', rateLimitMiddleware, verifyToken, AIController.getChatHistory)
+router.post("/submission/analyze", rateLimitMiddleware, verifyToken, AIController.analyzeSubmissionMistake);
 
 module.exports = router

@@ -43,17 +43,39 @@ const ConversationService = {
     return conversation;
   },
 
-  createGroup: async (name, avatar, userIds) => {
+  createGroup: async ({
+    name,
+    avatar,
+    userIds,
+    ownerId,
+    scope = "GENERAL",
+    topic_id = null,
+    challenge_id = null
+  }) => {
     const conversation = await prisma.conversation.create({
       data: {
         type: "GROUP",
+        scope,
         name,
         avatar,
+        topic_id,
+        challenge_id,
         ConversationUser: {
-          create: userIds.map((id) => ({ user_id: id })),
-        },
+          create: userIds.map((id) => ({
+            user_id: id,
+            role: id === ownerId ? "OWNER" : "MEMBER"
+          }))
+        }
       },
-      include: { ConversationUser: true },
+      include: {
+        Topic: {
+          select: { id: true, name: true, slug: true }
+        },
+        Challenge: {
+          select: { id: true, title: true, difficulty: true, type: true }
+        },
+        ConversationUser: true
+      }
     });
 
     userIds.forEach((uid) => {
@@ -87,6 +109,9 @@ const ConversationService = {
       include: {
         Conversation: {
           include: {
+            scope: conv.scope,
+            topic_id: conv.topic_id,
+            challenge_id: conv.challenge_id,
             ConversationUser: {
               where: {
                 User: {

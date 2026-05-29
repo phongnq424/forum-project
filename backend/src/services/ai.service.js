@@ -189,6 +189,37 @@ const AIService = {
 
         return true;
     },
+    analyzeSubmissionMistake: async (payload) => {
+        try {
+            const resp = await axios.post(
+                buildAiUrl("/submission/analyze"),
+                payload,
+                {
+                    timeout: 60000,
+                    headers: getAuthHeaders(),
+                }
+            );
+
+            if (!resp.data.success) {
+                console.error("[AIService] Submission analysis failed:", resp.data.error);
+                throw new Error(resp.data.error || "AI submission analysis failed");
+            }
+
+            return {
+                summary: resp.data.summary || null,
+                mistake_type: resp.data.mistake_type || "UNKNOWN",
+                mistake_level: resp.data.mistake_level || "LOW",
+                explanation: resp.data.explanation || null,
+                suggestion: resp.data.suggestion || null,
+                confidence: typeof resp.data.confidence === "number" ? resp.data.confidence : null,
+                topics: Array.isArray(resp.data.topics) ? resp.data.topics : [],
+                raw: resp.data,
+            };
+        } catch (err) {
+            console.error("[AIService] Submission analysis error:", err.message);
+            throw new Error("AI submission analysis unavailable");
+        }
+    },
 };
 
 module.exports = { AIService };
