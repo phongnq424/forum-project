@@ -1,0 +1,7 @@
+-- CreateEnum
+CREATE TYPE "MODERATION_STATUS" AS ENUM ('NOT_REQUIRED', 'PENDING', 'APPROVED', 'REJECTED', 'FAILED');
+
+-- AlterTable
+ALTER TABLE "Post" ADD COLUMN     "moderated_at" TIMESTAMP(3),
+ADD COLUMN     "moderation_reason" TEXT,
+ADD COLUMN     "moderation_status" "MODERATION_STATUS" NOT NULL DEFAULT 'NOT_REQUIRED';

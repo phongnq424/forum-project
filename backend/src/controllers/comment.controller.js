@@ -11,15 +11,6 @@ function mapCommentError(e) {
     };
   }
 
-  if (e.message === "AI moderation unavailable") {
-    return {
-      status: 503,
-      body: {
-        code: "AI_MODERATION_UNAVAILABLE",
-        message: "Hệ thống kiểm duyệt AI tạm thời không khả dụng. Vui lòng thử lại sau.",
-      },
-    };
-  }
 
   return null;
 }

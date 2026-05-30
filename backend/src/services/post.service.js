@@ -143,6 +143,7 @@ const PostService = {
       topic_ids,
       topicIds,
       files = [],
+      moderationEnabled = false,
     } = payload;
 
     const primaryTopicId = topicId || topic_id || null;
@@ -159,6 +160,7 @@ const PostService = {
           topicId: primaryTopicId,
           user_id: userId,
           title: title || "",
+          moderation_status: moderationEnabled ? "PENDING" : "APPROVED",
           PostTopics:
             allTopicIds.length > 0
               ? {
@@ -378,7 +380,12 @@ const PostService = {
     const limit = parseInt(query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    let where = { is_deleted: false };
+    let where = {
+      is_deleted: false,
+      moderation_status: {
+        not: "REJECTED",
+      },
+    };
 
     if (query.topic_id || query.topicId) {
       const topicId = query.topic_id || query.topicId;

@@ -4,6 +4,8 @@ const { AIService } = require("../services/ai.service");
 const { upload } = require("../middlewares/upload.middleware");
 const { validateFiles } = require("../validations/file.validation");
 const { buildBlockContext } = require("../contexts/block.context");
+const { PostModerationService } = require("../services/post-moderation.service");
+const POST_MODERATION_ENABLED = process.env.POST_MODERATION_ENABLED === "true";
 
 async function cleanupLocalFiles(files = []) {
     await Promise.all(
@@ -63,25 +65,23 @@ const PostController = {
 
                 const { content, topic_id, topicId, topic_ids, topicIds, title } = req.body;
 
-                await AIService.assertTextSafe(`${title || ""}\n${content || ""}`);
-                await AIService.assertImagesSafe(files);
-
                 const newPost = await PostService.createPost(req.user.id, {
                     content,
                     topic_id: topic_id || topicId,
                     topic_ids: topic_ids || topicIds,
                     title,
                     files,
+                    moderationEnabled: POST_MODERATION_ENABLED,
                 });
+
+                await cleanupLocalFiles(files);
+
+                if (POST_MODERATION_ENABLED) {
+                    PostModerationService.moderatePostInBackground(newPost.id);
+                }
 
                 return res.status(201).json(newPost);
             } catch (error) {
-                const mapped = mapModerationError(error);
-                if (mapped) {
-                    await cleanupLocalFiles(files);
-                    return res.status(mapped.status).json(mapped.body);
-                }
-
                 const status =
                     error.message && error.message.toLowerCase().includes("invalid")
                         ? 400

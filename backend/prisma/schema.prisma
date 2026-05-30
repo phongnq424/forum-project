@@ -182,6 +182,14 @@ model User {
   userTopicMasteries      UserTopicMastery[]
 }
 
+enum MODERATION_STATUS {
+  NOT_REQUIRED
+  PENDING
+  APPROVED
+  REJECTED
+  FAILED
+}
+
 model Profile {
   id              String       @id @default(uuid())
   user_id         String       @unique
@@ -266,14 +274,17 @@ model Topic {
 }
 
 model Post {
-  id         String    @id @default(uuid())
-  user_id    String
-  title      String
-  content    String
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now()) @updatedAt
-  is_deleted Boolean   @default(false)
-  deleted_at DateTime?
+  id                String            @id @default(uuid())
+  user_id           String
+  title             String
+  content           String
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @default(now()) @updatedAt
+  is_deleted        Boolean           @default(false)
+  deleted_at        DateTime?
+  moderation_status MODERATION_STATUS @default(NOT_REQUIRED)
+  moderation_reason String?
+  moderated_at      DateTime?
 
   User       User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
   PostTopics PostTopic[]

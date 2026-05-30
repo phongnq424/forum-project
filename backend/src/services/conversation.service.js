@@ -109,19 +109,21 @@ const ConversationService = {
       include: {
         Conversation: {
           include: {
-            scope: conv.scope,
-            topic_id: conv.topic_id,
-            challenge_id: conv.challenge_id,
             ConversationUser: {
               where: {
                 User: {
                   is_deleted: false,
                   status: "ACTIVE",
-                }
+                },
               },
               include: {
                 User: {
-                  select: { id: true, username: true, avatar: true, fullname: true }
+                  select: {
+                    id: true,
+                    username: true,
+                    avatar: true,
+                    fullname: true,
+                  },
                 },
               },
             },
@@ -146,6 +148,7 @@ const ConversationService = {
       },
       orderBy: { joined_at: "desc" },
     });
+
     const peerIds = [];
 
     rows.forEach((cu) => {
@@ -153,43 +156,64 @@ const ConversationService = {
 
       if (conv.type === "CHAT") {
         const peer = conv.ConversationUser
-          .map((cu) => cu.User)
+          .map((item) => item.User)
           .find((u) => u.id !== userId);
 
         if (peer) peerIds.push(peer.id);
       }
     });
+
     const onlineKeys = peerIds.map((id) => `online:user:${id}`);
-    const onlineResults =
-      onlineKeys.length > 0 ? await redisClient.mget(onlineKeys) : [];
+
+    let onlineResults = [];
+
+    try {
+      onlineResults =
+        onlineKeys.length > 0 ? await redisClient.mget(onlineKeys) : [];
+    } catch (error) {
+      console.error(
+        "[ConversationService] Redis online check failed:",
+        error.message
+      );
+      onlineResults = [];
+    }
 
     const onlineMap = {};
+
     peerIds.forEach((id, i) => {
       onlineMap[id] = !!onlineResults[i];
     });
 
     return rows.map((cu) => {
       const conv = cu.Conversation;
+
       const peerUser =
         conv.type === "CHAT"
-          ? conv.ConversationUser.map((cu) => cu.User).find(
-            (u) => u.id !== userId
-          )
+          ? conv.ConversationUser
+            .map((item) => item.User)
+            .find((u) => u.id !== userId)
           : null;
+
       return {
         conversationId: conv.id,
         type: conv.type,
+        scope: conv.scope || "GENERAL",
+        topic_id: conv.topic_id || null,
+        challenge_id: conv.challenge_id || null,
+
         name: conv.type === "GROUP" ? conv.name : null,
+
         avatar:
           conv.type === "GROUP"
             ? conv.avatar
-            : peerUser.avatar || null,
+            : peerUser?.avatar || null,
 
         peer: peerUser
           ? {
             id: peerUser.id,
             username: peerUser.username,
-            fullname: peerUser?.fullname,
+            fullname: peerUser.fullname,
+            avatar: peerUser.avatar,
             online: onlineMap[peerUser.id] || false,
           }
           : null,
