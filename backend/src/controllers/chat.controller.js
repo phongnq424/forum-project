@@ -65,29 +65,43 @@ const ChatController = {
 
     sendMessage: async (req, res) => {
         try {
-            const fromId = req.user.id
-            const { toUserId, content } = req.body
+            const fromId = req.user.id;
+            const { toUserId, content } = req.body;
+            const files = req.files || [];
 
-            if (!toUserId || !content) {
-                return res.status(400).json({ error: 'Missing fields' })
+            if (!toUserId) {
+                return res.status(400).json({ error: "Missing toUserId" });
             }
 
-            const blockContext = await buildBlockContext(fromId)
+            if ((!content || String(content).trim() === "") && files.length === 0) {
+                return res.status(400).json({ error: "Message content or file is required" });
+            }
+
+            const blockContext = await buildBlockContext(fromId);
 
             const result = await ConversationService.sendDirectMessage(
                 fromId,
                 toUserId,
-                content,
-                { blockContext }
-            )
+                content || "",
+                {
+                    blockContext,
+                    files
+                }
+            );
 
-            return res.status(201).json(result)
+            return res.status(201).json(result);
         } catch (error) {
-            const msg = error.message?.toLowerCase()
-            if (msg?.includes('blocked')) {
-                return res.status(403).json({ error: error.message })
+            const msg = error.message?.toLowerCase();
+
+            if (msg?.includes("blocked")) {
+                return res.status(403).json({ error: error.message });
             }
-            return res.status(500).json({ error: error.message })
+
+            if (msg?.includes("unsupported file type")) {
+                return res.status(400).json({ error: error.message });
+            }
+
+            return res.status(500).json({ error: error.message });
         }
     }
 

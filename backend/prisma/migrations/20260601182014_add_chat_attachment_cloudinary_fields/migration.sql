@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "FILE_TYPE" ADD VALUE 'FILE';
