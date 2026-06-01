@@ -1,11 +1,19 @@
 <script lang="ts">
     import Avatar from "$lib/components/ui/Avatar.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import Icon from "$lib/components/ui/Icon.svelte";
     import type { ChatConversation } from "$lib/types/chat.type";
+    import { goto } from "$app/navigation";
 
     let { activeChat } = $props<{
         activeChat: ChatConversation | null;
     }>();
+
+    function handleViewProfile() {
+        if (!activeChat?.peerId) return;
+
+        goto(`/profile/${activeChat.peerId}`);
+    }
 </script>
 
 <aside class="profile-sidebar">
@@ -15,7 +23,7 @@
                 <Avatar
                     name={activeChat.name}
                     src={activeChat.avatar}
-                    size="lg"
+                    size="md"
                 />
             </div>
 
@@ -31,7 +39,12 @@
 
             <div class="quick-actions">
                 {#if activeChat.type === "CHAT"}
-                    <Button variant="secondary" style="width: 100%">
+                    <Button
+                        variant="secondary"
+                        onclick={handleViewProfile}
+                        disabled={!activeChat.peerId}
+                    >
+                        <Icon name="user" />
                         View Profile
                     </Button>
 
@@ -42,9 +55,9 @@
                         Block User
                     </Button>
                 {:else}
-                    <Button variant="secondary" style="width: 100%">
-                        View Group Info
-                    </Button>
+                    <Button variant="secondary"
+                        ><Icon name="folder" /> View Group Info</Button
+                    >
 
                     <Button
                         variant="danger"

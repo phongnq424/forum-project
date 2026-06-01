@@ -99,4 +99,10 @@ export const ENDPOINTS = {
         BASE: "reports",
         BY_ID: (id: string) => `reports/${id}`
     },
+    FOLLOWERS: {
+        TOGGLE: "/followers/toggle",
+        REMOVE: "/followers/remove",
+        FOLLOWERS_BY_USER: (userId: string) => `/followers/followers/${userId}`,
+        FOLLOWING_BY_USER: (userId: string) => `/followers/following/${userId}`,
+    },
 };
