@@ -9,41 +9,41 @@
     import { socketService } from "$lib/services/socket.svelte";
     import { userService } from "$lib/services/user.service";
     import type { User } from "$lib/types/user.type";
-    // Xóa import onMount vì không cần nữa
+    import type { ChatConversation } from "$lib/types/chat.type";
 
     let {
         conversations,
         activeChat = $bindable(),
         isLoading = true,
     } = $props<{
-        conversations: any[];
-        activeChat: any;
+        conversations: ChatConversation[];
+        activeChat: ChatConversation | null;
         isLoading: boolean;
     }>();
 
     let suggestedUsers = $state<User[]>([]);
     let searchQuery = $state("");
     let isSearching = $state(false);
-
-    // Thêm một flag để tránh việc fetch lại nhiều lần
     let hasLoadedSuggestions = $state(false);
 
     async function loadSuggestedUsers(query = "") {
         isSearching = true;
+
         try {
             const res = await userService.listUsers({
                 limit: 5,
                 search: query,
             });
+
             suggestedUsers = res.data;
         } catch (error) {
             console.error("Lỗi lấy danh sách user:", error);
+            suggestedUsers = [];
         } finally {
             isSearching = false;
         }
     }
 
-    // Dùng $effect thay cho onMount
     $effect(() => {
         if (
             isLoading === false &&
@@ -54,24 +54,44 @@
             hasLoadedSuggestions = true;
         }
     });
+
     $effect(() => {
-        conversations.forEach((conv: any) => {
-            console.log(
-                conv.peerId,
-                socketService.onlineUsers[conv.peerId],
-                conv.online,
-            );
-        });
+        const q = searchQuery.trim();
+
+        if (!q) return;
+
+        const timeout = setTimeout(() => {
+            loadSuggestedUsers(q);
+        }, 300);
+
+        return () => clearTimeout(timeout);
     });
 
-    function startNewChat(user: any) {
+    function getOnlineStatus(conv: ChatConversation) {
+        if (!conv.peerId) return conv.online;
+
+        const socketOnline = socketService.onlineUsers[conv.peerId];
+
+        if (socketOnline !== undefined) {
+            return socketOnline;
+        }
+
+        return conv.online;
+    }
+
+    function startNewChat(user: User) {
         activeChat = {
             id: `temp_${user.id}`,
-            name: user.name,
+            type: "CHAT",
+            scope: "GENERAL",
+            name: user.fullname || user.username || "User",
             avatar: user.avatar,
             peerId: user.id,
             online: true,
+            unreadCount: 0,
             lastMsg: "",
+            topic_id: null,
+            challenge_id: null,
         };
     }
 </script>
@@ -79,8 +99,9 @@
 <aside class="conv-list">
     <div class="list-header">
         <h2>Messages</h2>
+
         <div class="search-box">
-            <Input placeholder="Search users...">
+            <Input bind:value={searchQuery} placeholder="Search users...">
                 {#snippet icon()}
                     <Icon name="search" size={18} />
                 {/snippet}
@@ -94,7 +115,7 @@
                 <Loading size="md" message="Loading conversations..." />
             </div>
         {:else if conversations.length > 0}
-            {#each conversations as conv}
+            {#each conversations as conv (conv.id)}
                 <button
                     class="conv-item {activeChat?.id === conv.id
                         ? 'active'
@@ -103,26 +124,24 @@
                 >
                     <div class="avatar-wrapper">
                         <Avatar name={conv.name} src={conv.avatar} size="md" />
+
                         <div
-                            class="status-dot {socketService.onlineUsers[
-                                conv.peerId
-                            ] !== undefined
-                                ? socketService.onlineUsers[conv.peerId]
-                                    ? 'online'
-                                    : ''
-                                : conv.online
-                                  ? 'online'
-                                  : ''}"
+                            class="status-dot {getOnlineStatus(conv)
+                                ? 'online'
+                                : ''}"
                         ></div>
                     </div>
+
                     <div class="conv-info">
                         <span class="name">{conv.name}</span>
+
                         {#if socketService.typingStatus[conv.id]}
                             <span class="typing-text">đang nhập...</span>
                         {:else}
                             <span class="last-msg">{conv.lastMsg}</span>
                         {/if}
                     </div>
+
                     {#if conv.unreadCount > 0}
                         <div class="unread-badge-end">
                             <Badge color="danger" size="sm">
@@ -137,6 +156,7 @@
                 <div class="empty-icon">
                     <Icon name="message-square" size={32} />
                 </div>
+
                 <p class="empty-text">No conversations yet</p>
 
                 <div class="suggested-section">
@@ -150,7 +170,7 @@
                         </p>
                     {:else}
                         <div class="suggested-list">
-                            {#each suggestedUsers as user}
+                            {#each suggestedUsers as user (user.id)}
                                 <div class="suggested-item">
                                     <Avatar
                                         name={(user.fullname ||
@@ -159,12 +179,13 @@
                                         src={user.avatar ?? undefined}
                                         size="sm"
                                     />
+
                                     <div class="suggested-info">
-                                        <span class="name"
-                                            >{user.fullname ||
-                                                user.username}</span
-                                        >
+                                        <span class="name">
+                                            {user.fullname || user.username}
+                                        </span>
                                     </div>
+
                                     <Button
                                         variant="primary"
                                         size="sm"
@@ -190,20 +211,24 @@
         height: 100%;
         background: #1e222b;
     }
+
     .list-header {
         padding: 20px;
         color: white;
     }
+
     .list-header h2 {
         margin: 0 0 15px 0;
         font-size: 20px;
         font-weight: 600;
     }
+
     :global(.conversations-list) {
         flex: 1;
         display: flex;
         flex-direction: column;
     }
+
     .conv-item {
         display: flex;
         align-items: center;
@@ -217,13 +242,16 @@
         transition: 0.2s;
         text-align: left;
     }
+
     .conv-item:hover,
     .conv-item.active {
         background: #2a2e36;
     }
+
     .avatar-wrapper {
         position: relative;
     }
+
     .unread-badge-end {
         display: flex;
         align-items: center;
@@ -242,13 +270,16 @@
         background: #9ca3af;
         transition: background-color 0.3s ease;
     }
+
     .status-dot.online {
         background: #10b981;
     }
+
     .conv-info {
         flex: 1;
         overflow: hidden;
     }
+
     .conv-info .name {
         display: block;
         font-weight: 500;
@@ -256,6 +287,7 @@
         margin-bottom: 4px;
         font-family: Poppins;
     }
+
     .conv-info .last-msg {
         font-size: 13px;
         color: #9ca3af;
@@ -265,11 +297,13 @@
         display: block;
         font-family: Poppins;
     }
+
     .typing-text {
         color: #10b981;
         font-size: 12px;
         font-style: italic;
     }
+
     .loading-state {
         display: flex;
         justify-content: center;
@@ -278,25 +312,29 @@
         min-height: 200px;
         color: #9ca3af;
     }
-    /* === CSS MỚI CHO PHẦN EMPTY STATE === */
+
     .empty-state-list {
         padding: 30px 20px;
         text-align: center;
     }
+
     .empty-icon {
         color: #6b7280;
         margin-bottom: 12px;
         display: flex;
         justify-content: center;
     }
+
     .empty-text {
         color: #9ca3af;
         font-size: 14px;
         margin: 0 0 30px 0;
     }
+
     .suggested-section {
         text-align: left;
     }
+
     .suggested-section h4 {
         color: #d1d5db;
         font-size: 13px;
@@ -305,11 +343,13 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
+
     .suggested-list {
         display: flex;
         flex-direction: column;
         gap: 12px;
     }
+
     .suggested-item {
         display: flex;
         align-items: center;
@@ -319,13 +359,16 @@
         border-radius: 12px;
         transition: background 0.2s;
     }
+
     .suggested-item:hover {
         background: #374151;
     }
+
     .suggested-info {
         flex: 1;
         overflow: hidden;
     }
+
     .suggested-info .name {
         display: block;
         color: white;

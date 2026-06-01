@@ -1,5 +1,6 @@
 <script lang="ts">
     import { tick } from "svelte";
+    import { marked } from "marked";
     import { page } from "$app/state";
     import { replaceState } from "$app/navigation";
     import { reactionService } from "$lib/services/reaction.service";
@@ -28,6 +29,9 @@
     let showOwnerMenu = $state(false);
     let openEditModal = $state(false);
     let openDeleteModal = $state(false);
+    let postContentHtml = $derived(
+        post?.content ? (marked.parse(post.content) as string) : "",
+    );
 
     async function handleAfterEdit(updated?: Post) {
         if (!updated) return;
@@ -176,6 +180,9 @@
                                                 <Icon name="trash" size={16} /> Delete
                                             </button>
                                         {/if}
+                                        <button type="button">
+                                            <Icon name="flag" size={16} /> Report
+                                        </button>
                                     </Dropdown>
 
                                     <button
@@ -198,14 +205,25 @@
                     <main class="post-content">
                         <h1 class="post-title">{post.title}</h1>
                         <PostImageGrid images={post.Image || []} />
-                        <div class="text-body">
-                            {post.content || ""}
+                        <div class="text-body markdown-body">
+                            {@html postContentHtml}
                         </div>
 
-                        {#if post.Topic?.name}
+                        {#if post.primaryTopic || (post.topics && post.topics.length > 0)}
                             <div class="tags">
-                                <span class="topic-tag">#{post.Topic.name}</span
-                                >
+                                {#if post.primaryTopic}
+                                    <span class="topic-tag primary"
+                                        >#{post.primaryTopic.name}</span
+                                    >
+                                {/if}
+
+                                {#each post.topics ?? [] as topic}
+                                    {#if topic.id !== post.primaryTopic?.id}
+                                        <span class="topic-tag"
+                                            >#{topic.name}</span
+                                        >
+                                    {/if}
+                                {/each}
                             </div>
                         {/if}
                     </main>
@@ -358,11 +376,100 @@
         line-height: 1.4;
     }
     .text-body {
-        line-height: 1.5;
+        line-height: 1.7;
         color: #d1d5db;
         font-size: 16px;
-        white-space: pre-wrap;
         margin-bottom: 16px;
+    }
+    .markdown-body :global(h1),
+    .markdown-body :global(h2),
+    .markdown-body :global(h3) {
+        color: #f9fafb;
+        margin: 24px 0 12px;
+        line-height: 1.3;
+    }
+
+    .markdown-body :global(h1) {
+        font-size: 28px;
+    }
+
+    .markdown-body :global(h2) {
+        font-size: 22px;
+    }
+
+    .markdown-body :global(h3) {
+        font-size: 18px;
+    }
+
+    .markdown-body :global(p) {
+        margin: 0 0 14px;
+    }
+
+    .markdown-body :global(strong) {
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    .markdown-body :global(em) {
+        color: #e5e7eb;
+    }
+
+    .markdown-body :global(ul),
+    .markdown-body :global(ol) {
+        padding-left: 24px;
+        margin: 12px 0 16px;
+    }
+
+    .markdown-body :global(li) {
+        margin-bottom: 6px;
+    }
+
+    .markdown-body :global(a) {
+        color: #6366f1;
+        text-decoration: none;
+    }
+
+    .markdown-body :global(a:hover) {
+        text-decoration: underline;
+    }
+
+    .markdown-body :global(blockquote) {
+        border-left: 4px solid #6366f1;
+        padding: 10px 16px;
+        margin: 18px 0;
+        background: rgba(99, 102, 241, 0.08);
+        color: #cbd5e1;
+        border-radius: 8px;
+        font-style: italic;
+    }
+
+    .markdown-body :global(code) {
+        background: #1f2937;
+        color: #93c5fd;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .markdown-body :global(pre) {
+        background: #020617;
+        border: 1px solid #1f2937;
+        padding: 16px;
+        border-radius: 12px;
+        overflow-x: auto;
+        margin: 16px 0;
+    }
+
+    .markdown-body :global(pre code) {
+        background: transparent;
+        padding: 0;
+        color: #dbeafe;
+    }
+
+    .markdown-body :global(img) {
+        max-width: 100%;
+        border-radius: 12px;
+        margin: 20px 0;
     }
     .text-body :global(img) {
         max-width: 100%;

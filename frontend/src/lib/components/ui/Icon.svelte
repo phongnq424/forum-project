@@ -20,6 +20,7 @@
         | "arrow-left"
         | "arrow-right"
         | "message-circle"
+        | "flag"
         | "share"
         | "plus"
         | "share-2"
@@ -72,6 +73,7 @@
             '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
         bookmark:
             '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+        flag: '<path d="M4 22V4c0-.5.2-1 .6-1.4C5 2.2 5.6 2 6.2 2H18c.5 0 .9.2 1.2.5.3.4.5.8.5 1.3v9c0 .5-.2.9-.5 1.2-.3.4-.7.6-1.2.6H7.2L4 22z"/>',
         "arrow-left": '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
         "arrow-right": '<path d="m12 5 7 7-7 7"/><path d="M5 12h14"/>',
         "message-circle": '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
@@ -101,6 +103,7 @@
         "map-pin": "#10b981", // Xanh lá (Địa điểm)
         "help-circle": "#6366f1", // Tím nhạt (Support/Help)
         "trending-up": "#6366f1",
+        flag: "#ef4444",
         trash: "#ef4444",
     };
 

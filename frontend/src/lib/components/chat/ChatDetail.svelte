@@ -1,9 +1,11 @@
 <script lang="ts">
     import Avatar from "$lib/components/ui/Avatar.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import type { ChatConversation } from "$lib/types/chat.type";
 
-    // Nhận activeChat từ component cha
-    let { activeChat } = $props<{ activeChat: any }>();
+    let { activeChat } = $props<{
+        activeChat: ChatConversation | null;
+    }>();
 </script>
 
 <aside class="profile-sidebar">
@@ -16,21 +18,46 @@
                     size="lg"
                 />
             </div>
+
             <h3>{activeChat.name}</h3>
-            <p class="bio">Software Engineer & UI Designer</p>
+
+            {#if activeChat.type === "GROUP"}
+                <p class="bio">
+                    {activeChat.scope.replaceAll("_", " ").toLowerCase()}
+                </p>
+            {:else}
+                <p class="bio">Software Engineer & UI Designer</p>
+            {/if}
 
             <div class="quick-actions">
-                <Button variant="secondary" style="width: 100%">
-                    View Profile
-                </Button>
+                {#if activeChat.type === "CHAT"}
+                    <Button variant="secondary" style="width: 100%">
+                        View Profile
+                    </Button>
 
-                <Button variant="danger" style="width: 100%; margin-top: 10px;">
-                    Block User
-                </Button>
+                    <Button
+                        variant="danger"
+                        style="width: 100%; margin-top: 10px;"
+                    >
+                        Block User
+                    </Button>
+                {:else}
+                    <Button variant="secondary" style="width: 100%">
+                        View Group Info
+                    </Button>
+
+                    <Button
+                        variant="danger"
+                        style="width: 100%; margin-top: 10px;"
+                    >
+                        Leave Group
+                    </Button>
+                {/if}
             </div>
 
             <div class="shared-media">
                 <h4>Shared Media</h4>
+
                 <div class="media-grid">
                     {#each Array(3) as _}
                         <div class="media-item"></div>
@@ -51,40 +78,51 @@
         padding: 30px 20px;
         background: #1e222b;
         color: white;
+        height: 100%;
+        box-sizing: border-box;
     }
+
     .profile-info {
         text-align: center;
     }
+
     .big-avatar {
         display: flex;
         justify-content: center;
         margin-bottom: 1rem;
     }
+
     .bio {
         color: #9ca3af;
         font-size: 13px;
         margin: 10px 0 20px;
+        text-transform: capitalize;
     }
+
     .quick-actions {
         display: flex;
         flex-direction: column;
-        gap: 2px; /* Khoảng cách giữa các button */
+        gap: 2px;
     }
+
     .shared-media {
         margin-top: 30px;
         text-align: left;
     }
+
     .media-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 8px;
         margin-top: 10px;
     }
+
     .media-item {
         aspect-ratio: 1;
         background: #2a2e36;
         border-radius: 8px;
     }
+
     .placeholder-text {
         height: 100%;
         display: flex;

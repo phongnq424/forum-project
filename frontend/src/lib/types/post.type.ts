@@ -1,9 +1,30 @@
 import type { Pagination } from "./common.type";
 
+export interface PostTopic {
+    id: string;
+    name: string;
+    slug?: string;
+}
+
+export interface PostImage {
+    id: string;
+    url: string;
+}
+
+export interface PostUser {
+    id: string;
+    username: string;
+    fullname?: string;
+    avatar: string | null;
+}
+
 export interface Post {
     id: string;
     user_id: string;
-    topic_id: string;
+
+    topicId?: string | null;
+    topic_id?: string | null;
+
     title: string;
     content?: string;
     created_at: string;
@@ -16,22 +37,19 @@ export interface Post {
     isSaved: boolean;
     isReacted: boolean;
 
-    User: {
-        id: string;
-        username: string;
-        fullname?: string; // Đặt dấu ? (optional) đề phòng BE lúc có lúc không
-        avatar: string | null;
-    };
+    User: PostUser;
 
-    Topic: {
-        id: string;
-        name: string;
-    };
+    primaryTopic?: PostTopic | null;
+    topics?: PostTopic[];
 
-    Image: {
-        id: string;
-        url: string;
+    topic?: PostTopic | null;
+    Topic?: PostTopic | null;
+
+    PostTopics?: {
+        Topic?: PostTopic | null;
     }[];
+
+    Image: PostImage[];
 
     permissions: {
         canEdit: boolean;
@@ -45,14 +63,16 @@ export interface PaginatedPostResponse {
 }
 
 export interface PostCreatePayload {
-    topic_id: string;
+    topicId: string;
+    topicIds: string[];
     title: string;
     content: string;
     images?: File[] | FileList | null;
 }
 
 export interface PostUpdatePayload {
-    topic_id?: string;
+    topicId?: string;
+    topicIds?: string[];
     title?: string;
     content?: string;
     images?: File[] | FileList | null;

@@ -7,18 +7,40 @@
 	import Button from "$lib/components/ui/Button.svelte";
 	import Icon from "$lib/components/ui/Icon.svelte";
 	import { chatService } from "$lib/services/chat.service";
+	import type {
+		ChatConversation,
+		ConversationApiItem,
+	} from "$lib/types/chat.type";
 
-	let conversations = $state<any[]>([]);
+	let conversations = $state<ChatConversation[]>([]);
 	let isLoadingConversations = $state(true);
-	let activeChat = $state<any>(null);
+	let activeChat = $state<ChatConversation | null>(null);
 	let currentView = $state<"list" | "chat" | "detail">("list");
 
-	// Tự động chuyển view sang 'chat' khi activeChat thay đổi (cho Mobile)
+	function normalizeConversation(c: ConversationApiItem): ChatConversation {
+		const id = c.conversationId || c.id || "";
+
+		return {
+			id,
+			type: c.type || "CHAT",
+			scope: c.scope || "GENERAL",
+			name: c.name || c.peer?.fullname || c.peer?.username || "Unknown",
+			avatar: c.avatar || c.peer?.avatar || null,
+			peerId: c.peer?.id,
+			topic_id: c.topic_id || null,
+			challenge_id: c.challenge_id || null,
+			unreadCount: c.unreadCount || 0,
+			lastMsg: c.latestMsg?.content || "",
+			online: c.peer?.online || false,
+		};
+	}
+
 	$effect(() => {
 		if (activeChat && currentView === "list") {
 			currentView = "chat";
 		}
 	});
+
 	function backToList() {
 		activeChat = null;
 		currentView = "list";
@@ -28,21 +50,29 @@
 		currentView = "chat";
 	}
 
+	function handleConversationCreated(updatedChat: ChatConversation) {
+		activeChat = updatedChat;
+
+		const exists = conversations.some((conv) => conv.id === updatedChat.id);
+
+		if (!exists) {
+			conversations = [updatedChat, ...conversations];
+		} else {
+			conversations = conversations.map((conv) =>
+				conv.id === updatedChat.id ? updatedChat : conv,
+			);
+		}
+	}
+
 	async function loadConversations() {
+		isLoadingConversations = true;
+
 		try {
-			const data = (await chatService.listChats()) as any;
-			conversations = data.map((c: any) => ({
-				id: c.conversationId,
-				name:
-					c.name || c.peer?.fullname || c.peer?.username || "Unknown",
-				avatar: c.avatar,
-				peerId: c.peer?.id,
-				unreadCount: c.unreadCount,
-				lastMsg: c.latestMsg?.content || "",
-				online: c.peer?.online || false,
-			}));
+			const data = await chatService.listChats();
+			conversations = data.map(normalizeConversation);
 		} catch (error) {
 			console.error("Lỗi khi tải danh sách chat:", error);
+			conversations = [];
 		} finally {
 			isLoadingConversations = false;
 		}
@@ -53,19 +83,17 @@
 	});
 
 	$effect(() => {
-		if (activeChat) {
-			socketService.joinRoom(activeChat.id);
-			return () => socketService.leaveRoom(activeChat.id);
+		const chat = activeChat;
+
+		if (!chat || chat.id.startsWith("temp_")) {
+			return;
 		}
-	});
-	$effect(() => {
-		conversations.forEach((conv) => {
-			console.log(
-				conv.peerId,
-				socketService.onlineUsers[conv.peerId],
-				conv.online,
-			);
-		});
+
+		socketService.joinRoom(chat.id);
+
+		return () => {
+			socketService.leaveRoom(chat.id);
+		};
 	});
 </script>
 
@@ -93,7 +121,7 @@
 					</Button>
 
 					<div class="user-info">
-						<span class="name">{activeChat?.name}</span>
+						<span class="name">{activeChat.name}</span>
 					</div>
 
 					<Button
@@ -105,7 +133,10 @@
 					</Button>
 				</div>
 
-				<ChatWindow {activeChat} />
+				<ChatWindow
+					{activeChat}
+					onConversationCreated={handleConversationCreated}
+				/>
 			{:else}
 				<div class="empty-state">
 					<div class="icon-circle">
@@ -125,9 +156,11 @@
 				<Button variant="secondary" size="sm" onclick={backToChat}>
 					<Icon name="arrow-left" size={24} />
 				</Button>
+
 				<span class="detail-title">Details</span>
 				<div style="width: 40px;"></div>
 			</div>
+
 			<ChatDetails {activeChat} />
 		</div>
 	</div>
@@ -173,10 +206,9 @@
 	}
 
 	.mobile-header {
-		display: none; /* Ẩn mặc định trên Desktop */
+		display: none;
 	}
 
-	/* Giao diện trống */
 	.empty-state {
 		flex: 1;
 		display: flex;
@@ -198,11 +230,10 @@
 		color: #6366f1;
 	}
 
-	/* MOBILE RESPONSIVE */
 	@media (max-width: 1024px) {
 		.chat-page {
 			padding: 0;
-			height: 100vh; /* Chiếm toàn màn hình trên mobile */
+			height: 100vh;
 		}
 
 		.chat-container {
@@ -218,16 +249,14 @@
 			z-index: 5;
 		}
 
-		/* Logic trượt trang */
 		.mobile-hidden {
 			transform: translateX(100%);
 			pointer-events: none;
 			visibility: hidden;
 		}
 
-		/* Cột list nằm dưới cùng, không cần trượt */
 		.list-col.mobile-hidden {
-			transform: translateX(-20%); /* Hiệu ứng parallax nhẹ */
+			transform: translateX(-20%);
 		}
 
 		.mobile-header {

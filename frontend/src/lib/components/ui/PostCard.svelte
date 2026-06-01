@@ -1,12 +1,14 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import Card from "./Card.svelte";
-    import type { Post } from "$lib/types/post.type";
+    import type { Post, PostTopic } from "$lib/types/post.type";
     import Badge from "./Badge.svelte";
     import Icon from "./Icon.svelte";
     import { reactionService } from "$lib/services/reaction.service";
     import { postSaveService } from "$lib/services/postSaved.service";
+
     let { post } = $props<{ post: Post }>();
+
     let isReacted = $state(post.isReacted || false);
     let reactionCount = $state(post.reactionCount || 0);
     let isSaved = $state(post.isSaved || false);
@@ -14,9 +16,62 @@
     function getInitial(name?: string) {
         return name ? name.charAt(0).toUpperCase() : "U";
     }
+
+    function isPostTopic(
+        topic: PostTopic | null | undefined,
+    ): topic is PostTopic {
+        return Boolean(topic && topic.id && topic.name);
+    }
+
+    let displayName = $derived(
+        post.User?.fullname || post.User?.username || "Anonymous",
+    );
+
+    let coverImage = $derived(
+        post.Image && post.Image.length > 0
+            ? post.Image[0].url
+            : "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400",
+    );
+
+    let primaryTopic = $derived(
+        post.primaryTopic || post.topic || post.Topic || null,
+    );
+
+    let displayTopics = $derived.by(() => {
+        const fromTopics = post.topics ?? [];
+
+        const fromPostTopics =
+            post.PostTopics?.map(
+                (item: { Topic?: PostTopic | null }) => item.Topic,
+            ).filter(isPostTopic) ?? [];
+
+        const merged: PostTopic[] = [...fromTopics, ...fromPostTopics];
+
+        if (
+            primaryTopic &&
+            !merged.some((topic) => topic.id === primaryTopic.id)
+        ) {
+            merged.unshift(primaryTopic);
+        }
+
+        const map = new Map<string, PostTopic>();
+
+        merged.forEach((topic) => {
+            if (topic?.id) {
+                map.set(topic.id, topic);
+            }
+        });
+
+        return Array.from(map.values()).slice(0, 3);
+    });
+
     async function handleReaction(e: MouseEvent) {
         e.preventDefault();
         e.stopPropagation();
+
+        const previousIsReacted = isReacted;
+        const previousCount = reactionCount;
+
         isReacted = !isReacted;
         reactionCount += isReacted ? 1 : -1;
 
@@ -24,29 +79,25 @@
             await reactionService.toggleReaction(post.id);
         } catch (error) {
             console.error("Lỗi khi thả tym:", error);
-            isReacted = !isReacted;
-            reactionCount += isReacted ? 1 : -1;
+            isReacted = previousIsReacted;
+            reactionCount = previousCount;
         }
     }
 
     async function handleSave(e: MouseEvent) {
         e.preventDefault();
         e.stopPropagation();
+
+        const previousIsSaved = isSaved;
         isSaved = !isSaved;
+
         try {
             await postSaveService.toggleSave(post.id);
         } catch (error) {
-            isSaved = !isSaved;
+            console.error("Save failed:", error);
+            isSaved = previousIsSaved;
         }
     }
-
-    const displayName =
-        post.User?.fullname || post.User?.username || "Anonymous";
-
-    const coverImage =
-        post.Image && post.Image.length > 0
-            ? post.Image[0].url
-            : "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400";
 </script>
 
 <Card
@@ -71,8 +122,10 @@
                                 {getInitial(displayName)}
                             </div>
                         {/if}
+
                         <span class="author-name">{displayName}</span>
                         <span class="dot">•</span>
+
                         <span class="post-date">
                             {new Date(post.created_at).toLocaleDateString(
                                 "en-US",
@@ -85,10 +138,14 @@
                         </span>
                     </div>
 
-                    {#if post.Topic?.name}
-                        <Badge color="outline" size="sm">
-                            #{post.Topic.name}
-                        </Badge>
+                    {#if displayTopics.length > 0}
+                        <div class="post-topics">
+                            {#each displayTopics as topic (topic.id)}
+                                <Badge color="outline" size="sm">
+                                    #{topic.name}
+                                </Badge>
+                            {/each}
+                        </div>
                     {/if}
                 </div>
 
@@ -112,6 +169,7 @@
                             />
                             {reactionCount || 0}
                         </button>
+
                         <button
                             class="action-btn"
                             title="Comments"
@@ -124,9 +182,17 @@
                             <Icon name="message-square" />
                             {post.commentCount || 0}
                         </button>
-                        <button class="action-btn">
+
+                        <button
+                            class="action-btn"
+                            onclick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }}
+                        >
                             <Icon name="share" />
                         </button>
+
                         <button
                             class="action-btn {isSaved ? 'saved' : ''}"
                             title="Save Post"
@@ -145,8 +211,8 @@
                 <img src={coverImage} alt={post.title} />
             </div>
         </div>
-    </a></Card
->
+    </a>
+</Card>
 
 <style>
     .post-card {
@@ -155,6 +221,7 @@
         padding: 24px;
         gap: 20px;
     }
+
     .post-link {
         text-decoration: none;
         color: inherit;
@@ -164,6 +231,7 @@
     .post-header {
         display: flex;
         align-items: flex-start;
+        justify-content: space-between;
         margin-bottom: 12px;
         gap: 16px;
     }
@@ -172,6 +240,16 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        min-width: 0;
+    }
+
+    .post-topics {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+        margin-left: auto;
+        max-width: 45%;
     }
 
     .mini-avatar,
@@ -179,7 +257,9 @@
         width: 24px;
         height: 24px;
         border-radius: 6px;
+        flex-shrink: 0;
     }
+
     .mini-avatar {
         background: #6366f1;
         font-size: 12px;
@@ -189,6 +269,7 @@
         font-weight: bold;
         color: white;
     }
+
     .real-avatar {
         object-fit: cover;
     }
@@ -197,16 +278,20 @@
         font-size: 13px;
         font-weight: 600;
         color: #d1d5db;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .post-date,
     .dot {
         font-size: 12px;
         color: #6b7280;
+        white-space: nowrap;
     }
 
     .post-title {
-        font-size: 18px; /* Đã làm nhỏ lại so với 20px cũ */
+        font-size: 18px;
         font-weight: 700;
         margin: 0 0 8px 0;
         line-height: 1.4;
@@ -238,7 +323,7 @@
     .action-btn {
         background: transparent;
         border: none;
-        color: #6b7280;
+        color: #9ca3af;
         display: flex;
         align-items: center;
         gap: 6px;
@@ -246,9 +331,6 @@
         cursor: pointer;
         transition: 0.2s;
         padding: 0;
-    }
-    .action-btn {
-        color: #9ca3af;
     }
 
     .action-btn.liked {
@@ -260,8 +342,9 @@
     }
 
     .action-btn.saved {
-        color: #6366f1; /* Đổi màu xanh nếu đã lưu */
+        color: #6366f1;
     }
+
     .action-btn.saved:hover {
         color: #818cf8;
     }
@@ -283,12 +366,25 @@
         .post-card {
             grid-template-columns: 1fr;
         }
+
         .post-thumbnail {
             order: -1;
         }
+
         .post-thumbnail img {
             height: auto;
             aspect-ratio: 16/9;
+        }
+
+        .post-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .post-topics {
+            max-width: 100%;
+            justify-content: flex-start;
+            margin-left: 0;
         }
     }
 </style>

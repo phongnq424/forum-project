@@ -72,7 +72,7 @@
 	.page-container {
 		max-width: 1280px;
 		margin: 0 auto;
-		padding: 48px 20px 30px;
+		padding: 48px 0px 30px;
 		width: 100%;
 	}
 </style>

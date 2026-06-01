@@ -2,21 +2,25 @@
     import Modal from "$lib/components/ui/Modal.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import Input from "$lib/components/ui/Input.svelte";
-    import Select from "$lib/components/ui/Select.svelte";
     import FileInput from "$lib/components/ui/FileInput.svelte";
     import ErrorMessage from "$lib/components/ui/ErrorMessage.svelte";
-    import TextArea from "$lib/components/ui/TextArea.svelte";
-    import { untrack } from "svelte";
+    import { tick, untrack } from "svelte";
+    import { marked } from "marked";
 
     import { postService } from "$lib/services/post.service";
-    import type { Post } from "$lib/types/post.type";
+    import type { Post, PostTopic } from "$lib/types/post.type";
 
     interface PostImage {
         id: string;
         url: string;
     }
 
-    type SimpleTopic = { id: string; name: string };
+    type SimpleTopic = {
+        id: string;
+        name: string;
+        slug?: string;
+        parent_id?: string | null;
+    };
 
     let {
         open = $bindable(false),
@@ -30,65 +34,224 @@
         onSuccess?: (post?: Post) => void;
     }>();
 
-    const isEdit = $derived(!!post);
+    const isEdit = $derived(Boolean(post));
 
     let title = $state("");
     let content = $state("");
-    let topicId = $state("");
+    let primaryTopicId = $state("");
+    let selectedTopicIds = $state<string[]>([]);
     let existingImages = $state<PostImage[]>([]);
     let imagesToDelete = $state<string[]>([]);
-
-    // DUY NHẤT 1 MẢNG NÀY ĐỂ QUẢN LÝ ẢNH MỚI (Cả hiển thị lẫn submit)
     let newImages = $state<{ file: File; url: string }[]>([]);
 
     let loading = $state(false);
     let errorMessage = $state("");
 
-    let topicOptions = $derived([
-        { value: "", label: "Select a topic" },
-        ...topics.map((t: SimpleTopic) => ({
-            value: t.id,
-            label: t.name,
-        })),
-    ]);
+    function isTopicSelected(topicId: string) {
+        return selectedTopicIds.includes(topicId);
+    }
 
-    // Hàm khởi tạo dữ liệu
-    function initFormData() {
-        if (post) {
-            title = post.title;
-            content = post.content;
-            topicId = post.topic_id || "";
-            existingImages = post.Image ? [...post.Image] : [];
-        } else {
-            title = "";
-            content = "";
-            topicId = "";
-            existingImages = [];
+    function normalizeTopicIds(ids: string[]) {
+        return Array.from(new Set(ids.filter(Boolean)));
+    }
+
+    function toggleTopic(topicId: string) {
+        if (isTopicSelected(topicId)) {
+            const nextIds = selectedTopicIds.filter((id) => id !== topicId);
+            selectedTopicIds = nextIds;
+
+            if (primaryTopicId === topicId) {
+                primaryTopicId = nextIds[0] ?? "";
+            }
+
+            return;
         }
-        imagesToDelete = [];
-        // Dọn dẹp URL cũ tránh rò rỉ bộ nhớ
+
+        selectedTopicIds = normalizeTopicIds([...selectedTopicIds, topicId]);
+
+        if (!primaryTopicId) {
+            primaryTopicId = topicId;
+        }
+    }
+
+    function setPrimaryTopic(topicId: string) {
+        primaryTopicId = topicId;
+
+        if (!selectedTopicIds.includes(topicId)) {
+            selectedTopicIds = normalizeTopicIds([
+                topicId,
+                ...selectedTopicIds,
+            ]);
+        }
+    }
+
+    function isPostTopic(
+        topic: PostTopic | null | undefined,
+    ): topic is PostTopic {
+        return Boolean(topic && topic.id && topic.name);
+    }
+
+    function getPostTopicIds(currentPost: Post) {
+        const fromTopics = currentPost.topics?.map((topic) => topic.id) ?? [];
+
+        const fromPostTopics =
+            currentPost.PostTopics?.map((item) => item.Topic)
+                .filter(isPostTopic)
+                .map((topic) => topic.id) ?? [];
+
+        return normalizeTopicIds([...fromTopics, ...fromPostTopics]);
+    }
+
+    function getPrimaryTopicId(currentPost: Post) {
+        return (
+            currentPost.primaryTopic?.id ||
+            currentPost.topic?.id ||
+            currentPost.Topic?.id ||
+            currentPost.topicId ||
+            currentPost.topic_id ||
+            ""
+        );
+    }
+
+    function resetNewImages() {
         newImages.forEach((img) => URL.revokeObjectURL(img.url));
         newImages = [];
     }
 
-    // Effect 1: Gọi hàm khởi tạo khi mở Modal hoặc đổi Post (Dùng untrack để không bị vòng lặp)
+    function initFormData() {
+        if (post) {
+            title = post.title ?? "";
+            content = post.content ?? "";
+
+            primaryTopicId = getPrimaryTopicId(post);
+            selectedTopicIds = getPostTopicIds(post);
+
+            if (primaryTopicId && !selectedTopicIds.includes(primaryTopicId)) {
+                selectedTopicIds = normalizeTopicIds([
+                    primaryTopicId,
+                    ...selectedTopicIds,
+                ]);
+            }
+
+            existingImages = post.Image ? [...post.Image] : [];
+        } else {
+            title = "";
+            content = "";
+            primaryTopicId = "";
+            selectedTopicIds = [];
+            existingImages = [];
+        }
+
+        imagesToDelete = [];
+        errorMessage = "";
+        loading = false;
+        resetNewImages();
+    }
+
+    let contentTextarea: HTMLTextAreaElement;
+
+    let previewHtml = $derived(marked.parse(content || "") as string);
+
+    const markdownHints = [
+        { label: "Bold", syntax: "**text**" },
+        { label: "Italic", syntax: "*text*" },
+        { label: "Heading", syntax: "## Title" },
+        { label: "Quote", syntax: "> quote" },
+        { label: "List", syntax: "- item" },
+        { label: "Code", syntax: "`code`" },
+        { label: "Code block", syntax: "```js\\ncode\\n```" },
+    ];
+
+    async function applyMarkdown(
+        before: string,
+        after = before,
+        placeholder = "text",
+    ) {
+        if (!contentTextarea) return;
+
+        const start = contentTextarea.selectionStart;
+        const end = contentTextarea.selectionEnd;
+        const selectedText = content.slice(start, end) || placeholder;
+
+        content =
+            content.slice(0, start) +
+            before +
+            selectedText +
+            after +
+            content.slice(end);
+
+        await tick();
+
+        const cursorStart = start + before.length;
+        const cursorEnd = cursorStart + selectedText.length;
+
+        contentTextarea.focus();
+        contentTextarea.setSelectionRange(cursorStart, cursorEnd);
+    }
+
+    async function applyLineMarkdown(prefix: string, placeholder = "text") {
+        if (!contentTextarea) return;
+
+        const start = contentTextarea.selectionStart;
+        const end = contentTextarea.selectionEnd;
+        const selectedText = content.slice(start, end) || placeholder;
+        const wrappedText = selectedText
+            .split("\n")
+            .map((line) => `${prefix}${line}`)
+            .join("\n");
+
+        content = content.slice(0, start) + wrappedText + content.slice(end);
+
+        await tick();
+
+        contentTextarea.focus();
+        contentTextarea.setSelectionRange(
+            start + prefix.length,
+            start + wrappedText.length,
+        );
+    }
+
+    async function applyCodeBlock() {
+        if (!contentTextarea) return;
+
+        const start = contentTextarea.selectionStart;
+        const end = contentTextarea.selectionEnd;
+        const selectedText =
+            content.slice(start, end) || "console.log('Hello');";
+        const block = `\`\`\`js\n${selectedText}\n\`\`\``;
+
+        content = content.slice(0, start) + block + content.slice(end);
+
+        await tick();
+
+        contentTextarea.focus();
+        contentTextarea.setSelectionRange(
+            start + 6,
+            start + 6 + selectedText.length,
+        );
+    }
+
     $effect(() => {
-        if (open || post) {
+        if (open) {
             untrack(() => initFormData());
         }
     });
 
-    // Effect 2: Dọn dẹp bộ nhớ URL khi Component bị hủy
     $effect(() => {
-        return () => newImages.forEach((img) => URL.revokeObjectURL(img.url));
+        return () => resetNewImages();
     });
 
     async function handleSubmit(e: Event) {
         e.preventDefault();
         errorMessage = "";
 
-        if (!title.trim() || !content.trim() || !topicId) {
-            errorMessage = "Please fill in all required fields.";
+        if (!title.trim() || !content.trim()) {
+            errorMessage = "Please fill in title and content.";
+            return;
+        }
+
+        if (!primaryTopicId || selectedTopicIds.length === 0) {
+            errorMessage = "Please select at least one topic.";
             return;
         }
 
@@ -96,34 +259,47 @@
 
         try {
             const formData = new FormData();
-            formData.append("title", title);
-            formData.append("content", content);
-            formData.append("topic_id", topicId);
 
-            // Gắn ảnh từ mảng newImages vào formData
+            formData.append("title", title.trim());
+            formData.append("content", content.trim());
+            formData.append("topicId", primaryTopicId);
+            formData.append("topicIds", JSON.stringify(selectedTopicIds));
+
             newImages.forEach((img) => {
                 formData.append("images", img.file);
             });
 
-            let result;
+            let result: Post;
 
-            if (isEdit) {
+            if (isEdit && post) {
                 formData.append(
                     "delete_images",
                     JSON.stringify(imagesToDelete),
                 );
-                result = await postService.updatePost(
-                    post!.id,
-                    formData as any,
-                );
+
+                result = await postService.updatePost(post.id, formData);
             } else {
-                result = await postService.createPost(formData as any);
+                result = await postService.createPost(formData);
             }
 
             open = false;
-            if (onSuccess) onSuccess(result);
-        } catch (error: any) {
-            errorMessage = error || "Something went wrong.";
+            onSuccess?.(result);
+        } catch (error: unknown) {
+            const err = error as {
+                response?: {
+                    data?: {
+                        message?: string;
+                        error?: string;
+                    };
+                };
+                message?: string;
+            };
+
+            errorMessage =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                "Something went wrong.";
         } finally {
             loading = false;
         }
@@ -133,16 +309,13 @@
         const input = e.target as HTMLInputElement;
         if (!input.files || input.files.length === 0) return;
 
-        const incomingFiles = Array.from(input.files);
-
-        // Tạo object chứa cả file và url, đẩy thẳng vào newImages
-        const addedImages = incomingFiles.map((file) => ({
+        const addedImages = Array.from(input.files).map((file) => ({
             file,
             url: URL.createObjectURL(file),
         }));
 
         newImages = [...newImages, ...addedImages];
-        input.value = ""; // Reset input
+        input.value = "";
     }
 
     function removeExistingImage(imgId: string) {
@@ -151,34 +324,179 @@
     }
 
     function removeNewImage(url: string) {
-        // Tìm và revoke URL, sau đó xóa khỏi mảng
         const imgToRemove = newImages.find((img) => img.url === url);
-        if (imgToRemove) URL.revokeObjectURL(imgToRemove.url);
+
+        if (imgToRemove) {
+            URL.revokeObjectURL(imgToRemove.url);
+        }
 
         newImages = newImages.filter((img) => img.url !== url);
     }
 </script>
 
-<Modal bind:open title={isEdit ? "Edit Post" : "Create Post"} maxWidth="600px">
+<Modal bind:open title={isEdit ? "Edit Post" : "Create Post"} maxWidth="1180px">
     <form class="post-form" onsubmit={handleSubmit}>
         <ErrorMessage error={errorMessage} />
 
         <Input label="Title" bind:value={title} required disabled={loading} />
 
-        <Select
-            label="Topic"
-            bind:value={topicId}
-            options={topicOptions}
-            disabled={loading}
-        />
+        <div class="topic-section">
+            <div class="topic-header">
+                <div>
+                    <p class="label">Topics *</p>
+                    <p class="hint">
+                        Select one or more tags. Click the star to choose the
+                        main topic.
+                    </p>
+                </div>
+            </div>
 
-        <TextArea
-            label="Content"
-            bind:value={content}
-            rows="6"
-            required
-            disabled={loading}
-        />
+            <div class="topic-chip-list">
+                {#each topics as topic (topic.id)}
+                    <div
+                        class="topic-chip"
+                        class:selected={isTopicSelected(topic.id)}
+                        class:primary={primaryTopicId === topic.id}
+                    >
+                        <button
+                            type="button"
+                            class="chip-main"
+                            disabled={loading}
+                            onclick={() => toggleTopic(topic.id)}
+                        >
+                            #{topic.name}
+                        </button>
+
+                        {#if isTopicSelected(topic.id)}
+                            <button
+                                type="button"
+                                class="star-btn"
+                                class:active={primaryTopicId === topic.id}
+                                disabled={loading}
+                                title="Set as main topic"
+                                onclick={() => setPrimaryTopic(topic.id)}
+                            >
+                                ★
+                            </button>
+                        {/if}
+                    </div>
+                {:else}
+                    <p class="empty-topic">No topics available.</p>
+                {/each}
+            </div>
+
+            {#if selectedTopicIds.length > 0}
+                <p class="selected-summary">
+                    Selected {selectedTopicIds.length} topic{selectedTopicIds.length ===
+                    1
+                        ? ""
+                        : "s"}. Main topic:
+                    <strong>
+                        {topics.find(
+                            (t: SimpleTopic) => t.id === primaryTopicId,
+                        )?.name ?? "None"}
+                    </strong>
+                </p>
+            {/if}
+        </div>
+
+        <div class="markdown-section">
+            <div class="markdown-column editor-column">
+                <div class="section-header">
+                    <div>
+                        <p class="section-title">Content</p>
+                        <p class="section-subtitle">
+                            Write with Markdown or use toolbar
+                        </p>
+                    </div>
+                </div>
+
+                <div class="markdown-toolbar">
+                    <button
+                        type="button"
+                        onclick={() => applyMarkdown("**", "**", "bold text")}
+                    >
+                        B
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick={() => applyMarkdown("*", "*", "italic text")}
+                    >
+                        I
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick={() => applyLineMarkdown("## ", "Heading")}
+                    >
+                        H2
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick={() => applyLineMarkdown("> ", "Quote")}
+                    >
+                        Quote
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick={() => applyLineMarkdown("- ", "List item")}
+                    >
+                        List
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick={() => applyMarkdown("`", "`", "code")}
+                    >
+                        Code
+                    </button>
+
+                    <button type="button" onclick={applyCodeBlock}>
+                        Code block
+                    </button>
+                </div>
+
+                <div class="markdown-hints">
+                    {#each markdownHints as hint}
+                        <div class="hint-item">
+                            <span>{hint.label}</span>
+                            <code>{hint.syntax}</code>
+                        </div>
+                    {/each}
+                </div>
+
+                <textarea
+                    bind:this={contentTextarea}
+                    bind:value={content}
+                    class="markdown-textarea"
+                    placeholder="Write your post content here..."
+                    required
+                    disabled={loading}
+                ></textarea>
+            </div>
+
+            <div class="markdown-column preview-column">
+                <div class="section-header">
+                    <div>
+                        <p class="section-title">Preview</p>
+                        <p class="section-subtitle">Live rendered result</p>
+                    </div>
+                </div>
+
+                <div class="markdown-preview">
+                    {#if content.trim()}
+                        {@html previewHtml}
+                    {:else}
+                        <div class="empty-preview">
+                            Your Markdown preview will appear here.
+                        </div>
+                    {/if}
+                </div>
+            </div>
+        </div>
 
         <div class="image-section">
             <p class="label">Images</p>
@@ -194,6 +512,7 @@
                             >
                                 ✕
                             </button>
+
                             <img src={img.url} alt="existing" />
                             <span class="tag">Server</span>
                         </div>
@@ -209,6 +528,7 @@
                         >
                             ✕
                         </button>
+
                         <img src={img.url} alt="preview" />
                         <span class="tag">New</span>
                     </div>
@@ -253,6 +573,114 @@
         flex-direction: column;
         gap: 16px;
         padding: 10px 0;
+    }
+
+    .topic-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .topic-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .label {
+        font-size: 14px;
+        color: #d1d5db;
+        margin: 0 0 4px;
+        display: block;
+        font-weight: 700;
+    }
+
+    .hint {
+        margin: 0;
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .topic-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid #2a2e36;
+        border-radius: 14px;
+        background: #111318;
+        max-height: 180px;
+        overflow-y: auto;
+    }
+
+    .topic-chip {
+        display: inline-flex;
+        align-items: center;
+        overflow: hidden;
+        border: 1px solid #2a2e36;
+        border-radius: 999px;
+        background: #171b24;
+        color: #9ca3af;
+        transition: all 0.2s ease;
+    }
+
+    .topic-chip.selected {
+        border-color: rgba(99, 102, 241, 0.45);
+        background: rgba(99, 102, 241, 0.14);
+        color: #e5e7eb;
+    }
+
+    .topic-chip.primary {
+        border-color: rgba(250, 204, 21, 0.45);
+        background: rgba(250, 204, 21, 0.12);
+    }
+
+    .chip-main {
+        border: none;
+        background: transparent;
+        color: inherit;
+        padding: 7px 10px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .chip-main:disabled,
+    .star-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .star-btn {
+        border: none;
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        color: #6b7280;
+        padding: 7px 9px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+    .star-btn.active {
+        color: #facc15;
+    }
+
+    .selected-summary {
+        margin: 0;
+        color: #9ca3af;
+        font-size: 12px;
+    }
+
+    .selected-summary strong {
+        color: #e5e7eb;
+    }
+
+    .empty-topic {
+        margin: 0;
+        color: #6b7280;
+        font-size: 13px;
     }
 
     .image-preview {
@@ -305,18 +733,194 @@
         border-radius: 4px;
     }
 
-    .label {
-        font-size: 14px;
-        color: #9ca3af;
-        margin-bottom: 8px;
-        display: block;
-    }
-
     .form-actions {
         display: flex;
         justify-content: flex-end;
         gap: 12px;
         border-top: 1px solid #2a2e36;
         padding-top: 16px;
+    }
+    .markdown-section {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+    }
+
+    .markdown-column {
+        border: 1px solid #2a2e36;
+        border-radius: 16px;
+        background: #111827;
+        overflow: hidden;
+        min-height: 560px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .section-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid #2a2e36;
+        background: #0f172a;
+    }
+
+    .section-title {
+        margin: 0;
+        color: #f9fafb;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .section-subtitle {
+        margin: 4px 0 0;
+        color: #9ca3af;
+        font-size: 12px;
+    }
+
+    .markdown-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #2a2e36;
+    }
+
+    .markdown-toolbar button {
+        border: 1px solid #374151;
+        background: #1f2937;
+        color: #e5e7eb;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .markdown-toolbar button:hover {
+        background: #374151;
+    }
+
+    .markdown-hints {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #2a2e36;
+    }
+
+    .hint-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        color: #9ca3af;
+        font-size: 12px;
+    }
+
+    .hint-item code {
+        color: #93c5fd;
+        background: #1f2937;
+        padding: 2px 6px;
+        border-radius: 6px;
+        white-space: nowrap;
+    }
+
+    .markdown-textarea {
+        flex: 1;
+        width: 100%;
+        min-height: 320px;
+        resize: vertical;
+        border: none;
+        outline: none;
+        background: #111827;
+        color: #f9fafb;
+        padding: 16px;
+        font-size: 14px;
+        line-height: 1.7;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+            "Liberation Mono", "Courier New", monospace;
+    }
+
+    .markdown-textarea::placeholder {
+        color: #6b7280;
+    }
+
+    .markdown-preview {
+        flex: 1;
+        padding: 18px;
+        overflow: auto;
+        color: #e5e7eb;
+        line-height: 1.7;
+    }
+
+    .markdown-preview :global(h1),
+    .markdown-preview :global(h2),
+    .markdown-preview :global(h3) {
+        color: #f9fafb;
+        margin: 20px 0 10px;
+    }
+
+    .markdown-preview :global(p) {
+        margin: 0 0 12px;
+    }
+
+    .markdown-preview :global(strong) {
+        color: #ffffff;
+    }
+
+    .markdown-preview :global(a) {
+        color: #60a5fa;
+    }
+
+    .markdown-preview :global(blockquote) {
+        margin: 12px 0;
+        padding: 10px 14px;
+        border-left: 4px solid #3b82f6;
+        background: #1f2937;
+        color: #d1d5db;
+        border-radius: 8px;
+    }
+
+    .markdown-preview :global(code) {
+        background: #1f2937;
+        color: #93c5fd;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 13px;
+    }
+
+    .markdown-preview :global(pre) {
+        background: #020617;
+        border: 1px solid #1f2937;
+        padding: 14px;
+        border-radius: 12px;
+        overflow-x: auto;
+    }
+
+    .markdown-preview :global(pre code) {
+        background: transparent;
+        padding: 0;
+    }
+
+    .markdown-preview :global(ul),
+    .markdown-preview :global(ol) {
+        padding-left: 22px;
+    }
+
+    .empty-preview {
+        height: 100%;
+        min-height: 320px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+        border: 1px dashed #374151;
+        border-radius: 12px;
+    }
+
+    @media (max-width: 900px) {
+        .markdown-section {
+            grid-template-columns: 1fr;
+        }
+
+        .markdown-column {
+            min-height: auto;
+        }
     }
 </style>
