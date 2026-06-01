@@ -1,10 +1,12 @@
 <script lang="ts">
     import { tick } from "svelte";
+    import { toastState } from "$lib/states/toast.svelte";
     import { marked } from "marked";
     import { page } from "$app/state";
     import { replaceState } from "$app/navigation";
     import { reactionService } from "$lib/services/reaction.service";
     import { postSaveService } from "$lib/services/postSaved.service.js";
+    import { reportService } from "$lib/services/report.service";
     import Icon from "$lib/components/ui/Icon.svelte";
     import Dropdown from "$lib/components/ui/Dropdown.svelte";
     import Button from "$lib/components/ui/Button.svelte";
@@ -32,6 +34,7 @@
     let postContentHtml = $derived(
         post?.content ? (marked.parse(post.content) as string) : "",
     );
+    let reporting = $state(false);
 
     async function handleAfterEdit(updated?: Post) {
         if (!updated) return;
@@ -69,6 +72,29 @@
         } catch (error) {
             console.error("Reaction failed, reverting:", error);
             isSaved = !isSaved;
+        }
+    }
+    async function handleReportPost() {
+        if (!post || reporting) return;
+
+        reporting = true;
+        showOwnerMenu = false;
+
+        try {
+            await reportService.create({
+                type: "POST",
+                targetId: post.id,
+                title: `Report post: ${post.title}`,
+                reason: "This post was reported by a user.",
+                severity: "MEDIUM",
+            });
+
+            toastState.success("Report submitted successfully.");
+        } catch (error) {
+            console.error("Report post failed:", error);
+            toastState.error("Failed to submit report.");
+        } finally {
+            reporting = false;
         }
     }
     $effect(() => {
@@ -180,8 +206,15 @@
                                                 <Icon name="trash" size={16} /> Delete
                                             </button>
                                         {/if}
-                                        <button type="button">
-                                            <Icon name="flag" size={16} /> Report
+                                        <button
+                                            type="button"
+                                            onclick={handleReportPost}
+                                            disabled={reporting}
+                                        >
+                                            <Icon name="flag" size={16} />
+                                            {reporting
+                                                ? "Reporting..."
+                                                : "Report"}
                                         </button>
                                     </Dropdown>
 

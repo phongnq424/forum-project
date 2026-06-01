@@ -9,6 +9,7 @@
 	import { goto } from "$app/navigation";
 	import { api } from "$lib/services/api";
 	import { untrack } from "svelte";
+	import ToastContainer from "$lib/components/ui/ToastContainer.svelte";
 
 	let { data, children }: { data: App.PageData; children: any } = $props();
 
@@ -42,6 +43,7 @@
 		<div class="page-container">
 			{@render children?.()}
 			<ChatBotFab />
+			<ToastContainer />
 		</div>
 	</main>
 
