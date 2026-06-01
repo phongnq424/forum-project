@@ -77,4 +77,10 @@
 		padding: 48px 0px 30px;
 		width: 100%;
 	}
+	@media (max-width: 768px) {
+		.page-container {
+			max-width: 1200px;
+			padding: 48px 20px 30px;
+		}
+	}
 </style>

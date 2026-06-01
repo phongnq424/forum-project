@@ -8,32 +8,100 @@
     import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
     import type {
+        ChatAttachment,
         ChatConversation,
         ChatMessage,
         ChatMessageApiItem,
     } from "$lib/types/chat.type";
 
-    let { activeChat, onConversationCreated } = $props<{
+    let {
+        activeChat,
+        online = false,
+        onConversationCreated,
+        onMessagesChange,
+    } = $props<{
         activeChat: ChatConversation;
-        onConversationCreated?: (conversation: ChatConversation) => void;
+        online?: boolean;
+        onConversationCreated?: (chat: ChatConversation) => void;
+        onMessagesChange?: (messages: ChatMessage[]) => void;
     }>();
 
     let messages = $state<ChatMessage[]>([]);
     let newMessage = $state("");
+    let selectedFiles = $state<File[]>([]);
     let isLoading = $state(true);
+    let isSending = $state(false);
+
+    function setMessages(next: ChatMessage[]) {
+        messages = next;
+        onMessagesChange?.(next);
+    }
 
     function normalizeMessage(m: ChatMessageApiItem): ChatMessage {
         return {
             id: m.id,
             senderId: m.Sender?.id || m.sender_id || "",
-            text: m.content,
+            text: m.content || "",
             time: new Date(m.sent_at).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
             }),
+            attachments: m.Attachment || [],
         };
     }
 
+    function buildFallbackText(files: File[]) {
+        if (files.length === 0) return "";
+
+        const hasImage = files.some((file) => file.type.startsWith("image/"));
+        const hasVideo = files.some((file) => file.type.startsWith("video/"));
+
+        if (hasImage) return "Đang gửi ảnh...";
+        if (hasVideo) return "Đang gửi video...";
+        return "Đang gửi tệp đính kèm...";
+    }
+
+    function formatSize(size?: number | null) {
+        if (!size) return "";
+        if (size < 1024) return `${size} B`;
+        if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+        return `${(size / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function handleFiles(event: Event) {
+        const input = event.target as HTMLInputElement;
+        selectedFiles = input.files ? Array.from(input.files) : [];
+    }
+
+    function removeSelectedFile(index: number) {
+        selectedFiles = selectedFiles.filter((_, i) => i !== index);
+    }
+
+    async function openAttachment(attachment: ChatAttachment) {
+        try {
+            const result = await chatService.getAttachmentUrl(attachment.id);
+            window.open(result.url, "_blank");
+        } catch (error) {
+            console.error("Lỗi mở attachment:", error);
+        }
+    }
+
+    function upsertRealMessage(
+        tempId: string,
+        realMessage: ChatMessageApiItem,
+    ) {
+        const normalized = normalizeMessage(realMessage);
+        const realExists = messages.some((item) => item.id === normalized.id);
+
+        if (realExists) {
+            setMessages(messages.filter((item) => item.id !== tempId));
+            return;
+        }
+
+        setMessages(
+            messages.map((item) => (item.id === tempId ? normalized : item)),
+        );
+    }
     async function ensureRealConversation(): Promise<ChatConversation> {
         if (!activeChat.id.startsWith("temp_")) {
             return activeChat;
@@ -84,7 +152,7 @@
     $effect(() => {
         async function fetchHistory() {
             if (!activeChat || activeChat.id.startsWith("temp_")) {
-                messages = [];
+                setMessages([]);
                 isLoading = false;
                 return;
             }
@@ -96,7 +164,7 @@
                 const data = await chatService.getMessages(currentId);
 
                 if (currentId === activeChat.id) {
-                    messages = data.map(normalizeMessage);
+                    setMessages(data.map(normalizeMessage));
                 }
             } catch (error) {
                 console.error("Lỗi tải lịch sử tin nhắn:", error);
@@ -122,21 +190,7 @@
                 const exists = messages.some((m) => m.id === msgData.id);
 
                 if (!exists) {
-                    messages = [
-                        ...messages,
-                        {
-                            id: msgData.id,
-                            senderId: msgData.sender_id,
-                            text: msgData.content,
-                            time: new Date(msgData.sent_at).toLocaleTimeString(
-                                [],
-                                {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                },
-                            ),
-                        },
-                    ];
+                    setMessages([...messages, normalizeMessage(msgData)]);
                 }
             }
         });
@@ -145,10 +199,15 @@
     });
 
     async function sendMessage() {
-        if (!newMessage.trim()) return;
-
         const text = newMessage.trim();
+        const files = selectedFiles;
+
+        if (!text && files.length === 0) return;
+        if (isSending) return;
+
         newMessage = "";
+        selectedFiles = [];
+        isSending = true;
 
         const tempId = `temp-${Date.now()}`;
         const currentSocketId = socketService.socket?.id;
@@ -156,19 +215,45 @@
         const optimisticMsg: ChatMessage = {
             id: tempId,
             senderId: authState.user?.id || "",
-            text,
+            text: text || buildFallbackText(files),
             time: new Date().toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
             }),
+            attachments: [],
         };
 
-        messages = [...messages, optimisticMsg];
+        setMessages([...messages, optimisticMsg]);
 
         try {
             const realConversation = await ensureRealConversation();
 
             socketService.sendTyping(realConversation.id, false);
+
+            if (files.length > 0) {
+                let result: ChatMessageApiItem;
+
+                if (realConversation.type === "GROUP") {
+                    result = await chatService.sendGroupMessage({
+                        conversationId: realConversation.id,
+                        content: text,
+                        files,
+                    });
+                } else {
+                    if (!realConversation.peerId) {
+                        throw new Error("Missing peerId");
+                    }
+
+                    result = await chatService.sendMessage({
+                        toUserId: realConversation.peerId,
+                        content: text,
+                        files,
+                    });
+                }
+
+                upsertRealMessage(tempId, result);
+                return;
+            }
 
             socketService.emit("chat:message:send", {
                 conversationId: realConversation.id,
@@ -179,14 +264,18 @@
         } catch (error) {
             console.error("Lỗi gửi tin nhắn:", error);
 
-            messages = messages.map((m) =>
-                m.id === tempId
-                    ? {
-                          ...m,
-                          text: `${m.text} (failed)`,
-                      }
-                    : m,
+            setMessages(
+                messages.map((m) =>
+                    m.id === tempId
+                        ? {
+                              ...m,
+                              text: `${m.text} (failed)`,
+                          }
+                        : m,
+                ),
             );
+        } finally {
+            isSending = false;
         }
     }
 </script>
@@ -195,9 +284,16 @@
     <header class="chat-header">
         <div class="user-meta">
             <strong>{activeChat.name}</strong>
-            <span class="status {activeChat.online ? 'online' : ''}">
-                {activeChat.online ? "Online" : "Offline"}
-            </span>
+
+            {#if activeChat.type === "CHAT"}
+                <span class="status {online ? 'online' : ''}">
+                    {online ? "Online" : "Offline"}
+                </span>
+            {:else}
+                <span class="status">
+                    {activeChat.scope.replaceAll("_", " ").toLowerCase()}
+                </span>
+            {/if}
         </div>
     </header>
 
@@ -214,7 +310,80 @@
                             ? 'me'
                             : 'them'}"
                     >
-                        <div class="msg-bubble">{msg.text}</div>
+                        <div class="msg-bubble">
+                            {#if msg.text}
+                                <div class="message-text">{msg.text}</div>
+                            {/if}
+
+                            {#if msg.attachments && msg.attachments.length > 0}
+                                <div class="attachments">
+                                    {#each msg.attachments as attachment (attachment.id)}
+                                        {#if attachment.file_type === "IMAGE" && attachment.url}
+                                            <img
+                                                class="attachment-image"
+                                                src={attachment.url}
+                                                alt={attachment.original_name ||
+                                                    "image"}
+                                            />
+                                        {:else if attachment.file_type === "DOCUMENT"}
+                                            <button
+                                                type="button"
+                                                class="attachment-file"
+                                                onclick={() =>
+                                                    openAttachment(attachment)}
+                                            >
+                                                {#if attachment.preview_url}
+                                                    <img
+                                                        class="attachment-preview"
+                                                        src={attachment.preview_url}
+                                                        alt={attachment.original_name ||
+                                                            "document preview"}
+                                                    />
+                                                {/if}
+
+                                                <span class="attachment-name">
+                                                    {attachment.original_name ||
+                                                        "Document"}
+                                                </span>
+
+                                                <span class="attachment-meta">
+                                                    {attachment.mime_type ||
+                                                        "document"}
+                                                    {#if attachment.size}
+                                                        · {formatSize(
+                                                            attachment.size,
+                                                        )}
+                                                    {/if}
+                                                </span>
+                                            </button>
+                                        {:else}
+                                            <button
+                                                type="button"
+                                                class="attachment-file"
+                                                onclick={() =>
+                                                    openAttachment(attachment)}
+                                            >
+                                                <span class="attachment-name">
+                                                    {attachment.original_name ||
+                                                        "Attachment"}
+                                                </span>
+
+                                                <span class="attachment-meta">
+                                                    {attachment.mime_type ||
+                                                        "file"}
+                                                    {#if attachment.size}
+                                                        · {formatSize(
+                                                            attachment.size,
+                                                        )}
+                                                    {/if}
+                                                </span>
+                                            </button>
+                                        {/if}
+                                    {/each}
+                                </div>
+                            {/if}
+                        </div>
+
                         <span class="time">{msg.time}</span>
                     </div>
                 {/each}
@@ -223,12 +392,39 @@
     </div>
 
     <footer class="chat-input-area">
+        {#if selectedFiles.length > 0}
+            <div class="selected-files">
+                {#each selectedFiles as file, index}
+                    <div class="selected-file">
+                        <span>{file.name}</span>
+
+                        <button
+                            type="button"
+                            onclick={() => removeSelectedFile(index)}
+                        >
+                            ×
+                        </button>
+                    </div>
+                {/each}
+            </div>
+        {/if}
+
         <form
             onsubmit={(e) => {
                 e.preventDefault();
                 sendMessage();
             }}
         >
+            <label class="file-button" aria-label="Attach files">
+                <Icon name="folder" size={18} />
+                <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                    onchange={handleFiles}
+                />
+            </label>
+
             <div class="input-wrapper">
                 <Input
                     bind:value={newMessage}
@@ -238,7 +434,12 @@
                 />
             </div>
 
-            <Button type="submit" variant="primary">
+            <Button
+                type="submit"
+                variant="primary"
+                disabled={isSending ||
+                    (!newMessage.trim() && selectedFiles.length === 0)}
+            >
                 <Icon name="reply" />
             </Button>
         </form>
@@ -273,6 +474,7 @@
     .status {
         font-size: 12px;
         color: #9ca3af;
+        text-transform: capitalize;
     }
 
     .status.online {
@@ -337,6 +539,65 @@
         border-bottom-left-radius: 4px;
     }
 
+    .message-text {
+        white-space: pre-wrap;
+    }
+
+    .attachments {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .attachment-image {
+        max-width: 260px;
+        max-height: 260px;
+        border-radius: 12px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .attachment-file {
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.14);
+        color: inherit;
+        border-radius: 12px;
+        padding: 10px;
+        text-align: left;
+        cursor: pointer;
+        max-width: 280px;
+    }
+
+    .attachment-file:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .attachment-preview {
+        width: 100%;
+        max-height: 180px;
+        object-fit: cover;
+        border-radius: 8px;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .attachment-name {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .attachment-meta {
+        display: block;
+        font-size: 11px;
+        color: #9ca3af;
+        margin-top: 3px;
+    }
+
     .time {
         font-size: 11px;
         color: #6b7280;
@@ -357,5 +618,60 @@
 
     .input-wrapper {
         flex: 1;
+    }
+
+    .file-button {
+        width: 42px;
+        min-width: 42px;
+        border-radius: 12px;
+        border: 1px solid #2a2e36;
+        background: #20242d;
+        color: #d1d5db;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .file-button:hover {
+        background: #252a33;
+    }
+
+    .file-button input {
+        display: none;
+    }
+
+    .selected-files {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .selected-file {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        max-width: 220px;
+        padding: 6px 8px;
+        border-radius: 999px;
+        background: #20242d;
+        color: #d1d5db;
+        font-size: 12px;
+    }
+
+    .selected-file span {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .selected-file button {
+        border: none;
+        background: transparent;
+        color: #9ca3af;
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
     }
 </style>

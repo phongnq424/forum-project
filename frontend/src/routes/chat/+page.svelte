@@ -6,16 +6,56 @@
 	import ChatDetails from "$lib/components/chat/ChatDetail.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import Icon from "$lib/components/ui/Icon.svelte";
+	import Avatar from "$lib/components/ui/Avatar.svelte";
 	import { chatService } from "$lib/services/chat.service";
 	import type {
+		ChatAttachment,
 		ChatConversation,
 		ConversationApiItem,
+		ChatMessage,
 	} from "$lib/types/chat.type";
 
 	let conversations = $state<ChatConversation[]>([]);
 	let isLoadingConversations = $state(true);
 	let activeChat = $state<ChatConversation | null>(null);
 	let currentView = $state<"list" | "chat" | "detail">("list");
+	let sharedAttachments = $state<ChatAttachment[]>([]);
+
+	function handleMessagesChange(messages: ChatMessage[]) {
+		sharedAttachments = messages.flatMap(
+			(message) => message.attachments || [],
+		);
+	}
+
+	function buildLastMessage(c: ConversationApiItem) {
+		const latest = c.latestMsg;
+
+		if (!latest) return "";
+
+		if (latest.content && latest.content.trim() !== "") {
+			return latest.content;
+		}
+
+		const attachments = latest.Attachment || [];
+
+		if (attachments.some((item) => item.file_type === "IMAGE")) {
+			return "Đã gửi một ảnh";
+		}
+
+		if (attachments.some((item) => item.file_type === "VIDEO")) {
+			return "Đã gửi một video";
+		}
+
+		if (attachments.some((item) => item.file_type === "DOCUMENT")) {
+			return "Đã gửi một tài liệu";
+		}
+
+		if (attachments.length > 0) {
+			return "Đã gửi một tệp đính kèm";
+		}
+
+		return "";
+	}
 
 	function normalizeConversation(c: ConversationApiItem): ChatConversation {
 		const id = c.conversationId || c.id || "";
@@ -30,15 +70,65 @@
 			topic_id: c.topic_id || null,
 			challenge_id: c.challenge_id || null,
 			unreadCount: c.unreadCount || 0,
-			lastMsg: c.latestMsg?.content || "",
+			lastMsg: buildLastMessage(c),
 			online: c.peer?.online || false,
 		};
 	}
+
+	function getActiveOnlineStatus(chat: ChatConversation | null) {
+		if (!chat) return false;
+		if (!chat.peerId) return chat.online;
+
+		const socketOnline = socketService.onlineUsers[chat.peerId];
+
+		if (socketOnline !== undefined) {
+			return socketOnline;
+		}
+
+		return chat.online;
+	}
+
+	let activeChatOnline = $derived(getActiveOnlineStatus(activeChat));
 
 	$effect(() => {
 		if (activeChat && currentView === "list") {
 			currentView = "chat";
 		}
+	});
+
+	$effect(() => {
+		if (!activeChat) {
+			sharedAttachments = [];
+			return;
+		}
+
+		activeChat.id;
+		sharedAttachments = [];
+	});
+
+	$effect(() => {
+		if (!activeChat?.peerId) return;
+
+		const socketOnline = socketService.onlineUsers[activeChat.peerId];
+
+		if (socketOnline === undefined) return;
+		if (activeChat.online === socketOnline) return;
+
+		const activeChatId = activeChat.id;
+
+		activeChat = {
+			...activeChat,
+			online: socketOnline,
+		};
+
+		conversations = conversations.map((conv) =>
+			conv.id === activeChatId
+				? {
+						...conv,
+						online: socketOnline,
+					}
+				: conv,
+		);
 	});
 
 	function backToList() {
@@ -117,11 +207,40 @@
 			{#if activeChat}
 				<div class="mobile-header">
 					<Button variant="secondary" size="sm" onclick={backToList}>
-						<Icon name="arrow-left" size={24} />
+						<Icon name="arrow-left" size={20} />
 					</Button>
 
-					<div class="user-info">
-						<span class="name">{activeChat.name}</span>
+					<div class="chat-mobile-user">
+						<div class="mobile-avatar-wrap">
+							<Avatar
+								name={activeChat.name}
+								src={activeChat.avatar ?? undefined}
+								size="sm"
+							/>
+
+							{#if activeChat.type === "CHAT"}
+								<span
+									class:online={activeChatOnline}
+									class="mobile-status-dot"
+								></span>
+							{/if}
+						</div>
+
+						<div class="mobile-user-text">
+							<span class="mobile-name">{activeChat.name}</span>
+
+							{#if activeChat.type === "CHAT"}
+								<span class="mobile-status">
+									{activeChatOnline ? "Online" : "Offline"}
+								</span>
+							{:else}
+								<span class="mobile-status">
+									{activeChat.scope
+										.replaceAll("_", " ")
+										.toLowerCase()}
+								</span>
+							{/if}
+						</div>
 					</div>
 
 					<Button
@@ -129,13 +248,15 @@
 						size="sm"
 						onclick={() => (currentView = "detail")}
 					>
-						<Icon name="user" size={24} />
+						<Icon name="user" size={20} />
 					</Button>
 				</div>
 
 				<ChatWindow
 					{activeChat}
+					online={activeChatOnline}
 					onConversationCreated={handleConversationCreated}
+					onMessagesChange={handleMessagesChange}
 				/>
 			{:else}
 				<div class="empty-state">
@@ -154,14 +275,18 @@
 		>
 			<div class="mobile-header">
 				<Button variant="secondary" size="sm" onclick={backToChat}>
-					<Icon name="arrow-left" size={24} />
+					<Icon name="arrow-left" size={20} />
 				</Button>
 
 				<span class="detail-title">Details</span>
-				<div style="width: 40px;"></div>
+				<div style="width: 36px;"></div>
 			</div>
 
-			<ChatDetails {activeChat} />
+			<ChatDetails
+				{activeChat}
+				online={activeChatOnline}
+				attachments={sharedAttachments}
+			/>
 		</div>
 	</div>
 </div>
@@ -178,15 +303,15 @@
 
 	.chat-container {
 		display: grid;
-		grid-template-columns: 320px 1fr 300px;
+		grid-template-columns: 320px minmax(0, 1fr) 300px;
 		width: 100%;
 		max-width: 1600px;
 		height: 100%;
-		background: #1e222b;
-		border-radius: 16px;
+		background: #171a21;
+		border-radius: 18px;
 		overflow: hidden;
-		border: 1px solid #2a2e36;
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+		border: 1px solid #252a33;
+		box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
 		position: relative;
 	}
 
@@ -194,15 +319,15 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		background: #1e222b;
+		background: #171a21;
 		min-height: 0;
 		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.main-col {
-		background: #16191f;
-		border-left: 1px solid #2a2e36;
-		border-right: 1px solid #2a2e36;
+		background: #10131a;
+		border-left: 1px solid #252a33;
+		border-right: 1px solid #252a33;
 	}
 
 	.mobile-header {
@@ -215,18 +340,32 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		color: #9ca3af;
+		color: #8b949e;
+	}
+
+	.empty-state h3 {
+		margin: 14px 0 6px;
+		font-size: 18px;
+		font-weight: 600;
+		color: #f3f4f6;
+		letter-spacing: -0.02em;
+	}
+
+	.empty-state p {
+		margin: 0;
+		font-size: 14px;
+		color: #8b949e;
 	}
 
 	.icon-circle {
 		width: 80px;
 		height: 80px;
 		border-radius: 50%;
-		background: #2a2e36;
+		background: #1c2029;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-bottom: 20px;
+		margin-bottom: 8px;
 		color: #6366f1;
 	}
 
@@ -264,15 +403,69 @@
 			align-items: center;
 			justify-content: space-between;
 			padding: 10px 16px;
-			background: #1e222b;
-			border-bottom: 1px solid #2a2e36;
-			height: 40px;
+			background: #171a21;
+			border-bottom: 1px solid #252a33;
+			height: 44px;
 			flex-shrink: 0;
 		}
 
-		.user-info {
+		.chat-mobile-user {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			min-width: 0;
+			flex: 1;
+			justify-content: center;
+			padding: 0 12px;
+		}
+
+		.mobile-avatar-wrap {
+			position: relative;
+			flex-shrink: 0;
+		}
+
+		.mobile-status-dot {
+			position: absolute;
+			right: -1px;
+			bottom: -1px;
+			width: 10px;
+			height: 10px;
+			border-radius: 999px;
+			background: #6b7280;
+			border: 2px solid #171a21;
+		}
+
+		.mobile-status-dot.online {
+			background: #22c55e;
+		}
+
+		.mobile-user-text {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			text-align: left;
+		}
+
+		.mobile-name {
+			font-size: 13px;
 			font-weight: 600;
-			color: white;
+			color: #f3f4f6;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			letter-spacing: -0.01em;
+		}
+
+		.mobile-status {
+			font-size: 11px;
+			color: #8b949e;
+			text-transform: capitalize;
+		}
+
+		.detail-title {
+			font-size: 13px;
+			font-weight: 600;
+			color: #f3f4f6;
 		}
 	}
 </style>

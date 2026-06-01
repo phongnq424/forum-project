@@ -125,11 +125,13 @@
                     <div class="avatar-wrapper">
                         <Avatar name={conv.name} src={conv.avatar} size="md" />
 
-                        <div
-                            class="status-dot {getOnlineStatus(conv)
-                                ? 'online'
-                                : ''}"
-                        ></div>
+                        {#if conv.type === "CHAT"}
+                            <div
+                                class="status-dot {getOnlineStatus(conv)
+                                    ? 'online'
+                                    : ''}"
+                            ></div>
+                        {/if}
                     </div>
 
                     <div class="conv-info">
@@ -138,7 +140,9 @@
                         {#if socketService.typingStatus[conv.id]}
                             <span class="typing-text">đang nhập...</span>
                         {:else}
-                            <span class="last-msg">{conv.lastMsg}</span>
+                            <span class="last-msg">
+                                {conv.lastMsg || "No messages yet"}
+                            </span>
                         {/if}
                     </div>
 
@@ -205,22 +209,29 @@
 
 <style>
     .conv-list {
-        border-right: 1px solid #2a2e36;
+        border-right: 1px solid #252a33;
         display: flex;
         flex-direction: column;
         height: 100%;
-        background: #1e222b;
+        background: #171a21;
     }
 
     .list-header {
-        padding: 20px;
-        color: white;
+        padding: 18px;
+        color: #f3f4f6;
+        border-bottom: 1px solid #252a33;
     }
 
     .list-header h2 {
-        margin: 0 0 15px 0;
-        font-size: 20px;
+        margin: 0 0 14px 0;
+        font-size: 18px;
         font-weight: 600;
+        letter-spacing: -0.02em;
+        color: #f3f4f6;
+    }
+
+    .search-box {
+        width: 100%;
     }
 
     :global(.conversations-list) {
@@ -233,73 +244,87 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 15px 20px;
+        padding: 12px 16px;
         width: 100%;
         border: none;
         background: transparent;
-        color: white;
+        color: #f3f4f6;
         cursor: pointer;
-        transition: 0.2s;
+        transition:
+            background-color 0.16s ease,
+            transform 0.16s ease;
         text-align: left;
     }
 
-    .conv-item:hover,
+    .conv-item:hover {
+        background: #1c2029;
+    }
+
     .conv-item.active {
-        background: #2a2e36;
+        background: #20242d;
     }
 
     .avatar-wrapper {
         position: relative;
+        flex-shrink: 0;
     }
 
     .unread-badge-end {
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-left: 10px;
+        margin-left: 8px;
     }
 
     .status-dot {
         position: absolute;
         bottom: 0;
         right: 0;
-        width: 14px;
-        height: 14px;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
-        border: 2.5px solid #1e222b;
-        background: #9ca3af;
-        transition: background-color 0.3s ease;
+        border: 2px solid #171a21;
+        background: #6b7280;
+        transition: background-color 0.2s ease;
     }
 
     .status-dot.online {
-        background: #10b981;
+        background: #22c55e;
     }
 
     .conv-info {
         flex: 1;
         overflow: hidden;
+        min-width: 0;
     }
 
     .conv-info .name {
         display: block;
         font-weight: 500;
-        font-size: 14px;
-        margin-bottom: 4px;
-        font-family: Poppins;
+        font-size: 13px;
+        line-height: 1.35;
+        margin-bottom: 3px;
+        color: #f3f4f6;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-family: "Poppins";
     }
 
     .conv-info .last-msg {
-        font-size: 13px;
-        color: #9ca3af;
+        font-family: "Poppins";
+        font-size: 12px;
+        line-height: 1.35;
+        color: #8b949e;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         display: block;
-        font-family: Poppins;
     }
 
     .typing-text {
-        color: #10b981;
+        color: #22c55e;
         font-size: 12px;
         font-style: italic;
     }
@@ -310,7 +335,7 @@
         align-items: center;
         height: 100%;
         min-height: 200px;
-        color: #9ca3af;
+        color: #8b949e;
     }
 
     .empty-state-list {
@@ -326,7 +351,7 @@
     }
 
     .empty-text {
-        color: #9ca3af;
+        color: #8b949e;
         font-size: 14px;
         margin: 0 0 30px 0;
     }
@@ -337,42 +362,43 @@
 
     .suggested-section h4 {
         color: #d1d5db;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
-        margin: 0 0 15px 0;
+        margin: 0 0 14px 0;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.06em;
     }
 
     .suggested-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
     }
 
     .suggested-item {
         display: flex;
         align-items: center;
         gap: 12px;
-        background: #2a2e36;
-        padding: 12px;
+        background: #1c2029;
+        padding: 10px;
         border-radius: 12px;
-        transition: background 0.2s;
+        transition: background 0.16s;
     }
 
     .suggested-item:hover {
-        background: #374151;
+        background: #20242d;
     }
 
     .suggested-info {
         flex: 1;
         overflow: hidden;
+        min-width: 0;
     }
 
     .suggested-info .name {
         display: block;
-        color: white;
-        font-size: 14px;
+        color: #f3f4f6;
+        font-size: 13px;
         font-weight: 500;
         margin-bottom: 2px;
         white-space: nowrap;
