@@ -162,72 +162,275 @@
         { label: "Code block", syntax: "```js\\ncode\\n```" },
     ];
 
-    async function applyMarkdown(
+    type TextSelection = {
+        start: number;
+        end: number;
+    };
+
+    let savedSelection = $state<TextSelection>({ start: 0, end: 0 });
+
+    function saveSelection() {
+        if (!contentTextarea) return;
+
+        savedSelection = {
+            start: contentTextarea.selectionStart,
+            end: contentTextarea.selectionEnd,
+        };
+    }
+
+    function getSelection() {
+        if (!contentTextarea) {
+            return savedSelection;
+        }
+
+        const activeElement = document.activeElement;
+
+        if (activeElement === contentTextarea) {
+            saveSelection();
+            return savedSelection;
+        }
+
+        return savedSelection;
+    }
+
+    async function updateContent(
+        nextContent: string,
+        nextStart: number,
+        nextEnd: number,
+    ) {
+        content = nextContent;
+
+        await tick();
+
+        contentTextarea.focus();
+        contentTextarea.setSelectionRange(nextStart, nextEnd);
+
+        savedSelection = {
+            start: nextStart,
+            end: nextEnd,
+        };
+    }
+
+    function isWrapped(text: string, before: string, after: string) {
+        return text.startsWith(before) && text.endsWith(after);
+    }
+
+    async function toggleInlineMarkdown(
         before: string,
         after = before,
         placeholder = "text",
     ) {
         if (!contentTextarea) return;
 
-        const start = contentTextarea.selectionStart;
-        const end = contentTextarea.selectionEnd;
-        const selectedText = content.slice(start, end) || placeholder;
+        const { start, end } = getSelection();
+        const hasSelection = start !== end;
+        const selectedText = content.slice(start, end);
 
-        content =
+        if (hasSelection && isWrapped(selectedText, before, after)) {
+            const innerText = selectedText.slice(
+                before.length,
+                selectedText.length - after.length,
+            );
+
+            const nextContent =
+                content.slice(0, start) + innerText + content.slice(end);
+
+            await updateContent(nextContent, start, start + innerText.length);
+
+            return;
+        }
+
+        const beforeStart = start - before.length;
+        const afterEnd = end + after.length;
+
+        const hasWrapperAroundSelection =
+            beforeStart >= 0 &&
+            content.slice(beforeStart, start) === before &&
+            content.slice(end, afterEnd) === after;
+
+        if (hasWrapperAroundSelection) {
+            const nextContent =
+                content.slice(0, beforeStart) +
+                selectedText +
+                content.slice(afterEnd);
+
+            await updateContent(
+                nextContent,
+                beforeStart,
+                beforeStart + selectedText.length,
+            );
+
+            return;
+        }
+
+        const textToInsert = hasSelection ? selectedText : placeholder;
+
+        const nextContent =
             content.slice(0, start) +
             before +
-            selectedText +
+            textToInsert +
             after +
             content.slice(end);
 
-        await tick();
+        const nextStart = start + before.length;
+        const nextEnd = nextStart + textToInsert.length;
 
-        const cursorStart = start + before.length;
-        const cursorEnd = cursorStart + selectedText.length;
-
-        contentTextarea.focus();
-        contentTextarea.setSelectionRange(cursorStart, cursorEnd);
+        await updateContent(nextContent, nextStart, nextEnd);
     }
 
-    async function applyLineMarkdown(prefix: string, placeholder = "text") {
+    function getLineRange(start: number, end: number) {
+        const lineStart = content.lastIndexOf("\n", start - 1) + 1;
+
+        let lineEnd = content.indexOf("\n", end);
+
+        if (lineEnd === -1) {
+            lineEnd = content.length;
+        }
+
+        return {
+            lineStart,
+            lineEnd,
+        };
+    }
+
+    async function toggleLineMarkdown(prefix: string, placeholder = "text") {
         if (!contentTextarea) return;
 
-        const start = contentTextarea.selectionStart;
-        const end = contentTextarea.selectionEnd;
-        const selectedText = content.slice(start, end) || placeholder;
-        const wrappedText = selectedText
-            .split("\n")
-            .map((line) => `${prefix}${line}`)
+        const { start, end } = getSelection();
+        const hasSelection = start !== end;
+
+        if (!hasSelection) {
+            const nextContent =
+                content.slice(0, start) +
+                prefix +
+                placeholder +
+                content.slice(end);
+
+            await updateContent(
+                nextContent,
+                start + prefix.length,
+                start + prefix.length + placeholder.length,
+            );
+
+            return;
+        }
+
+        const { lineStart, lineEnd } = getLineRange(start, end);
+        const selectedBlock = content.slice(lineStart, lineEnd);
+        const lines = selectedBlock.split("\n");
+
+        const allLinesHavePrefix = lines.every((line) => {
+            if (!line.trim()) return true;
+            return line.startsWith(prefix);
+        });
+
+        const nextBlock = lines
+            .map((line) => {
+                if (!line.trim()) return line;
+
+                if (allLinesHavePrefix) {
+                    return line.slice(prefix.length);
+                }
+
+                if (line.startsWith(prefix)) {
+                    return line;
+                }
+
+                return prefix + line;
+            })
             .join("\n");
 
-        content = content.slice(0, start) + wrappedText + content.slice(end);
+        const nextContent =
+            content.slice(0, lineStart) + nextBlock + content.slice(lineEnd);
 
-        await tick();
+        const diff = nextBlock.length - selectedBlock.length;
 
-        contentTextarea.focus();
-        contentTextarea.setSelectionRange(
-            start + prefix.length,
-            start + wrappedText.length,
+        await updateContent(
+            nextContent,
+            Math.max(
+                lineStart,
+                start + (allLinesHavePrefix ? -prefix.length : prefix.length),
+            ),
+            Math.max(lineStart, end + diff),
         );
     }
 
-    async function applyCodeBlock() {
+    async function toggleHeading() {
+        await toggleLineMarkdown("## ", "Heading");
+    }
+
+    async function toggleQuote() {
+        await toggleLineMarkdown("> ", "Quote");
+    }
+
+    async function toggleList() {
+        await toggleLineMarkdown("- ", "List item");
+    }
+
+    async function toggleCodeBlock() {
         if (!contentTextarea) return;
 
-        const start = contentTextarea.selectionStart;
-        const end = contentTextarea.selectionEnd;
-        const selectedText =
-            content.slice(start, end) || "console.log('Hello');";
-        const block = `\`\`\`js\n${selectedText}\n\`\`\``;
+        const { start, end } = getSelection();
+        const selectedText = content.slice(start, end);
+        const hasSelection = start !== end;
 
-        content = content.slice(0, start) + block + content.slice(end);
+        const blockStart = "```js\n";
+        const blockEnd = "\n```";
 
-        await tick();
+        if (
+            hasSelection &&
+            selectedText.startsWith(blockStart) &&
+            selectedText.endsWith(blockEnd)
+        ) {
+            const innerText = selectedText.slice(
+                blockStart.length,
+                selectedText.length - blockEnd.length,
+            );
 
-        contentTextarea.focus();
-        contentTextarea.setSelectionRange(
-            start + 6,
-            start + 6 + selectedText.length,
+            const nextContent =
+                content.slice(0, start) + innerText + content.slice(end);
+
+            await updateContent(nextContent, start, start + innerText.length);
+
+            return;
+        }
+
+        const beforeStart = start - blockStart.length;
+        const afterEnd = end + blockEnd.length;
+
+        const hasWrapperAroundSelection =
+            beforeStart >= 0 &&
+            content.slice(beforeStart, start) === blockStart &&
+            content.slice(end, afterEnd) === blockEnd;
+
+        if (hasWrapperAroundSelection) {
+            const nextContent =
+                content.slice(0, beforeStart) +
+                selectedText +
+                content.slice(afterEnd);
+
+            await updateContent(
+                nextContent,
+                beforeStart,
+                beforeStart + selectedText.length,
+            );
+
+            return;
+        }
+
+        const textToInsert = hasSelection
+            ? selectedText
+            : "console.log('Hello');";
+
+        const block = blockStart + textToInsert + blockEnd;
+
+        const nextContent =
+            content.slice(0, start) + block + content.slice(end);
+
+        await updateContent(
+            nextContent,
+            start + blockStart.length,
+            start + blockStart.length + textToInsert.length,
         );
     }
 
@@ -414,47 +617,66 @@
                 <div class="markdown-toolbar">
                     <button
                         type="button"
-                        onclick={() => applyMarkdown("**", "**", "bold text")}
+                        disabled={loading}
+                        onmousedown={(e) => e.preventDefault()}
+                        onclick={() =>
+                            toggleInlineMarkdown("**", "**", "bold text")}
                     >
                         B
                     </button>
 
                     <button
                         type="button"
-                        onclick={() => applyMarkdown("*", "*", "italic text")}
+                        disabled={loading}
+                        onmousedown={(e) => e.preventDefault()}
+                        onclick={() =>
+                            toggleInlineMarkdown("*", "*", "italic text")}
                     >
                         I
                     </button>
 
                     <button
                         type="button"
-                        onclick={() => applyLineMarkdown("## ", "Heading")}
+                        disabled={loading}
+                        onmousedown={(e) => e.preventDefault()}
+                        onclick={toggleHeading}
                     >
                         H2
                     </button>
 
                     <button
                         type="button"
-                        onclick={() => applyLineMarkdown("> ", "Quote")}
+                        disabled={loading}
+                        onmousedown={(e) => e.preventDefault()}
+                        onclick={toggleQuote}
                     >
                         Quote
                     </button>
 
                     <button
                         type="button"
-                        onclick={() => applyLineMarkdown("- ", "List item")}
+                        disabled={loading}
+                        onmousedown={(e) => e.preventDefault()}
+                        onclick={toggleList}
                     >
                         List
                     </button>
 
                     <button
                         type="button"
-                        onclick={() => applyMarkdown("`", "`", "code")}
+                        disabled={loading}
+                        onmousedown={(e) => e.preventDefault()}
+                        onclick={() => toggleInlineMarkdown("`", "`", "code")}
                     >
                         Code
                     </button>
 
-                    <button type="button" onclick={applyCodeBlock}>
+                    <button
+                        type="button"
+                        disabled={loading}
+                        onmousedown={(e) => e.preventDefault()}
+                        onclick={toggleCodeBlock}
+                    >
                         Code block
                     </button>
                 </div>
@@ -475,6 +697,9 @@
                     placeholder="Write your post content here..."
                     required
                     disabled={loading}
+                    onselect={saveSelection}
+                    onkeyup={saveSelection}
+                    onclick={saveSelection}
                 ></textarea>
             </div>
 
@@ -804,6 +1029,33 @@
         padding: 12px 16px;
         border-bottom: 1px solid #2a2e36;
     }
+    .markdown-toolbar button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+    }
+
+    .markdown-preview {
+        flex: 1;
+        padding: 18px;
+        overflow: auto;
+        color: #e5e7eb;
+        line-height: 1.7;
+        word-break: break-word;
+    }
+
+    .markdown-preview :global(img) {
+        max-width: 100%;
+        border-radius: 12px;
+    }
+
+    .markdown-preview :global(pre) {
+        background: #020617;
+        border: 1px solid #1f2937;
+        padding: 14px;
+        border-radius: 12px;
+        overflow-x: auto;
+        max-width: 100%;
+    }
 
     .hint-item {
         display: flex;
@@ -839,14 +1091,6 @@
 
     .markdown-textarea::placeholder {
         color: #6b7280;
-    }
-
-    .markdown-preview {
-        flex: 1;
-        padding: 18px;
-        overflow: auto;
-        color: #e5e7eb;
-        line-height: 1.7;
     }
 
     .markdown-preview :global(h1),

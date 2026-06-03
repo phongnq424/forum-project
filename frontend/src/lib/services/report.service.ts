@@ -6,6 +6,7 @@ import type {
     ReportListParams,
     ReportListResponse,
     ReportReply,
+    ReportSeverity,
     ReportStatus,
     ReplyReportPayload,
 } from "$lib/types/report.type";
@@ -26,8 +27,14 @@ export const reportService = {
     },
 
     updateStatus(id: string, status: ReportStatus): Promise<Report> {
-        return api.put<Report>(ENDPOINTS.REPORTS.BY_ID(id), {
+        return api.put<Report>(`${ENDPOINTS.REPORTS.BY_ID(id)}/status`, {
             status,
+        });
+    },
+
+    updateSeverity(id: string, severity: ReportSeverity): Promise<Report> {
+        return api.put<Report>(`${ENDPOINTS.REPORTS.BY_ID(id)}/severity`, {
+            severity,
         });
     },
 

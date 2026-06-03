@@ -9,13 +9,13 @@
         ApiTestcaseStep,
     } from "$lib/types/testcase.type";
     import BackendStepEditor from "./BackendStepEditor.svelte";
-    import type { StepJsonTextMap } from "./testcase-form.utils";
+    import type { StepJsonTextMap } from "../../../utils/testcase-form.utils";
     import {
         buildApiTestcasePayload,
         createDefaultBackendForm,
         createUserApiExample,
         syncJsonTextFromSteps,
-    } from "./testcase-form.utils";
+    } from "../../../utils/testcase-form.utils";
 
     let {
         open = $bindable(false),

@@ -4,16 +4,52 @@ export type ReportSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export type ReportType = "USER" | "POST" | "COMMENT" | "MESSAGE" | "UNKNOWN";
 
+export interface ReportUserSummary {
+    id: string;
+    username?: string | null;
+    fullname?: string | null;
+    avatar?: string | null;
+}
+
+export interface ReportTarget {
+    id: string | null;
+    type: ReportType;
+    title?: string | null;
+    content?: string | null;
+    owner?: ReportUserSummary | null;
+    url?: string | null;
+}
+
+export interface ReportReply {
+    id: string;
+    report_id: string;
+    message: string;
+    created_at: string;
+    updated_at?: string | null;
+}
+
 export interface Report {
     id: string;
     title: string;
     description: string;
-    reportedBy: string;
-    reportedUser?: string | null;
-    reportedContent?: string | null;
+
     type: ReportType;
     status: ReportStatus;
     severity: ReportSeverity;
+    recommendedSeverity?: ReportSeverity | null;
+
+    reporter?: ReportUserSummary | null;
+    reportedBy: string;
+
+    target?: ReportTarget | null;
+
+    reportedUser?: string | null;
+    reportedContent?: string | null;
+
+    targetReportCount?: number;
+
+    replies?: ReportReply[];
+
     createdAt: string;
     updatedAt: string;
 }
@@ -30,16 +66,12 @@ export interface UpdateReportStatusPayload {
     status: ReportStatus;
 }
 
-export interface ReplyReportPayload {
-    message: string;
+export interface UpdateReportSeverityPayload {
+    severity: ReportSeverity;
 }
 
-export interface ReportReply {
-    id: string;
-    report_id: string;
+export interface ReplyReportPayload {
     message: string;
-    created_at: string;
-    updated_at?: string;
 }
 
 export interface ReportListParams {
@@ -48,6 +80,7 @@ export interface ReportListParams {
     q?: string;
     status?: ReportStatus | "";
     severity?: ReportSeverity | "";
+    type?: ReportType | "";
 }
 
 export interface ReportListResponse {

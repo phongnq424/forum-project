@@ -6,6 +6,7 @@
     import Modal from "$lib/components/ui/Modal.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
     import Badge from "$lib/components/ui/Badge.svelte";
+    import Select from "$lib/components/ui/Select.svelte";
 
     import type {
         AdminUser,
@@ -31,6 +32,17 @@
     let editLoading = $state(false);
 
     let totalPages = $derived(Math.max(1, Math.ceil(total / limit)));
+
+    const statusOptions: { value: "" | UserStatus; label: string }[] = [
+        { value: "", label: "All Status" },
+        { value: "ACTIVE", label: "Active" },
+        { value: "INACTIVE", label: "Inactive" },
+        { value: "BANNED", label: "Banned" },
+    ];
+    const roleOptions: { value: UserRole; label: string }[] = [
+        { value: "USER", label: "User" },
+        { value: "ADMIN", label: "Admin" },
+    ];
 
     onMount(loadUsers);
 
@@ -153,12 +165,11 @@
                 }}
             />
 
-            <select bind:value={statusFilter} class="select">
-                <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="BANNED">Banned</option>
-            </select>
+            <Select
+                bind:value={statusFilter}
+                options={statusOptions}
+                placeholder="Status"
+            />
 
             <Button onclick={handleSearch}>Search</Button>
             <Button variant="secondary" onclick={resetFilters}>Reset</Button>
@@ -324,23 +335,20 @@
 
             <div class="form-group">
                 <label for="role">Role</label>
-                <select id="role" bind:value={editingUser.role} class="select">
-                    <option value="USER">User</option>
-                    <option value="ADMIN">Admin</option>
-                </select>
+                <Select
+                    bind:value={editingUser.role}
+                    options={roleOptions}
+                    placeholder="Role"
+                />
             </div>
 
             <div class="form-group">
                 <label for="status">Status</label>
-                <select
-                    id="status"
+                <Select
                     bind:value={editingUser.status}
-                    class="select"
-                >
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                    <option value="BANNED">Banned</option>
-                </select>
+                    options={statusOptions}
+                    placeholder="Status"
+                />
             </div>
 
             <div class="modal-actions">
@@ -411,22 +419,6 @@
         grid-template-columns: minmax(240px, 1fr) 180px auto auto;
         gap: 10px;
         align-items: center;
-    }
-
-    .select {
-        width: 100%;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: #111318;
-        color: #f9fafb;
-        padding: 10px 12px;
-        font-size: 14px;
-        outline: none;
-    }
-
-    .select:focus {
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
     }
 
     .alert {

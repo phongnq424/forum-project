@@ -2,14 +2,14 @@
     import Input from "$lib/components/ui/Input.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import type { ApiTestcaseStep, HttpMethod } from "$lib/types/testcase.type";
-    import type { StepJsonText } from "./testcase-form.utils";
+    import type { StepJsonText } from "../../../utils/testcase-form.utils";
     import {
         headerPlaceholder,
         bodyPlaceholder,
         expectedPlaceholder,
         assertPlaceholder,
         saveVariablesPlaceholder,
-    } from "./testcase-form.utils";
+    } from "../../../utils/testcase-form.utils";
 
     let {
         step,

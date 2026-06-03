@@ -179,10 +179,10 @@
                             </div>
                         </div>
                         {#if post?.permissions}
-                            {#if post.permissions.canEdit || post.permissions.canDelete}
+                            {#if post}
                                 <div class="owner-actions">
                                     <Dropdown bind:show={showOwnerMenu}>
-                                        {#if post.permissions.canEdit}
+                                        {#if post.permissions?.canEdit}
                                             <button
                                                 type="button"
                                                 onclick={() => {
@@ -195,7 +195,7 @@
                                             </button>
                                         {/if}
 
-                                        {#if post.permissions.canDelete}
+                                        {#if post.permissions?.canDelete}
                                             <button
                                                 type="button"
                                                 onclick={() => {
@@ -203,24 +203,30 @@
                                                     showOwnerMenu = false;
                                                 }}
                                             >
-                                                <Icon name="trash" size={16} /> Delete
+                                                <Icon name="trash" size={16} />
+                                                Delete
                                             </button>
                                         {/if}
-                                        <button
-                                            type="button"
-                                            onclick={handleReportPost}
-                                            disabled={reporting}
-                                        >
-                                            <Icon name="flag" size={16} />
-                                            {reporting
-                                                ? "Reporting..."
-                                                : "Report"}
-                                        </button>
+
+                                        {#if !post.permissions?.canEdit && !post.permissions?.canDelete}
+                                            <button
+                                                type="button"
+                                                onclick={handleReportPost}
+                                                disabled={reporting}
+                                            >
+                                                <Icon name="flag" size={16} />
+                                                {reporting
+                                                    ? "Reporting..."
+                                                    : "Report"}
+                                            </button>
+                                        {/if}
                                     </Dropdown>
 
                                     <button
+                                        type="button"
                                         class="icon-btn"
-                                        aria-label="More"
+                                        aria-label="More post actions"
+                                        title="More actions"
                                         onclick={() =>
                                             (showOwnerMenu = !showOwnerMenu)}
                                     >
