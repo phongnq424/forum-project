@@ -134,7 +134,27 @@ async def moderate_image(image_bytes: bytes):
         model = genai.GenerativeModel('gemini-2.5-flash')
         # Chuyển bytes thành ảnh cho Gemini hiểu
         img = Image.open(io.BytesIO(image_bytes)) 
-        response = await model.generate_content(["Is this image safe? Answer 'safe' or 'unsafe'.", img])
+        response = await model.generate_content_async([
+            """
+You are a strict image safety classifier for a public student programming forum.
+
+Classify the image as UNSAFE if it contains:
+- explicit adult content
+- nudity or sexualized content
+- graphic violence
+- hate symbols
+- self-harm content
+- illegal drugs
+- weapons or dangerous objects used threateningly
+- sword, gun, knife, bomb, etc.
+
+Return only one word:
+SAFE
+or
+UNSAFE
+""",
+            img
+        ])
         
         if "unsafe" in response.text.lower():
             return False

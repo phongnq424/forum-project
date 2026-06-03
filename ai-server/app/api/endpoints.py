@@ -2,8 +2,9 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Any, Optional
 
+from app.services.submission_analyzer import analyze_submission_mistake
 from app.services.rag_engine import get_chatbot_response
 from app.services.moderation import moderate_text, moderate_image
 from core.config import settings
@@ -37,6 +38,33 @@ class TextModResponse(BaseModel):
 class ImageModResponse(BaseModel):
     success: bool
     is_safe: bool
+    error: str = ""
+
+class SubmissionAnalyzePayload(BaseModel):
+    submissionId: Optional[str] = None
+    judgeStatus: Optional[str] = None
+    score: Optional[float] = None
+    runtime_ms: Optional[int] = None
+    memory_kb: Optional[int] = None
+    error_message: Optional[str] = None
+    language: Optional[Dict[str, Any]] = None
+    code: Optional[str] = None
+    kind: Optional[str] = None
+    challenge: Optional[Dict[str, Any]] = None
+    testcaseResults: Optional[List[Dict[str, Any]]] = None
+
+
+class SubmissionAnalyzeResponse(BaseModel):
+    success: bool
+    summary: Optional[str] = None
+    mistake_type: str = "UNKNOWN"
+    mistake_level: str = "LOW"
+    explanation: Optional[str] = None
+    suggestion: Optional[str] = None
+    confidence: Optional[float] = None
+    topics: List[Dict[str, Any]] = []
+    model_name: Optional[str] = None
+    prompt_version: Optional[str] = None
     error: str = ""
 
 
@@ -111,5 +139,24 @@ async def moderate_image_endpoint(
         return ImageModResponse(
             success=False,
             is_safe=False,
+            error=str(e)
+        )
+
+@router.post("/submission/analyze")
+async def analyze_submission_endpoint(
+    payload: SubmissionAnalyzePayload,
+    auth: HTTPAuthorizationCredentials = Depends(security)
+):
+    if auth.credentials != settings.AI_SERVER_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        result = await analyze_submission_mistake(payload.model_dump())
+        return SubmissionAnalyzeResponse(**result)
+    except Exception as e:
+        return SubmissionAnalyzeResponse(
+            success=False,
+            mistake_type="UNKNOWN",
+            mistake_level="LOW",
             error=str(e)
         )
