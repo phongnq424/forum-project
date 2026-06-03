@@ -117,7 +117,7 @@ const SubmissionInsightService = {
         }
 
         const payload = buildAnalysisPayload(submission);
-
+        console.log("[SubmissionInsightService] Analysis payload prepared for submissionId:", payload);
         let aiResult;
         try {
             aiResult = await AIService.analyzeSubmissionMistake(payload);

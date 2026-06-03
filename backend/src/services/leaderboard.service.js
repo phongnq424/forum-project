@@ -12,6 +12,7 @@ const LeaderboardService = {
             include: {
                 User: {
                     select: {
+                        id: true,
                         email: true,
                         username: true,
                         avatar: true,

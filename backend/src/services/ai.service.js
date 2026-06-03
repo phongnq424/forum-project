@@ -191,6 +191,7 @@ const AIService = {
     },
     analyzeSubmissionMistake: async (payload) => {
         try {
+            console.log("[SubmissionInsightService] start:", payload.submissionId);
             const resp = await axios.post(
                 buildAiUrl("/submission/analyze"),
                 payload,

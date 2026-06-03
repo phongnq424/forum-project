@@ -198,7 +198,6 @@ const SubmissionService = {
                 });
             }
         });
-
         SubmissionInsightService.analyzeAfterJudging(submissionId).catch((err) => {
             console.error("[SubmissionInsightService] analyzeAfterJudging failed:", err.message);
         });
