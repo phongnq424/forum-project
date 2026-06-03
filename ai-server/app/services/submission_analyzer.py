@@ -170,11 +170,11 @@ Return ONLY valid JSON. Do not use markdown.
 
 The JSON schema must be:
 {{
-  "summary": "short Vietnamese summary",
+  "summary": "short English summary",
   "mistake_type": "SYNTAX_ERROR | RUNTIME_ERROR | TIME_LIMIT | MEMORY_LIMIT | WRONG_ANSWER | LOGIC_ERROR | EDGE_CASE | INPUT_OUTPUT_FORMAT | PARTIAL_SOLUTION | UNKNOWN",
   "mistake_level": "LOW | MEDIUM | HIGH",
-  "explanation": "Vietnamese explanation of why the submission failed or what can be improved",
-  "suggestion": "Vietnamese concrete suggestion for the student",
+  "explanation": "English explanation of why the submission failed or what can be improved",
+  "suggestion": "English concrete suggestion for the student",
   "confidence": 0.0,
   "topics": [
     {{
@@ -188,12 +188,19 @@ The JSON schema must be:
 }}
 
 Rules:
+- Follow this diagnosis order strictly:
+  1. First inspect judgeStatus, error_message, and testcaseResults.stderr/message.
+  2. If judgeStatus is CE, the primary issue must be a compile/build/runtime-selection issue, not an algorithmic or SQL logic issue.
+  3. If stderr mentions that a keyword or token "does not name a type", "expected", "syntax error", "not declared", or similar compiler messages, explain the compiler-level cause first.
+  4. If the submitted code looks like SQL but the selected language/runtime is C++, Java, Python, JavaScript, or another non-SQL runtime, explain that the SQL query was submitted under the wrong runtime/language and was compiled/interpreted as source code.
+  5. If challenge.type is SQL and language.code is not a SQL runtime, classify the issue as INPUT_OUTPUT_FORMAT or SYNTAX_ERROR, with HIGH confidence.
+  6. Do not analyze SQL query correctness until the submission is actually executed by a SQL engine.
+  7. Do not say the SQL condition/subquery/order is wrong if the error is caused before SQL execution.
+  8. Only analyze algorithmic/logic/edge-case mistakes when the code compiled/executed and produced WA, PARTIAL, TLE, MLE, or RE.
 - If judgeStatus is ACCEPTED, still give a useful learning summary and improvement suggestion.
-- If there is compiler/runtime/error_message, prioritize it.
-- If testcase stderr/stdout/message shows the cause, use it.
 - Only choose topics from challenge.topics when possible.
 - Do not invent database IDs.
-- The answer must be Vietnamese.
+- The answer must be English.
 - Keep explanation and suggestion clear, practical, and not too long.
 
 Submission data:
@@ -222,7 +229,7 @@ def normalize_result(result, payload, model_name):
 
     return {
         "success": True,
-        "summary": result.get("summary") or "Đã phân tích bài nộp.",
+        "summary": result.get("summary") or "Submission analyzed.",
         "mistake_type": mistake_type,
         "mistake_level": mistake_level,
         "explanation": result.get("explanation"),
