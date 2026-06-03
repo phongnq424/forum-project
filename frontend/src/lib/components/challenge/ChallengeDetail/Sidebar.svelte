@@ -114,7 +114,11 @@
 
                     <div class="list-wrapper">
                         {#each leaderboard.slice(0, 5) as item}
-                            {@const user = item.User ?? item.user}
+                            {@const user = item.user ?? item.User}
+                            {@const displayName =
+                                user?.fullname ||
+                                user?.username ||
+                                "Unknown user"}
 
                             <div class="list-item-clean">
                                 <div class="item-left">
@@ -122,19 +126,35 @@
                                         >#{item.rank ?? "-"}</span
                                     >
 
-                                    <Avatar
-                                        src={user?.avatar || undefined}
-                                        name={user?.username ||
-                                            user?.fullname ||
-                                            "Unknown user"}
-                                        size="sm"
-                                    />
+                                    {#if user?.id}
+                                        <a
+                                            href={`/profile/${user.id}`}
+                                            class="user-link"
+                                            aria-label={`View profile of ${displayName}`}
+                                        >
+                                            <Avatar
+                                                src={user?.avatar || undefined}
+                                                name={displayName}
+                                                size="sm"
+                                            />
 
-                                    <span class="text-sm username-text">
-                                        {user?.username ||
-                                            user?.fullname ||
-                                            "Unknown user"}
-                                    </span>
+                                            <span class="text-sm username-text">
+                                                {displayName}
+                                            </span>
+                                        </a>
+                                    {:else}
+                                        <div class="user-link static">
+                                            <Avatar
+                                                src={user?.avatar || undefined}
+                                                name={displayName}
+                                                size="sm"
+                                            />
+
+                                            <span class="text-sm username-text">
+                                                {displayName}
+                                            </span>
+                                        </div>
+                                    {/if}
                                 </div>
 
                                 <span class="text-sm weight-500 color-indigo">
@@ -255,13 +275,37 @@
         justify-content: space-between;
         align-items: center;
         padding: 8px 0;
+        gap: 12px;
     }
 
     .item-left {
         display: flex;
         align-items: center;
         gap: 10px;
+        min-width: 0;
+        flex: 1;
     }
+
+    .user-link:not(.static):hover .username-text {
+        color: #ffffff;
+        text-decoration: underline;
+    }
+
+    .user-link.static {
+        cursor: default;
+        pointer-events: none;
+    }
+
+    .username-text {
+        color: #d1d5db;
+        font-weight: 400;
+        min-width: 0;
+        max-width: 150px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
     .view-more-btn {
         display: flex;
         align-items: center;
@@ -282,6 +326,24 @@
     .view-more-btn:hover {
         background: rgba(255, 255, 255, 0.05);
         color: #f3f4f6;
+    }
+    .user-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        color: inherit;
+        text-decoration: none;
+        border-radius: 10px;
+    }
+
+    .user-link:not(.static):hover .username-text {
+        color: #ffffff;
+        text-decoration: underline;
+    }
+
+    .user-link.static {
+        cursor: default;
     }
 
     /* Visual Elements */
@@ -331,7 +393,13 @@
     .username-text {
         color: #d1d5db;
         font-weight: 400;
+        min-width: 0;
+        max-width: 150px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
+
     .color-indigo {
         color: #818cf8;
     }

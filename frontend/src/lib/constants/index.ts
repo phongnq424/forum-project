@@ -91,6 +91,8 @@ export const ENDPOINTS = {
         BY_USER: (id: string) => `/submissions/user/${id}`,
         BY_USER_AND_CHALLENGE: (userId: string, challengeId: string) =>
             `/submissions/user/${userId}/challenge/${challengeId}`,
+        INSIGHT: (id: string) => `/submissions/${id}/insight`,
+        RECOMMENDATIONS: (id: string) => `/submissions/${id}/recommendations`,
     },
     LEADERBOARD: {
         BY_CHALLENGE: (id: string) => `/leaderboards/${id}`,

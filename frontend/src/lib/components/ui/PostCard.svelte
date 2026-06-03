@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import Card from "./Card.svelte";
+    import Avatar from "./Avatar.svelte";
     import type { Post, PostTopic } from "$lib/types/post.type";
     import Badge from "./Badge.svelte";
     import Icon from "./Icon.svelte";
@@ -13,10 +14,6 @@
     let reactionCount = $state(post.reactionCount || 0);
     let isSaved = $state(post.isSaved || false);
 
-    function getInitial(name?: string) {
-        return name ? name.charAt(0).toUpperCase() : "U";
-    }
-
     function isPostTopic(
         topic: PostTopic | null | undefined,
     ): topic is PostTopic {
@@ -26,6 +23,12 @@
     let displayName = $derived(
         post.User?.fullname || post.User?.username || "Anonymous",
     );
+
+    let authorHref = $derived(
+        post.User?.id ? `/profile/${post.User.id}` : null,
+    );
+
+    let postHref = $derived(`/discuss/${post.id}`);
 
     let coverImage = $derived(
         post.Image && post.Image.length > 0
@@ -98,6 +101,18 @@
             isSaved = previousIsSaved;
         }
     }
+
+    function goToComments(e: MouseEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        goto(`/discuss/${post.id}?scrollTo=comments`);
+    }
+
+    function handleShare(e: MouseEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
 </script>
 
 <Card
@@ -106,112 +121,120 @@
     hover={true}
     style="margin-bottom: 20px; overflow: hidden;"
 >
-    <a href="/discuss/{post.id}" class="post-link">
-        <div class="post-card">
-            <div class="post-content">
-                <div class="post-header">
-                    <div class="post-author">
-                        {#if post.User?.avatar}
-                            <img
-                                class="real-avatar"
-                                src={post.User.avatar}
-                                alt={displayName}
+    <article class="post-card">
+        <div class="post-content">
+            <div class="post-header">
+                <div class="post-author">
+                    {#if authorHref}
+                        <a
+                            href={authorHref}
+                            class="author-link"
+                            aria-label={`View profile of ${displayName}`}
+                        >
+                            <Avatar
+                                name={displayName}
+                                src={post.User?.avatar ?? undefined}
+                                size="sm"
                             />
-                        {:else}
-                            <div class="mini-avatar">
-                                {getInitial(displayName)}
-                            </div>
-                        {/if}
 
-                        <span class="author-name">{displayName}</span>
-                        <span class="dot">•</span>
+                            <span class="author-name">{displayName}</span>
+                        </a>
+                    {:else}
+                        <div class="author-link static">
+                            <Avatar
+                                name={displayName}
+                                src={post.User?.avatar ?? undefined}
+                                size="sm"
+                            />
 
-                        <span class="post-date">
-                            {new Date(post.created_at).toLocaleDateString(
-                                "en-US",
-                                {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                },
-                            )}
-                        </span>
-                    </div>
-
-                    {#if displayTopics.length > 0}
-                        <div class="post-topics">
-                            {#each displayTopics as topic (topic.id)}
-                                <Badge color="outline" size="sm">
-                                    #{topic.name}
-                                </Badge>
-                            {/each}
+                            <span class="author-name">{displayName}</span>
                         </div>
                     {/if}
+
+                    <span class="dot">•</span>
+
+                    <span class="post-date">
+                        {new Date(post.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                        })}
+                    </span>
                 </div>
 
+                {#if displayTopics.length > 0}
+                    <div class="post-topics">
+                        {#each displayTopics as topic (topic.id)}
+                            <Badge color="outline" size="sm">
+                                #{topic.name}
+                            </Badge>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+
+            <a href={postHref} class="post-body-link">
                 <h2 class="post-title">{post.title}</h2>
 
                 <p class="post-excerpt">
                     {post.content ||
                         "No description provided for this post yet..."}
                 </p>
+            </a>
 
-                <div class="post-actions">
-                    <div class="stats-group">
-                        <button
-                            class="action-btn {isReacted ? 'liked' : ''}"
-                            title="Reactions"
-                            onclick={handleReaction}
-                        >
-                            <Icon
-                                name="heart"
-                                fill={isReacted ? "currentColor" : "none"}
-                            />
-                            {reactionCount || 0}
-                        </button>
+            <div class="post-actions">
+                <div class="stats-group">
+                    <button
+                        type="button"
+                        class="action-btn {isReacted ? 'liked' : ''}"
+                        title="Reactions"
+                        onclick={handleReaction}
+                    >
+                        <Icon
+                            name="heart"
+                            fill={isReacted ? "currentColor" : "none"}
+                        />
+                        {reactionCount || 0}
+                    </button>
 
-                        <button
-                            class="action-btn"
-                            title="Comments"
-                            onclick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                goto(`/discuss/${post.id}?scrollTo=comments`);
-                            }}
-                        >
-                            <Icon name="message-square" />
-                            {post.commentCount || 0}
-                        </button>
+                    <button
+                        type="button"
+                        class="action-btn"
+                        title="Comments"
+                        onclick={goToComments}
+                    >
+                        <Icon name="message-square" />
+                        {post.commentCount || 0}
+                    </button>
 
-                        <button
-                            class="action-btn"
-                            onclick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                            }}
-                        >
-                            <Icon name="share" />
-                        </button>
+                    <button
+                        type="button"
+                        class="action-btn"
+                        title="Share"
+                        onclick={handleShare}
+                    >
+                        <Icon name="share" />
+                    </button>
 
-                        <button
-                            class="action-btn {isSaved ? 'saved' : ''}"
-                            title="Save Post"
-                            onclick={handleSave}
-                        >
-                            <Icon
-                                name="bookmark"
-                                fill={isSaved ? "currentColor" : "none"}
-                            />
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        class="action-btn {isSaved ? 'saved' : ''}"
+                        title="Save Post"
+                        onclick={handleSave}
+                    >
+                        <Icon
+                            name="bookmark"
+                            fill={isSaved ? "currentColor" : "none"}
+                        />
+                    </button>
                 </div>
             </div>
-
-            <div class="post-thumbnail">
-                <img src={coverImage} alt={post.title} />
-            </div>
         </div>
-    </a>
+
+        <a href={postHref} class="post-thumbnail" aria-label={post.title}>
+            <img src={coverImage} alt={post.title} />
+        </a>
+    </article>
 </Card>
 
 <style>
@@ -222,10 +245,8 @@
         gap: 20px;
     }
 
-    .post-link {
-        text-decoration: none;
-        color: inherit;
-        display: block;
+    .post-content {
+        min-width: 0;
     }
 
     .post-header {
@@ -243,6 +264,21 @@
         min-width: 0;
     }
 
+    .author-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 10px;
+    }
+
+    .author-link:not(.static):hover .author-name {
+        color: #ffffff;
+        text-decoration: underline;
+    }
+
     .post-topics {
         display: flex;
         flex-wrap: wrap;
@@ -250,28 +286,6 @@
         gap: 6px;
         margin-left: auto;
         max-width: 45%;
-    }
-
-    .mini-avatar,
-    .real-avatar {
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
-        flex-shrink: 0;
-    }
-
-    .mini-avatar {
-        background: #6366f1;
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: white;
-    }
-
-    .real-avatar {
-        object-fit: cover;
     }
 
     .author-name {
@@ -290,12 +304,23 @@
         white-space: nowrap;
     }
 
+    .post-body-link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .post-body-link:hover .post-title {
+        color: #ffffff;
+    }
+
     .post-title {
         font-size: 18px;
         font-weight: 700;
         margin: 0 0 8px 0;
         line-height: 1.4;
         color: #f3f4f6;
+        transition: color 0.16s ease;
     }
 
     .post-excerpt {
@@ -306,7 +331,7 @@
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        margin-bottom: 20px;
+        margin: 0 0 20px;
     }
 
     .post-actions {
@@ -352,6 +377,7 @@
     .post-thumbnail {
         display: flex;
         align-items: center;
+        text-decoration: none;
     }
 
     .post-thumbnail img {
@@ -360,6 +386,13 @@
         object-fit: cover;
         border-radius: 12px;
         border: 1px solid #2a2e36;
+        transition:
+            filter 0.16s ease,
+            transform 0.16s ease;
+    }
+
+    .post-thumbnail:hover img {
+        filter: brightness(1.08);
     }
 
     @media (max-width: 600px) {

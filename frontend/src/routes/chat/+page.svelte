@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+	import { page } from "$app/state";
+	import { goto } from "$app/navigation";
 	import { socketService } from "$lib/services/socket.svelte";
 	import ChatList from "$lib/components/chat/ChatList.svelte";
 	import ChatWindow from "$lib/components/chat/ChatWindow.svelte";
@@ -20,6 +22,10 @@
 	let activeChat = $state<ChatConversation | null>(null);
 	let currentView = $state<"list" | "chat" | "detail">("list");
 	let sharedAttachments = $state<ChatAttachment[]>([]);
+	let routeConversationId = $derived(
+		page.url.searchParams.get("conversationId") || "",
+	);
+	let routeUserId = $derived(page.url.searchParams.get("userId") || "");
 
 	function handleMessagesChange(messages: ChatMessage[]) {
 		sharedAttachments = messages.flatMap(
@@ -134,6 +140,11 @@
 	function backToList() {
 		activeChat = null;
 		currentView = "list";
+
+		goto("/chat", {
+			noScroll: true,
+			keepFocus: true,
+		});
 	}
 
 	function backToChat() {
@@ -142,6 +153,7 @@
 
 	function handleConversationCreated(updatedChat: ChatConversation) {
 		activeChat = updatedChat;
+		currentView = "chat";
 
 		const exists = conversations.some((conv) => conv.id === updatedChat.id);
 
@@ -151,6 +163,14 @@
 			conversations = conversations.map((conv) =>
 				conv.id === updatedChat.id ? updatedChat : conv,
 			);
+		}
+
+		if (!updatedChat.id.startsWith("temp_")) {
+			goto(`/chat?conversationId=${updatedChat.id}`, {
+				replaceState: true,
+				noScroll: true,
+				keepFocus: true,
+			});
 		}
 	}
 
@@ -168,8 +188,56 @@
 		}
 	}
 
+	function syncActiveChatFromUrl() {
+		if (isLoadingConversations) return;
+
+		if (routeConversationId) {
+			const matchedChat = conversations.find(
+				(conv) => conv.id === routeConversationId,
+			);
+
+			if (matchedChat) {
+				activeChat = matchedChat;
+				currentView = "chat";
+				return;
+			}
+
+			activeChat = null;
+			currentView = "list";
+			return;
+		}
+
+		if (routeUserId) {
+			const matchedChat = conversations.find(
+				(conv) => conv.peerId === routeUserId,
+			);
+
+			if (matchedChat) {
+				activeChat = matchedChat;
+				currentView = "chat";
+				return;
+			}
+
+			activeChat = null;
+			currentView = "list";
+			return;
+		}
+
+		activeChat = null;
+		currentView = "list";
+	}
+
 	onMount(() => {
 		loadConversations();
+	});
+
+	$effect(() => {
+		routeConversationId;
+		routeUserId;
+		conversations;
+		isLoadingConversations;
+
+		syncActiveChatFromUrl();
 	});
 
 	$effect(() => {

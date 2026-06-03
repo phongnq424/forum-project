@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
     import Avatar from "$lib/components/ui/Avatar.svelte";
     import Input from "$lib/components/ui/Input.svelte";
     import Button from "$lib/components/ui/Button.svelte";
@@ -79,6 +80,10 @@
         return conv.online;
     }
 
+    function getConversationHref(conv: ChatConversation) {
+        return `/chat?conversationId=${conv.id}`;
+    }
+
     function startNewChat(user: User) {
         activeChat = {
             id: `temp_${user.id}`,
@@ -93,6 +98,11 @@
             topic_id: null,
             challenge_id: null,
         };
+
+        goto(`/chat?userId=${user.id}`, {
+            noScroll: true,
+            keepFocus: true,
+        });
     }
 </script>
 
@@ -116,10 +126,11 @@
             </div>
         {:else if conversations.length > 0}
             {#each conversations as conv (conv.id)}
-                <button
+                <a
                     class="conv-item {activeChat?.id === conv.id
                         ? 'active'
                         : ''}"
+                    href={getConversationHref(conv)}
                     onclick={() => (activeChat = conv)}
                 >
                     <div class="avatar-wrapper">
@@ -153,7 +164,7 @@
                             </Badge>
                         </div>
                     {/if}
-                </button>
+                </a>
             {/each}
         {:else}
             <div class="empty-state-list">
@@ -254,6 +265,7 @@
             background-color 0.16s ease,
             transform 0.16s ease;
         text-align: left;
+        text-decoration: none;
     }
 
     .conv-item:hover {

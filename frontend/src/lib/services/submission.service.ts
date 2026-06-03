@@ -7,6 +7,10 @@ import type {
     SubmitResponse
 } from "$lib/types/submission.type";
 import type { Leaderboard } from "$lib/types/leaderboard.type";
+import type {
+    LearningRecommendation,
+    SubmissionInsightResponse,
+} from "$lib/types/submission-ai.type";
 
 export const submissionService = {
 
@@ -45,5 +49,13 @@ export const submissionService = {
             ENDPOINTS.LEADERBOARD.BY_CHALLENGE(challengeId),
             { fetch: customFetch }
         );
-    }
+    },
+
+    async getInsight(id: string): Promise<SubmissionInsightResponse> {
+        return api.get(ENDPOINTS.SUBMISSIONS.INSIGHT(id));
+    },
+
+    async getRecommendations(id: string): Promise<LearningRecommendation[]> {
+        return api.get(ENDPOINTS.SUBMISSIONS.RECOMMENDATIONS(id));
+    },
 };

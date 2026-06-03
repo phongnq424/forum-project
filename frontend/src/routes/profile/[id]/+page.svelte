@@ -8,6 +8,7 @@
     import { reportService } from "$lib/services/report.service";
     import { followService } from "$lib/services/follow.service";
     import { authState } from "$lib/states/auth.svelte";
+    import { chatService } from "$lib/services/chat.service";
 
     import PublicProfileHeader from "$lib/components/profile/PublicProfileHeader.svelte";
     import ProfileStats from "$lib/components/profile/ProfileStats.svelte";
@@ -25,6 +26,7 @@
     let errorMessage = $state("");
     let isFollowing = $state(false);
     let followLoading = $state(false);
+    let messageLoading = $state(false);
 
     let userId = $derived(String(page.params.id));
 
@@ -86,11 +88,25 @@
         }
     }
 
-    function handleMessage() {
-        if (!profile) return;
+    async function handleMessage() {
+        if (!profile || messageLoading) return;
 
-        // Tùy route chat của bạn, sửa lại cho đúng.
-        goto(`/messages?userId=${profile.User.id}`);
+        messageLoading = true;
+
+        try {
+            const chat = await chatService.createChat(profile.User.id);
+            const conversationId = chat.conversationId || chat.id;
+
+            if (!conversationId) {
+                throw new Error("Cannot open chat conversation");
+            }
+
+            goto(`/chat?conversationId=${conversationId}`);
+        } catch (error) {
+            console.error("Open chat failed:", error);
+        } finally {
+            messageLoading = false;
+        }
     }
 
     async function handleReportUser() {
