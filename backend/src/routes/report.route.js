@@ -23,7 +23,7 @@ router.get(
 );
 
 router.put(
-    "/:id",
+    "/:id/status",
     rateLimitMiddleware,
     verifyToken,
     requireRole("ADMIN"),
