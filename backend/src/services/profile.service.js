@@ -51,24 +51,34 @@ const ProfileService = {
     },
 
     updateProfile: async (userId, data, files = {}) => {
-        // 🚀 Chạy query song song
         const [profile, user] = await Promise.all([
             prisma.profile.findUnique({ where: { user_id: userId } }),
             prisma.user.findUnique({ where: { id: userId } })
         ])
 
-        if (data.dob === "") {
-            data.dob = null;
+        const userUpdateData = {}
+
+        if (Object.prototype.hasOwnProperty.call(data, 'fullname')) {
+            userUpdateData.fullname = data.fullname && data.fullname.trim()
+                ? data.fullname.trim()
+                : null
+
+            delete data.fullname
         }
-        else if (data.dob && typeof data.dob === 'string') {
+
+        delete data.avatar
+        delete data.avatar_public_id
+
+        if (data.dob === "") {
+            data.dob = null
+        } else if (data.dob && typeof data.dob === 'string') {
             data.dob = new Date(data.dob)
         }
 
         if (data.gender === "") {
-            data.gender = null;
+            data.gender = null
         }
 
-        // 🚀 Upload avatar + cover song song
         const uploadPromises = []
         let uploadedAvatar = null
         let uploadedCover = null
@@ -78,8 +88,8 @@ const ProfileService = {
                 CloudinaryService.update(
                     files.avatar,
                     'avatar',
-                    user?.avatar_public_id
-                ).then(uploaded => {
+                    user && user.avatar_public_id
+                ).then(function (uploaded) {
                     uploadedAvatar = uploaded
                 })
             )
@@ -90,8 +100,8 @@ const ProfileService = {
                 CloudinaryService.update(
                     files.cover,
                     'cover',
-                    profile?.cover_public_id
-                ).then(uploaded => {
+                    profile && profile.cover_public_id
+                ).then(function (uploaded) {
                     uploadedCover = uploaded
                 })
             )
@@ -101,26 +111,16 @@ const ProfileService = {
             await Promise.all(uploadPromises)
         }
 
-        // 🚀 Chuẩn bị data cập nhật User (gộp avatar + fullname thành 1 lần)
-        const userUpdateData = {}
-
         if (uploadedAvatar) {
             userUpdateData.avatar = uploadedAvatar.url
             userUpdateData.avatar_public_id = uploadedAvatar.public_id
         }
 
-        if (data.fullname) {
-            userUpdateData.fullname = data.fullname
-            delete data.fullname
-        }
-
-        // Chuẩn bị data cập nhật Profile (cover)
         if (uploadedCover) {
             data.cover = uploadedCover.url
             data.cover_public_id = uploadedCover.public_id
         }
 
-        // 🚀 Cập nhật User + Profile song song
         const updatePromises = []
 
         if (Object.keys(userUpdateData).length > 0) {
@@ -134,16 +134,40 @@ const ProfileService = {
 
         if (!profile) {
             updatePromises.push(
-                prisma.profile.create({ data: { ...data, user_id: userId } })
+                prisma.profile.create({
+                    data: {
+                        ...data,
+                        user_id: userId
+                    }
+                })
             )
         } else {
             updatePromises.push(
-                prisma.profile.update({ where: { user_id: userId }, data })
+                prisma.profile.update({
+                    where: { user_id: userId },
+                    data
+                })
             )
         }
 
-        const results = await Promise.all(updatePromises)
-        return results[results.length - 1]
+        await Promise.all(updatePromises)
+
+        return await prisma.profile.findUnique({
+            where: { user_id: userId },
+            include: {
+                User: {
+                    select: {
+                        id: true,
+                        username: true,
+                        email: true,
+                        role: true,
+                        fullname: true,
+                        avatar: true,
+                        created_at: true
+                    }
+                }
+            }
+        })
     },
 
 
