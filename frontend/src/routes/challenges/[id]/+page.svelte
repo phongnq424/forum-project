@@ -12,6 +12,7 @@
     import { challengeService } from "$lib/services/challenge.service";
     import { languageService } from "$lib/services/language.service";
     import { submissionService } from "$lib/services/submission.service";
+    import { socketService } from "$lib/services/socket.svelte";
     import type {
         Challenge,
         ChallengeDifficulty,
@@ -54,27 +55,9 @@
     let aiInsight = $state<SubmissionAIInsight | null>(null);
     let learningRecommendations = $state<LearningRecommendation[]>([]);
 
-    let judgeInterval: ReturnType<typeof setInterval> | null = null;
-    let insightInterval: ReturnType<typeof setInterval> | null = null;
-
     const challengeId = $derived(page.params.id);
 
-    function clearJudgeInterval() {
-        if (judgeInterval) {
-            clearInterval(judgeInterval);
-            judgeInterval = null;
-        }
-    }
-
-    function clearInsightInterval() {
-        if (insightInterval) {
-            clearInterval(insightInterval);
-            insightInterval = null;
-        }
-    }
-
     function resetAiInsight() {
-        clearInsightInterval();
         activeSubmissionId = null;
         aiInsightStatus = "idle";
         aiInsight = null;
@@ -83,10 +66,6 @@
 
     function isJudging(status: string) {
         return status === "PENDING" || status === "RUNNING";
-    }
-
-    function isFinished(status: string) {
-        return !isJudging(status);
     }
 
     function resolveInsightResponse(res: unknown): {
@@ -160,6 +139,7 @@
             recentSubmissions = [];
             return;
         }
+
         try {
             const res = await submissionService.listByUserAndChallenge(
                 authState.user.id,
@@ -173,6 +153,7 @@
 
     async function fetchLeaderboard() {
         if (!challengeId) return;
+
         try {
             const res = await submissionService.getLeaderboard(challengeId);
             leaderboard = res;
@@ -184,6 +165,7 @@
     async function fetchChallengeDetail(id: string) {
         isLoading = true;
         error = null;
+
         try {
             const res = await challengeService.getById(id);
             challenge = res;
@@ -227,12 +209,7 @@
         }
     }
 
-    async function fetchSubmissionInsight(
-        submissionId: string,
-        shouldPollIfNotReady = false,
-    ) {
-        clearInsightInterval();
-
+    async function fetchSubmissionInsight(submissionId: string) {
         try {
             aiInsightStatus = "waiting";
 
@@ -247,60 +224,11 @@
                 return;
             }
 
-            if (shouldPollIfNotReady && resolved.shouldRetry) {
-                activeSubmissionId = submissionId;
-                pollSubmissionInsight(submissionId);
-                return;
-            }
-
-            aiInsightStatus = "idle";
+            aiInsightStatus = "waiting";
         } catch (err) {
             console.error("Failed to fetch AI insight:", err);
             aiInsightStatus = "idle";
         }
-    }
-
-    function pollSubmissionInsight(submissionId: string) {
-        clearInsightInterval();
-
-        activeSubmissionId = submissionId;
-        aiInsightStatus = "waiting";
-
-        let attempts = 0;
-        const MAX_ATTEMPTS = 15;
-
-        insightInterval = setInterval(async () => {
-            attempts++;
-
-            try {
-                const res = await submissionService.getInsight(submissionId);
-                const resolved = resolveInsightResponse(res);
-
-                if (resolved.ready && resolved.insight) {
-                    aiInsight = resolved.insight;
-                    aiInsightStatus = "ready";
-                    fetchRecommendations(submissionId);
-
-                    clearInsightInterval();
-                    return;
-                }
-
-                if (!resolved.shouldRetry) {
-                    aiInsightStatus = "idle";
-                    clearInsightInterval();
-                    return;
-                }
-
-                if (attempts >= MAX_ATTEMPTS) {
-                    aiInsightStatus = "idle";
-                    clearInsightInterval();
-                }
-            } catch (err) {
-                console.error("Polling AI insight failed:", err);
-                aiInsightStatus = "idle";
-                clearInsightInterval();
-            }
-        }, 2000);
     }
 
     async function refreshRecentSubmissionsAndResume() {
@@ -322,20 +250,78 @@
         activeSubmissionId = latest.id;
 
         if (isJudging(latest.status)) {
+            submissionResult = {
+                status: "success",
+                message: "Submission is still judging...",
+            };
             return;
         }
 
         submissionResult = null;
-        fetchSubmissionInsight(latest.id, false);
+        fetchSubmissionInsight(latest.id);
+    }
+
+    function handleSubmissionUpdated(data: {
+        submissionId: string;
+        challengeId: string;
+        status: string;
+        score: number;
+        runtime_ms?: number | null;
+        memory_kb?: number | null;
+    }) {
+        if (!data?.submissionId || !data?.challengeId) return;
+        if (data.challengeId !== challengeId) return;
+
+        if (activeSubmissionId && data.submissionId !== activeSubmissionId) {
+            return;
+        }
+
+        activeSubmissionId = data.submissionId;
+
+        submissionResult = {
+            status: data.status === "ACCEPTED" ? "success" : "error",
+            message: data.status,
+        };
+
+        fetchRecentSubmissions();
+        fetchLeaderboard();
+
+        aiInsightStatus = "waiting";
+    }
+
+    function handleSubmissionInsightReady(data: {
+        submissionId: string;
+        challengeId: string;
+    }) {
+        if (!data?.submissionId || !data?.challengeId) return;
+        if (data.challengeId !== challengeId) return;
+
+        if (activeSubmissionId && data.submissionId !== activeSubmissionId) {
+            return;
+        }
+
+        activeSubmissionId = data.submissionId;
+        fetchSubmissionInsight(data.submissionId);
     }
 
     onMount(() => {
+        socketService.connect();
         fetchLanguages();
-    });
 
-    onDestroy(() => {
-        clearJudgeInterval();
-        clearInsightInterval();
+        const unsubscribeSubmissionUpdated = socketService.on(
+            "submission:updated",
+            handleSubmissionUpdated,
+        );
+
+        const unsubscribeSubmissionInsightReady = socketService.on(
+            "submission:insight:ready",
+            handleSubmissionInsightReady,
+        );
+
+        return () => {
+            unsubscribeSubmissionUpdated();
+            unsubscribeSubmissionInsightReady();
+        };
     });
 
     $effect(() => {
@@ -357,7 +343,6 @@
         isSubmitting = true;
         submissionResult = null;
         resetAiInsight();
-        clearJudgeInterval();
 
         try {
             const payload = {
@@ -367,13 +352,14 @@
             };
 
             const res = await submissionService.submit(payload);
+
             submissionResult = {
                 status: "success",
                 message: "Submission sent! Judging...",
             };
 
             activeSubmissionId = res.id;
-            pollSubmission(res.id);
+            await fetchRecentSubmissions();
         } catch (err) {
             submissionResult = {
                 status: "error",
@@ -382,49 +368,6 @@
         } finally {
             isSubmitting = false;
         }
-    }
-
-    async function pollSubmission(id: string) {
-        clearJudgeInterval();
-
-        let attempts = 0;
-        const MAX_ATTEMPTS = 10;
-
-        judgeInterval = setInterval(async () => {
-            attempts++;
-
-            try {
-                const sub = await submissionService.getSubmission(id);
-
-                if (sub.status !== "PENDING" && sub.status !== "RUNNING") {
-                    submissionResult = {
-                        status: sub.status === "ACCEPTED" ? "success" : "error",
-                        message: sub.status,
-                    };
-
-                    fetchRecentSubmissions();
-                    fetchLeaderboard();
-
-                    aiInsightStatus = "waiting";
-                    pollSubmissionInsight(id);
-
-                    clearJudgeInterval();
-                    return;
-                }
-
-                if (attempts >= MAX_ATTEMPTS) {
-                    submissionResult = {
-                        status: "error",
-                        message: "Judging timeout",
-                    };
-
-                    clearJudgeInterval();
-                }
-            } catch (err) {
-                console.error("Polling failed", err);
-                clearJudgeInterval();
-            }
-        }, 2000);
     }
 </script>
 
