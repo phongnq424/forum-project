@@ -38,6 +38,11 @@ export const ENDPOINTS = {
         BASE: 'categories',
         BY_ID: (id: string) => `categories/${id}`,
     },
+    INTERESTED_TOPICS: {
+        BASE: "/interested-topics",
+        ME: "/interested-topics/me",
+        BY_TOPIC_ID: (topicId: string) => `/interested-topics/${topicId}`,
+    },
     TOPICS: {
         BASE: 'topics',
         BY_ID: (id: string) => `topics/${id}`,

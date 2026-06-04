@@ -4,10 +4,13 @@
     import { postService } from "$lib/services/post.service";
     import { authService } from "$lib/services/auth.service";
     import { authState } from "$lib/states/auth.svelte";
+    import { adminTopicService } from "$lib/services/topic.service";
+    import { interestedTopicService } from "$lib/services/interested-topic.service";
 
     import ProfileHeader from "$lib/components/profile/ProfileHeader.svelte";
     import ProfileStats from "$lib/components/profile/ProfileStats.svelte";
     import ProfilePost from "$lib/components/profile/ProfilePost.svelte";
+    import ProfileInterestedTopics from "$lib/components/profile/ProfileInterestedTopics.svelte";
     import EditProfileModal from "$lib/components/profile/EditProfileModal.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
     import Modal from "$lib/components/ui/Modal.svelte";
@@ -15,12 +18,16 @@
     import Card from "$lib/components/ui/Card.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
 
+    import type { Topic } from "$lib/types/topic.type";
+
     let profile = $state<any>(null);
     let posts = $state<any[]>([]);
+    let topics = $state<Topic[]>([]);
+    let selectedTopicIds = $state<string[]>([]);
     let isEditModalOpen = $state(false);
     let isLogoutModalOpen = $state(false);
     let loading = $state(true);
-
+    let currentUserId = $state<string | null>(null);
     onMount(async () => {
         const userId = authState.user?.id;
         if (!userId) {
@@ -28,14 +35,21 @@
             return;
         }
 
+        currentUserId = userId;
+
         try {
-            const [profData, postsData] = await Promise.all([
-                profileService.getMyProfile(),
-                postService.getByUser(userId, { page: 1, limit: 10 }),
-            ]);
+            const [profData, postsData, topicsData, myTopicsData] =
+                await Promise.all([
+                    profileService.getMyProfile(),
+                    postService.getByUser(userId, { page: 1, limit: 10 }),
+                    adminTopicService.listTopics({ page: 1, limit: 100 }),
+                    interestedTopicService.getMyTopics(),
+                ]);
 
             profile = profData;
             posts = postsData?.data || [];
+            topics = topicsData?.data || [];
+            selectedTopicIds = myTopicsData.map((item) => item.topic_id);
         } catch (e) {
             console.error("Error:", e);
         } finally {
@@ -44,7 +58,6 @@
     });
 
     function handleUpdated(data: any) {
-        // Cập nhật state local ngay lập tức để UI render lại
         profile.User.fullname = data.fullname;
         profile.bio = data.bio;
         profile.location = data.location;
@@ -78,7 +91,10 @@
             <ProfileStats
                 followerCount={profile.followerCount}
                 followingCount={profile.followingCount}
+                userId={profile.User?.id || currentUserId || undefined}
             />
+
+            <ProfileInterestedTopics {topics} bind:selectedTopicIds />
 
             <Card variant="default" padding="20px" hover={false}>
                 <h3 class="sidebar-title">Recent Contests</h3>
