@@ -104,7 +104,8 @@ const FollowerService = {
           select: {
             id: true,
             username: true,
-            Profile: { select: { avatar: true } },
+            avatar: true,
+            fullname: true,
           },
         },
       },
@@ -139,7 +140,8 @@ const FollowerService = {
           select: {
             id: true,
             username: true,
-            Profile: { select: { avatar: true } },
+            avatar: true,
+            fullname: true
           },
         },
       },
