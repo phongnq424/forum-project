@@ -4,6 +4,7 @@ const prisma = new PrismaClient();
 const { Queue } = require('bullmq');
 const connection = require('../config/redisQueue');
 const { SubmissionInsightService } = require("./submissionInsight.service");
+const { emitToUser } = require("../socket/emitter");
 
 const judgeQueue = new Queue('judge_queue', { connection });
 
@@ -198,6 +199,15 @@ const SubmissionService = {
                 });
             }
         });
+        emitToUser(submission.user_id, "submission:updated", {
+            submissionId,
+            challengeId: submission.challenge_id,
+            status: finalStatus,
+            score,
+            runtime_ms: runtime_ms || null,
+            memory_kb: memory_kb || null
+        });
+
         SubmissionInsightService.analyzeAfterJudging(submissionId).catch((err) => {
             console.error("[SubmissionInsightService] analyzeAfterJudging failed:", err.message);
         });

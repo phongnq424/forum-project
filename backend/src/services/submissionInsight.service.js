@@ -2,6 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const { AIService } = require("./ai.service");
 const { UserTopicMasteryService } = require("./userTopicMastery.service");
 const { LearningRecommendationService } = require("./learningRecommendation.service");
+const { emitToUser } = require("../socket/emitter");
 
 const prisma = new PrismaClient();
 
@@ -117,7 +118,6 @@ const SubmissionInsightService = {
         }
 
         const payload = buildAnalysisPayload(submission);
-        console.log("[SubmissionInsightService] Analysis payload prepared for submissionId:", payload);
         let aiResult;
         try {
             aiResult = await AIService.analyzeSubmissionMistake(payload);
@@ -199,6 +199,11 @@ const SubmissionInsightService = {
         await LearningRecommendationService.createForSubmission(submissionId).catch(
             console.error
         );
+
+        emitToUser(submission.user_id, "submission:insight:ready", {
+            submissionId: submission.id,
+            challengeId: submission.challenge_id,
+        });
 
         return insight;
     },
