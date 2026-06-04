@@ -11,6 +11,7 @@
     import Avatar from "$lib/components/ui/Avatar.svelte";
 
     import { followService } from "$lib/services/follow.service";
+    import { profileService } from "$lib/services/profile.service";
     import type {
         FollowUser,
         FollowerItem,
@@ -38,6 +39,8 @@
 
     let followersTotal = $state(0);
     let followingTotal = $state(0);
+
+    let currentResultTotal = $state(0);
 
     let pageNumber = $state(1);
     let limit = $state(20);
@@ -71,6 +74,19 @@
         return activeTab === "followers" ? followers : following;
     }
 
+    async function loadProfileStats() {
+        if (!userId) return;
+
+        try {
+            const profile = await profileService.getProfileById(userId);
+
+            followersTotal = profile.followerCount || 0;
+            followingTotal = profile.followingCount || 0;
+        } catch (error) {
+            console.error("Failed to load profile stats:", error);
+        }
+    }
+
     function currentTotal() {
         return activeTab === "followers" ? followersTotal : followingTotal;
     }
@@ -92,14 +108,22 @@
                 const res = await followService.getFollowers(userId, params);
 
                 followers = res.data.map(normalizeFollower);
-                followersTotal = res.pagination.total;
+                currentResultTotal = res.pagination.total;
                 totalPages = res.pagination.totalPages;
+
+                if (!search.trim()) {
+                    followersTotal = res.pagination.total;
+                }
             } else {
                 const res = await followService.getFollowing(userId, params);
 
                 following = res.data.map(normalizeFollowing);
-                followingTotal = res.pagination.total;
+                currentResultTotal = res.pagination.total;
                 totalPages = res.pagination.totalPages;
+
+                if (!search.trim()) {
+                    followingTotal = res.pagination.total;
+                }
             }
 
             pageNumber = nextPage;
@@ -143,6 +167,7 @@
             activeTab = "followers";
         }
 
+        loadProfileStats();
         loadConnections(1);
 
         return () => {
@@ -183,11 +208,7 @@
                 onclick={() => switchTab("followers")}
             >
                 Followers
-                <span
-                    >{activeTab === "followers"
-                        ? currentTotal()
-                        : followersTotal}</span
-                >
+                <span>{followersTotal}</span>
             </button>
 
             <button
@@ -196,11 +217,7 @@
                 onclick={() => switchTab("following")}
             >
                 Following
-                <span
-                    >{activeTab === "following"
-                        ? currentTotal()
-                        : followingTotal}</span
-                >
+                <span>{followingTotal}</span>
             </button>
         </div>
 
@@ -239,11 +256,7 @@
             {:else}
                 <div class="user-list">
                     {#each currentList() as user (user.id)}
-                        <button
-                            type="button"
-                            class="user-row"
-                            onclick={() => openProfile(user.id)}
-                        >
+                        <a class="user-row" href={`/profile/${user.id}`}>
                             <Avatar
                                 name={user.fullname || user.username}
                                 src={user.avatar ?? undefined}
@@ -258,7 +271,7 @@
                             </div>
 
                             <Icon name="arrow-right" size={18} />
-                        </button>
+                        </a>
                     {/each}
                 </div>
             {/if}
@@ -415,6 +428,7 @@
         color: #d1d5db;
         text-align: left;
         cursor: pointer;
+        text-decoration: none;
         transition:
             background-color 0.16s ease,
             border-color 0.16s ease,

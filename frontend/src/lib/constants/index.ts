@@ -112,4 +112,13 @@ export const ENDPOINTS = {
         FOLLOWERS_BY_USER: (userId: string) => `/followers/followers/${userId}`,
         FOLLOWING_BY_USER: (userId: string) => `/followers/following/${userId}`,
     },
+    RECOMMENDATIONS: {
+        BASE: "/recommendations",
+        POSTS: "/recommendations/posts",
+        USERS: "/recommendations/users",
+        CHALLENGES: "/recommendations/challenges",
+        GROUPS: "/recommendations/groups",
+        LEARNING: "/recommendations/learning",
+        TOPIC_PROFILE: "/recommendations/topic-profile",
+    },
 };

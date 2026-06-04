@@ -12,20 +12,30 @@
     import TextArea from "../ui/TextArea.svelte";
     import Badge from "$lib/components/ui/Badge.svelte";
 
-    // --- Props ---
     let { postId } = $props<{ postId: string }>();
 
-    // --- State (Runes) ---
     let comments = $state<Comment[]>([]);
     let newCommentText = $state("");
     let loading = $state(true);
     let sending = $state(false);
 
-    // Trạng thái cho chức năng Reply
     let replyingToId = $state<string | null>(null);
     let replyText = $state("");
 
-    // --- Logic ---
+    function getCommentUser(comment: Comment) {
+        return comment.User;
+    }
+
+    function getCommentDisplayName(comment: Comment) {
+        const user = getCommentUser(comment);
+        return user?.fullname || user?.username || "Anonymous";
+    }
+
+    function getCommentUserHref(comment: Comment) {
+        const user = getCommentUser(comment);
+        return user?.id ? `/profile/${user.id}` : null;
+    }
+
     async function fetchComments() {
         loading = true;
         try {
@@ -98,18 +108,40 @@
 
 {#snippet commentItem(comment: Comment, isChild = false)}
     <div class="comment-item" class:child-item={isChild}>
-        <img
-            src={comment.User?.avatar || "/default-avatar.png"}
-            alt="Avatar"
-            class="comm-avatar"
-            style={isChild ? "width: 32px; height: 32px;" : ""}
-        />
+        {#if getCommentUserHref(comment)}
+            <a
+                href={getCommentUserHref(comment)}
+                class="comm-avatar-link"
+                aria-label={`View profile of ${getCommentDisplayName(comment)}`}
+            >
+                <img
+                    src={comment.User?.avatar || "/default-avatar.png"}
+                    alt="Avatar"
+                    class="comm-avatar"
+                    style={isChild ? "width: 32px; height: 32px;" : ""}
+                />
+            </a>
+        {:else}
+            <img
+                src={comment.User?.avatar || "/default-avatar.png"}
+                alt="Avatar"
+                class="comm-avatar"
+                style={isChild ? "width: 32px; height: 32px;" : ""}
+            />
+        {/if}
 
         <div class="comm-content">
             <div class="comm-header">
-                <span class="comm-user"
-                    >{comment.User?.username || "Anonymous"}</span
-                >
+                {#if getCommentUserHref(comment)}
+                    <a href={getCommentUserHref(comment)} class="comm-user">
+                        {getCommentDisplayName(comment)}
+                    </a>
+                {:else}
+                    <span class="comm-user">
+                        {getCommentDisplayName(comment)}
+                    </span>
+                {/if}
+
                 <span class="comm-time">
                     • {formatDistanceToNow(new Date(comment.created_at))} ago
                 </span>
@@ -380,6 +412,29 @@
         border-top-color: #6366f1;
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
+    }
+
+    .comm-avatar-link {
+        display: inline-flex;
+        flex-shrink: 0;
+        border-radius: 50%;
+        text-decoration: none;
+    }
+
+    .comm-avatar-link:hover .comm-avatar {
+        filter: brightness(1.12);
+    }
+
+    .comm-user {
+        font-weight: 600;
+        color: #f9fafb;
+        font-size: 0.95rem;
+        text-decoration: none;
+    }
+
+    a.comm-user:hover {
+        color: #ffffff;
+        text-decoration: underline;
     }
 
     /* Animation cho loader icon */

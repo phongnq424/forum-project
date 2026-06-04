@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { postService } from "$lib/services/post.service";
-	import { untrack } from "svelte";
+	import { recommendationService } from "$lib/services/recommendation.service";
+	import { onMount, untrack } from "svelte";
 	import type { PageData } from "./$types";
 
 	import PostCard from "$lib/components/ui/PostCard.svelte";
@@ -23,7 +24,7 @@
 	let error = $state<string | null>(null);
 	let posts = $derived(clientPosts ?? serverPosts);
 
-	let activeCategory = $state("For You");
+	let activeCategory = $state("All");
 	let searchQuery = $state("");
 	let sortBy = $state("Newest");
 	let isCreateModalOpen = $state(false);
@@ -39,6 +40,13 @@
 		{ value: "Newest", label: "Newest" },
 		{ value: "Most Favorite", label: "Most Favorite" },
 	];
+	const discussCategories = $derived([
+		"All",
+		"For You",
+		...discussState.categoryNames.filter(
+			(name) => name !== "For You" && name !== "All",
+		),
+	]);
 
 	const trendingPosts: TrendingPost[] = [
 		{
@@ -64,46 +72,64 @@
 		{ name: "Tech Lead", role: "Ex-Google Engineer" },
 	];
 
+	function buildPostListPayload(
+		query: string,
+		sort: string,
+		category: string,
+	): Parameters<typeof postService.listPosts>[0] {
+		const payload: Parameters<typeof postService.listPosts>[0] = {
+			page: 1,
+			limit: 10,
+			sortBy: sort,
+		};
+
+		if (query.trim() !== "") {
+			payload.q = query.trim();
+		}
+
+		if (category !== "All" && category !== "For You") {
+			const found = discussState.categories.find(
+				(c) => c.name === category,
+			);
+
+			if (found) {
+				payload.category_id = found.id;
+			}
+		}
+
+		return payload;
+	}
+
 	async function fetchPosts(
 		query: string,
 		sort: string,
 		category: string,
 		attempt = 0,
 	) {
-		// Cancel previous request để avoid race condition
 		if (abortController) {
 			abortController.abort();
 		}
+
 		abortController = new AbortController();
 
 		loading = true;
 		error = null;
 
 		try {
-			let payload: Parameters<typeof postService.listPosts>[0] = {
-				page: 1,
-				limit: 10,
-				sortBy: sort,
-			};
-
-			if (query.trim() !== "") payload.q = query.trim();
-
-			if (category !== "For You") {
-				const found = discussState.categories.find(
-					(c) => c.name === category,
-				);
-				if (found) payload.category_id = found.id;
-			}
-
-			// Timeout 6s
-			const timeoutPromise = new Promise((_, reject) => {
-				setTimeout(() => reject(new Error("Request timeout")), 6000);
-			});
-
 			type PostListResult = PageData["initialPosts"];
 
+			const requestPromise: Promise<PostListResult> =
+				category === "For You"
+					? (recommendationService.getRecommendedPosts({
+							page: 1,
+							limit: 10,
+						}) as Promise<PostListResult>)
+					: postService.listPosts(
+							buildPostListPayload(query, sort, category),
+						);
+
 			const res = await Promise.race<PostListResult>([
-				postService.listPosts(payload),
+				requestPromise,
 				new Promise<PostListResult>((_, reject) => {
 					setTimeout(
 						() => reject(new Error("Request timeout")),
@@ -113,9 +139,8 @@
 			]);
 
 			clientPosts = res.data ?? [];
-			retryCount = 0; // Reset retry count on success
+			retryCount = 0;
 		} catch (err: any) {
-			// Ignore abort errors (user changed filter while pending)
 			if (err.name === "AbortError") {
 				return;
 			}
@@ -125,7 +150,6 @@
 				err,
 			);
 
-			// Retry logic - exponential backoff
 			if (attempt < MAX_RETRIES) {
 				const delayMs = RETRY_DELAY * Math.pow(2, attempt);
 				console.log(`Retrying in ${delayMs}ms...`);
@@ -134,7 +158,6 @@
 				return fetchPosts(query, sort, category, attempt + 1);
 			}
 
-			// Show user-friendly error message
 			error = "Failed to load posts. Please try again.";
 			clientPosts = [];
 		} finally {
@@ -169,6 +192,9 @@
 			}
 		};
 	});
+	onMount(() => {
+		fetchPosts(searchQuery, sortBy, activeCategory);
+	});
 </script>
 
 <div class="discuss-container">
@@ -176,7 +202,7 @@
 		bind:searchQuery
 		bind:sortBy
 		bind:activeCategory
-		categories={discussState.categoryNames}
+		categories={discussCategories}
 		{sortOptions}
 		onCreatePost={() => (isCreateModalOpen = true)}
 	/>
