@@ -16,7 +16,7 @@
         { name: "Discuss", href: "/discuss" },
         { name: "Challenges", href: "/challenges" },
         { name: "Chat", href: "/chat" },
-        { name: "Contact", href: "/contact" },
+        { name: "Learn", href: "/visualizer" },
         ...(currentUser?.role === "ADMIN"
             ? [{ name: "Admin", href: "/admin" }]
             : []),

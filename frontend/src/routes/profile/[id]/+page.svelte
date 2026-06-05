@@ -167,6 +167,7 @@
             <ProfileStats
                 followerCount={profile.followerCount}
                 followingCount={profile.followingCount}
+                userId={profile.User?.id || userId}
             />
 
             <Card variant="default" padding="20px" hover={false}>
