@@ -5,7 +5,11 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 
 from app.services.submission_analyzer import analyze_submission_mistake
-from app.services.rag_engine import get_chatbot_response
+from app.services.rag_engine import (
+    get_chatbot_response,
+    classify_chat_intent,
+    select_response_cards
+)
 from app.services.moderation import moderate_text, moderate_image
 from core.config import settings
 
@@ -22,7 +26,27 @@ class ChatResponse(BaseModel):
     success: bool
     reply: str = ""
     error: str = ""
-    is_safe: bool = True
+
+
+class ChatIntentResponse(BaseModel):
+    success: bool
+    intent: Dict[str, Any] = {}
+    error: str = ""
+
+
+class SelectCardsPayload(BaseModel):
+    message: str
+    messages: List[Dict[str, str]] = []
+    candidates: List[Dict[str, Any]] = []
+    last_cards: List[Dict[str, Any]] = []
+
+
+class SelectCardsResponse(BaseModel):
+    success: bool
+    reply: str = ""
+    selected_card_ids: List[str] = []
+    reason: str = ""
+    error: str = ""
 
 
 class TextModPayload(BaseModel):
@@ -76,24 +100,70 @@ async def chat_endpoint(
     if auth.credentials != settings.AI_SERVER_SECRET_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    mod_result = await moderate_text(payload.message)
-
-    if not mod_result.get("is_safe"):
-        return ChatResponse(
-            success=False,
-            is_safe=False,
-            error="Content violates policy"
-        )
-
     try:
         response = await get_chatbot_response(payload.messages)
-        return ChatResponse(success=True, reply=response)
+
+        return ChatResponse(
+            success=True,
+            reply=response
+        )
     except Exception as e:
         return ChatResponse(
             success=False,
-            error=f"AI Engine Error: {str(e)}"
+            error=f"Chat Error: {str(e)}"
         )
 
+@router.post("/chat/intent")
+async def chat_intent_endpoint(
+    payload: ChatPayload,
+    auth: HTTPAuthorizationCredentials = Depends(security)
+):
+    if auth.credentials != settings.AI_SERVER_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        intent = await classify_chat_intent(
+            payload.message,
+            payload.messages
+        )
+
+        return ChatIntentResponse(
+            success=True,
+            intent=intent
+        )
+    except Exception as e:
+        return ChatIntentResponse(
+            success=False,
+            error=f"Intent Classification Error: {str(e)}"
+        )
+
+@router.post("/chat/select-cards")
+async def chat_select_cards_endpoint(
+    payload: SelectCardsPayload,
+    auth: HTTPAuthorizationCredentials = Depends(security)
+):
+    if auth.credentials != settings.AI_SERVER_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        result = await select_response_cards(
+            message=payload.message,
+            history=payload.messages,
+            candidates=payload.candidates,
+            last_cards=payload.last_cards
+        )
+
+        return SelectCardsResponse(
+            success=True,
+            reply=result["reply"],
+            selected_card_ids=result["selected_card_ids"],
+            reason=result.get("reason", "")
+        )
+    except Exception as e:
+        return SelectCardsResponse(
+            success=False,
+            error=f"Card Selection Error: {str(e)}"
+        )
 
 @router.post("/moderate/text")
 async def moderate_text_endpoint(
