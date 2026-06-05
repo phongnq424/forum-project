@@ -11,11 +11,21 @@
     import { marked } from "marked";
     import DOMPurify from "dompurify";
 
+    type ChatCard = {
+        id: string;
+        type: "POST" | "CHALLENGE";
+        title: string;
+        description?: string;
+        meta?: string;
+        url: string;
+    };
+
     type ChatMessage = {
         id?: string;
         senderId: string | undefined;
         text: string;
         time: string;
+        cards?: ChatCard[];
     };
 
     marked.setOptions({
@@ -34,6 +44,30 @@
     let newMessage = $state("");
     let isTyping = $state(false);
     let isLoadingHistory = $state(true);
+
+    function scrollCards(
+        messageId: string | undefined,
+        direction: "left" | "right",
+    ) {
+        if (!messageId) return;
+
+        const element = document.getElementById(`cards-${messageId}`);
+
+        if (!element) return;
+
+        element.scrollBy({
+            left: direction === "right" ? 240 : -240,
+            behavior: "smooth",
+        });
+    }
+
+    function getLastBotCards() {
+        const lastBotMessage = [...messages]
+            .reverse()
+            .find((msg) => msg.senderId === "bot" && msg.cards?.length);
+
+        return lastBotMessage?.cards ?? [];
+    }
 
     function renderMarkdown(text: string) {
         const html = marked.parse(text || "", {
@@ -115,7 +149,10 @@
         isTyping = true;
 
         try {
-            const response = await AiService.sendMessage({ message: text });
+            const response = await AiService.sendMessage({
+                message: text,
+                lastCards: getLastBotCards(),
+            });
 
             if (response.reply) {
                 messages = [
@@ -125,6 +162,9 @@
                         senderId: "bot",
                         text: response.reply,
                         time: "AI",
+                        cards: Array.isArray(response.cards)
+                            ? response.cards
+                            : [],
                     },
                 ];
             }
@@ -211,6 +251,68 @@
                                             {msg.text}
                                         {/if}
                                     </div>
+
+                                    {#if msg.senderId === "bot" && msg.cards?.length}
+                                        <div class="card-carousel">
+                                            <button
+                                                type="button"
+                                                class="card-nav left"
+                                                onclick={() =>
+                                                    scrollCards(msg.id, "left")}
+                                                aria-label="Previous suggestions"
+                                            >
+                                                ‹
+                                            </button>
+
+                                            <div
+                                                class="card-track"
+                                                id="cards-{msg.id}"
+                                            >
+                                                {#each msg.cards as card}
+                                                    <a
+                                                        href={card.url}
+                                                        class="suggestion-card"
+                                                    >
+                                                        <div
+                                                            class="card-type {card.type.toLowerCase()}"
+                                                        >
+                                                            {card.type ===
+                                                            "POST"
+                                                                ? "Post"
+                                                                : "Challenge"}
+                                                        </div>
+
+                                                        <h4>{card.title}</h4>
+
+                                                        {#if card.description}
+                                                            <p>
+                                                                {card.description}
+                                                            </p>
+                                                        {/if}
+
+                                                        {#if card.meta}
+                                                            <span
+                                                                >{card.meta}</span
+                                                            >
+                                                        {/if}
+                                                    </a>
+                                                {/each}
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                class="card-nav right"
+                                                onclick={() =>
+                                                    scrollCards(
+                                                        msg.id,
+                                                        "right",
+                                                    )}
+                                                aria-label="Next suggestions"
+                                            >
+                                                ›
+                                            </button>
+                                        </div>
+                                    {/if}
 
                                     <span class="time">{msg.time}</span>
                                 </div>
@@ -587,5 +689,129 @@
             right: 18px;
             bottom: 18px;
         }
+    }
+
+    .card-carousel {
+        position: relative;
+        width: 310px;
+        max-width: 100%;
+        margin-top: 10px;
+    }
+
+    .card-track {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        scrollbar-width: none;
+        padding: 2px 2px 6px;
+    }
+
+    .card-track::-webkit-scrollbar {
+        display: none;
+    }
+
+    .suggestion-card {
+        min-width: 220px;
+        max-width: 220px;
+        min-height: 145px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        border-radius: 14px;
+        background: #1e222b;
+        border: 1px solid #2a2e36;
+        text-decoration: none;
+        color: inherit;
+        transition:
+            background-color 0.2s ease,
+            border-color 0.2s ease,
+            transform 0.2s ease;
+    }
+
+    .suggestion-card:hover {
+        background: #252a35;
+        border-color: #6366f1;
+        transform: translateY(-2px);
+    }
+
+    .card-type {
+        width: fit-content;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .card-type.post {
+        color: #93c5fd;
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(59, 130, 246, 0.24);
+    }
+
+    .card-type.challenge {
+        color: #a5b4fc;
+        background: rgba(99, 102, 241, 0.12);
+        border: 1px solid rgba(99, 102, 241, 0.24);
+    }
+
+    .suggestion-card h4 {
+        margin: 0;
+        color: #f9fafb;
+        font-size: 14px;
+        line-height: 1.35;
+    }
+
+    .suggestion-card p {
+        margin: 0;
+        color: #9ca3af;
+        font-size: 12px;
+        line-height: 1.45;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        flex: 1;
+    }
+
+    .suggestion-card span {
+        color: #6b7280;
+        font-size: 11px;
+        line-height: 1.4;
+    }
+
+    .card-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 26px;
+        height: 26px;
+        border-radius: 999px;
+        border: 1px solid #374151;
+        background: #111318;
+        color: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 2;
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    .card-nav:hover {
+        background: #6366f1;
+        border-color: #6366f1;
+        color: white;
+    }
+
+    .card-nav.left {
+        left: -8px;
+    }
+
+    .card-nav.right {
+        right: -8px;
     }
 </style>
