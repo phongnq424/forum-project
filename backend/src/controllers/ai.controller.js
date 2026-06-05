@@ -3,16 +3,16 @@ const { AIService } = require("../services/ai.service");
 const AIController = {
     chat: async (req, res) => {
         try {
-            const { message } = req.body;
+            const { message, lastCards = [] } = req.body;
 
             if (!message) {
                 return res.status(400).json({ error: "Message is required" });
             }
 
             const userId = req.user.id;
-            const reply = await AIService.generateReply(userId, message);
+            const result = await AIService.generateReply(userId, message, lastCards);
 
-            return res.json({ reply });
+            return res.json(result);
         } catch (error) {
             return res.status(500).json({ error: error.message });
         }
