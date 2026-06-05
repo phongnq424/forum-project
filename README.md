@@ -1,4 +1,4 @@
-```markdown
+
 # Forum Platform – Feature Expansion and System Improvement v2
 
 ## Overview
