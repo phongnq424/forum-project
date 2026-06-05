@@ -15,6 +15,7 @@
 		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"@types/dompurify": "^3.0.5",
 		"svelte": "^5.51.0",
 		"svelte-check": "^4.3.6",
 		"typescript": "^5.9.3",
@@ -23,9 +24,10 @@
 	"dependencies": {
 		"@types/js-cookie": "^3.0.6",
 		"date-fns": "^4.1.0",
+		"dompurify": "^3.4.8",
 		"js-cookie": "^3.0.5",
 		"jwt-decode": "^4.0.0",
-		"marked": "^18.0.4",
+		"marked": "^18.0.5",
 		"socket.io-client": "^4.8.3"
 	}
 }

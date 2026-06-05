@@ -8,26 +8,48 @@
     import { fade, fly } from "svelte/transition";
     import { page } from "$app/state";
     import { onMount } from "svelte";
+    import { marked } from "marked";
+    import DOMPurify from "dompurify";
 
-    // 1. Quản lý trạng thái ẩn/hiện
+    type ChatMessage = {
+        id?: string;
+        senderId: string | undefined;
+        text: string;
+        time: string;
+    };
+
+    marked.setOptions({
+        gfm: true,
+        breaks: true,
+    });
+
     const hiddenRoutes = ["/login", "/register", "/admin"];
+
     let isHidden = $derived(
         hiddenRoutes.some((route) => page.url.pathname.startsWith(route)),
     );
-    let isOpen = $state(false);
 
-    // 2. Quản lý tin nhắn
-    let messages = $state<any[]>([]);
+    let isOpen = $state(false);
+    let messages = $state<ChatMessage[]>([]);
     let newMessage = $state("");
     let isTyping = $state(false);
     let isLoadingHistory = $state(true);
 
-    // Load history khi component mount
+    function renderMarkdown(text: string) {
+        const html = marked.parse(text || "", {
+            async: false,
+        }) as string;
+
+        return DOMPurify.sanitize(html);
+    }
+
     onMount(async () => {
         try {
             const response = await AiService.getHistory();
+
             if (Array.isArray(response)) {
                 messages = response.map((msg: any) => ({
+                    id: msg.id || `${msg.role}-${msg.timestamp || Date.now()}`,
                     senderId: msg.role === "user" ? authState.user?.id : "bot",
                     text: msg.content,
                     time: msg.timestamp
@@ -38,8 +60,20 @@
                         : "AI",
                 }));
             }
+
+            if (!messages.length) {
+                messages = [
+                    {
+                        id: "start",
+                        senderId: "bot",
+                        text: "Hi! I'm WindFlow AI Assistant. You need any help?",
+                        time: "AI",
+                    },
+                ];
+            }
         } catch (error) {
             console.error("Failed to load chat history:", error);
+
             messages = [
                 {
                     id: "start",
@@ -53,17 +87,16 @@
         }
     });
 
-    // Toggle đóng mở
     function toggleChat() {
         isOpen = !isOpen;
     }
 
-    // 3. Logic gửi tin nhắn thật đến backend
     async function sendMessage() {
-        if (!newMessage.trim()) return;
+        if (!newMessage.trim() || isTyping) return;
 
-        const text = newMessage;
+        const text = newMessage.trim();
         newMessage = "";
+
         const time = new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -82,7 +115,6 @@
         isTyping = true;
 
         try {
-            // Gọi API thật đến backend/AI service
             const response = await AiService.sendMessage({ message: text });
 
             if (response.reply) {
@@ -98,6 +130,7 @@
             }
         } catch (error) {
             console.error("Failed to send message:", error);
+
             messages = [
                 ...messages,
                 {
@@ -121,11 +154,13 @@
                     <div class="bot-avatar">
                         <Icon name="bot" size={20} />
                     </div>
+
                     <div>
                         <strong>AI Assistant</strong>
                         <span class="status">Online</span>
                     </div>
                 </div>
+
                 <button
                     type="button"
                     class="close-btn"
@@ -152,18 +187,7 @@
             <div class="messages-area">
                 <ScrollArea scrollToBottom={true} watch={messages}>
                     <div class="message-list">
-                        {#each messages as msg}
-                            <div
-                                class="msg-wrapper {msg.senderId === 'bot'
-                                    ? 'them'
-                                    : 'me'}"
-                            >
-                                <div class="msg-bubble">{msg.text}</div>
-                                <span class="time">{msg.time}</span>
-                            </div>
-                        {/each}
-
-                        {#if isTyping}
+                        {#if isLoadingHistory}
                             <div class="msg-wrapper them">
                                 <div class="msg-bubble typing">
                                     <span class="dot"></span>
@@ -171,6 +195,36 @@
                                     <span class="dot"></span>
                                 </div>
                             </div>
+                        {:else}
+                            {#each messages as msg (msg.id)}
+                                <div
+                                    class="msg-wrapper {msg.senderId === 'bot'
+                                        ? 'them'
+                                        : 'me'}"
+                                >
+                                    <div class="msg-bubble">
+                                        {#if msg.senderId === "bot"}
+                                            <div class="markdown-content">
+                                                {@html renderMarkdown(msg.text)}
+                                            </div>
+                                        {:else}
+                                            {msg.text}
+                                        {/if}
+                                    </div>
+
+                                    <span class="time">{msg.time}</span>
+                                </div>
+                            {/each}
+
+                            {#if isTyping}
+                                <div class="msg-wrapper them">
+                                    <div class="msg-bubble typing">
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                    </div>
+                                </div>
+                            {/if}
                         {/if}
                     </div>
                 </ScrollArea>
@@ -189,7 +243,13 @@
                             placeholder="Hỏi AI gì đó..."
                         />
                     </div>
-                    <Button type="submit" variant="primary" size="sm">
+
+                    <Button
+                        type="submit"
+                        variant="primary"
+                        size="sm"
+                        disabled={isTyping || !newMessage.trim()}
+                    >
                         <Icon name="reply" size={18} />
                     </Button>
                 </form>
@@ -197,19 +257,18 @@
         </div>
     {/if}
 
-    <button class="chat-fab" onclick={toggleChat} aria-label="Toggle Chat">
-        {#if isOpen}
-            <Icon name="bot" size={28} />
-            <span class="online-dot"></span>
-        {:else}
-            <Icon name="bot" size={28} />
-            <span class="online-dot"></span>
-        {/if}
+    <button
+        type="button"
+        class="chat-fab"
+        onclick={toggleChat}
+        aria-label="Toggle Chat"
+    >
+        <Icon name="bot" size={28} />
+        <span class="online-dot"></span>
     </button>
 {/if}
 
 <style>
-    /* FAB Button */
     .chat-fab {
         position: fixed;
         bottom: 30px;
@@ -228,6 +287,7 @@
         justify-content: center;
         transition: transform 0.2s;
     }
+
     .chat-fab:hover {
         transform: scale(1.05);
     }
@@ -243,7 +303,6 @@
         border-radius: 50%;
     }
 
-    /* Main Window - Dựa trên style ChatWindow của bạn */
     .chat-container {
         position: fixed;
         bottom: 100px;
@@ -275,6 +334,7 @@
         align-items: center;
         gap: 12px;
     }
+
     .bot-avatar {
         width: 32px;
         height: 32px;
@@ -291,6 +351,7 @@
         color: white;
         display: block;
     }
+
     .status {
         font-size: 11px;
         color: #10b981;
@@ -301,12 +362,23 @@
         border: none;
         color: #6b7280;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        border-radius: 8px;
+    }
+
+    .close-btn:hover {
+        color: #e5e7eb;
+        background: rgba(255, 255, 255, 0.04);
     }
 
     .messages-area {
         flex: 1;
         min-height: 0;
     }
+
     .message-list {
         padding: 20px;
         display: flex;
@@ -315,30 +387,35 @@
     }
 
     .msg-wrapper {
-        max-width: 85%;
+        max-width: 88%;
         display: flex;
         flex-direction: column;
     }
+
     .msg-wrapper.me {
         align-self: flex-end;
         align-items: flex-end;
     }
+
     .msg-wrapper.them {
         align-self: flex-start;
         align-items: flex-start;
     }
 
     .msg-bubble {
+        max-width: 100%;
         padding: 10px 14px;
         border-radius: 14px;
         font-size: 14px;
         line-height: 1.5;
+        overflow-wrap: anywhere;
     }
 
     .me .msg-bubble {
         background: linear-gradient(135deg, #6366f1, #8b5cf6);
         color: white;
         border-bottom-right-radius: 2px;
+        white-space: pre-wrap;
     }
 
     .them .msg-bubble {
@@ -357,20 +434,22 @@
         padding: 15px;
         border-top: 1px solid #2a2e36;
     }
+
     .input-area form {
         display: flex;
         gap: 10px;
     }
+
     .input-wrapper {
         flex: 1;
     }
 
-    /* Typing Animation */
     .typing {
         display: flex;
         gap: 4px;
         padding: 12px 16px !important;
     }
+
     .dot {
         width: 6px;
         height: 6px;
@@ -378,9 +457,11 @@
         border-radius: 50%;
         animation: blink 1.4s infinite;
     }
+
     .dot:nth-child(2) {
         animation-delay: 0.2s;
     }
+
     .dot:nth-child(3) {
         animation-delay: 0.4s;
     }
@@ -391,9 +472,120 @@
             opacity: 0.3;
             transform: scale(1);
         }
+
         50% {
             opacity: 1;
             transform: scale(1.1);
+        }
+    }
+
+    .markdown-content {
+        font-size: 14px;
+        line-height: 1.6;
+        color: inherit;
+        overflow-wrap: anywhere;
+    }
+
+    .markdown-content :global(p) {
+        margin: 0 0 10px;
+    }
+
+    .markdown-content :global(p:last-child) {
+        margin-bottom: 0;
+    }
+
+    .markdown-content :global(strong) {
+        color: #f9fafb;
+        font-weight: 700;
+    }
+
+    .markdown-content :global(ul),
+    .markdown-content :global(ol) {
+        margin: 8px 0 10px;
+        padding-left: 20px;
+    }
+
+    .markdown-content :global(li) {
+        margin: 4px 0;
+    }
+
+    .markdown-content :global(code) {
+        padding: 2px 5px;
+        border-radius: 5px;
+        background: rgba(15, 17, 21, 0.8);
+        color: #c4b5fd;
+        font-size: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+            "Liberation Mono", "Courier New", monospace;
+    }
+
+    .markdown-content :global(pre) {
+        margin: 10px 0;
+        padding: 12px;
+        border-radius: 10px;
+        background: #111318;
+        border: 1px solid #2a2e36;
+        overflow-x: auto;
+    }
+
+    .markdown-content :global(pre code) {
+        padding: 0;
+        background: transparent;
+        color: #e5e7eb;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .markdown-content :global(a) {
+        color: #a5b4fc;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .markdown-content :global(a:hover) {
+        text-decoration: underline;
+    }
+
+    .markdown-content :global(blockquote) {
+        margin: 10px 0;
+        padding: 8px 12px;
+        border-left: 3px solid #6366f1;
+        background: rgba(99, 102, 241, 0.08);
+        color: #d1d5db;
+        border-radius: 8px;
+    }
+
+    .markdown-content :global(table) {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+        font-size: 12px;
+    }
+
+    .markdown-content :global(th),
+    .markdown-content :global(td) {
+        border: 1px solid #374151;
+        padding: 6px 8px;
+        text-align: left;
+    }
+
+    .markdown-content :global(th) {
+        background: rgba(255, 255, 255, 0.04);
+        color: #f9fafb;
+    }
+
+    @media (max-width: 520px) {
+        .chat-container {
+            right: 12px;
+            left: 12px;
+            bottom: 88px;
+            width: auto;
+            height: 72vh;
+        }
+
+        .chat-fab {
+            right: 18px;
+            bottom: 18px;
         }
     }
 </style>
