@@ -256,16 +256,6 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
-
-    .page-header h1 {
-        margin: 0;
-        color: #f8fafc;
-        font-size: 24px;
-        line-height: 1.25;
-        font-weight: 650;
-        letter-spacing: -0.025em;
-    }
-
     .page-header p:not(.eyebrow) {
         max-width: 720px;
         margin: 8px 0 0;
@@ -298,10 +288,6 @@
         .page-header {
             flex-direction: column;
             align-items: stretch;
-        }
-
-        .page-header h1 {
-            font-size: 22px;
         }
     }
 </style>

@@ -501,13 +501,6 @@
         text-transform: uppercase;
     }
 
-    .page-header h1 {
-        margin: 0;
-        color: #ffffff;
-        font-size: 30px;
-        font-weight: 800;
-    }
-
     .page-header p:not(.eyebrow) {
         margin: 8px 0 0;
         color: #9ca3af;

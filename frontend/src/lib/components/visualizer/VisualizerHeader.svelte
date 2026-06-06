@@ -98,14 +98,6 @@
         text-transform: uppercase;
     }
 
-    h1 {
-        margin: 0;
-        color: #f9fafb;
-        font-size: 32px;
-        line-height: 1.15;
-        letter-spacing: -0.03em;
-    }
-
     .subtitle {
         max-width: 640px;
         margin: 12px 0 0;
@@ -209,10 +201,6 @@
         .search-bar-wrapper {
             flex-direction: column;
             align-items: stretch;
-        }
-
-        h1 {
-            font-size: 26px;
         }
     }
 </style>
