@@ -10,7 +10,7 @@ from app.services.rag_engine import (
     classify_chat_intent,
     select_response_cards
 )
-from app.services.moderation import moderate_text, moderate_image
+from app.services.moderation import moderate_text, moderate_text_batch, moderate_image
 from core.config import settings
 
 router = APIRouter()
@@ -51,6 +51,28 @@ class SelectCardsResponse(BaseModel):
 
 class TextModPayload(BaseModel):
     text: str
+
+class TextModBatchItem(BaseModel):
+    id: str
+    content: str
+
+
+class TextModBatchPayload(BaseModel):
+    items: List[TextModBatchItem]
+
+
+class TextModBatchResult(BaseModel):
+    id: str
+    is_safe: bool
+    source: str = ""
+    category: str = ""
+    reason: str = ""
+
+
+class TextModBatchResponse(BaseModel):
+    success: bool
+    results: List[TextModBatchResult] = []
+    error: str = ""
 
 
 class TextModResponse(BaseModel):
@@ -228,5 +250,51 @@ async def analyze_submission_endpoint(
             success=False,
             mistake_type="UNKNOWN",
             mistake_level="LOW",
+            error=str(e)
+        )
+    
+
+@router.post("/moderate/text/batch")
+async def moderate_text_batch_endpoint(
+    payload: TextModBatchPayload,
+    auth: HTTPAuthorizationCredentials = Depends(security)
+):
+    if auth.credentials != settings.AI_SERVER_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if not payload.items:
+        return TextModBatchResponse(success=True, results=[])
+
+    if len(payload.items) > 50:
+        raise HTTPException(status_code=400, detail="Maximum 50 items per batch")
+
+    try:
+        items = [
+            {
+                "id": item.id,
+                "content": item.content
+            }
+            for item in payload.items
+        ]
+
+        results = await moderate_text_batch(items)
+
+        return TextModBatchResponse(
+            success=True,
+            results=[
+                TextModBatchResult(
+                    id=str(item.get("id", "")),
+                    is_safe=bool(item.get("is_safe", True)),
+                    source=str(item.get("source", "")),
+                    category=str(item.get("category", "")),
+                    reason=str(item.get("reason", ""))
+                )
+                for item in results
+            ]
+        )
+    except Exception as e:
+        return TextModBatchResponse(
+            success=False,
+            results=[],
             error=str(e)
         )

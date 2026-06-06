@@ -5,6 +5,8 @@ import google.generativeai as genai
 from PIL import Image
 import io
 
+import json
+import re
 from core.config import settings
 
 # Khởi tạo client 1 lần ở ngoài (tiết kiệm tài nguyên)
@@ -129,6 +131,148 @@ UNSAFE
         "category": "moderation_unavailable",
         "reason": "All moderation providers failed"
     }
+
+def extract_json_array(text: str):
+    cleaned = (text or "").strip()
+
+    if cleaned.startswith("```"):
+        cleaned = cleaned.replace("```json", "").replace("```", "").strip()
+
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        match = re.search(r"\[[\s\S]*\]", cleaned)
+
+        if not match:
+            raise ValueError("No JSON array found in AI response")
+
+        return json.loads(match.group(0))
+
+
+async def moderate_text_batch(items: list):
+    normalized_items = []
+
+    for item in items:
+        item_id = str(item.get("id", "")).strip()
+        content = str(item.get("content", "") or "").strip()
+
+        if item_id:
+            normalized_items.append({
+                "id": item_id,
+                "content": content
+            })
+
+    if not normalized_items:
+        return []
+
+    empty_results = []
+    non_empty_items = []
+
+    for item in normalized_items:
+        if not item["content"]:
+            empty_results.append({
+                "id": item["id"],
+                "is_safe": True,
+                "source": "empty_text",
+                "category": "none",
+                "reason": ""
+            })
+        else:
+            non_empty_items.append(item)
+
+    if not non_empty_items:
+        return empty_results
+
+    try:
+        completion = await groq_client.chat.completions.create(
+            model="openai/gpt-oss-safeguard-20b",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """
+You are a strict Vietnamese social forum moderation classifier.
+
+Classify each item as SAFE or UNSAFE.
+
+Mark UNSAFE if the text contains any of these:
+- insults, humiliation, verbal abuse, or personal attacks
+- harassment or bullying
+- threats or intimidation
+- hate speech against protected groups
+- sexual harassment or explicit sexual content
+- encouragement of self-harm or violence
+- scams, phishing, spam, or requests for passwords/OTP/tokens
+- instructions to attack, bypass, or harm systems
+
+Important:
+Vietnamese insults such as "ngu", "rác rưởi", "vô dụng", "cút", "biến đi", "đồ chó", "đồ ngu" are UNSAFE when used to attack a person.
+
+Return ONLY valid JSON array.
+Do not return markdown.
+Do not explain outside JSON.
+
+JSON schema:
+[
+  {
+    "id": "same id from input",
+    "is_safe": true
+  }
+]
+"""
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(non_empty_items, ensure_ascii=False)
+                }
+            ],
+            temperature=0
+        )
+
+        raw_text = completion.choices[0].message.content
+        parsed = extract_json_array(raw_text)
+
+        result_map = {}
+
+        for item in parsed:
+            item_id = str(item.get("id", "")).strip()
+            is_safe = bool(item.get("is_safe", True))
+
+            if item_id:
+                result_map[item_id] = {
+                    "id": item_id,
+                    "is_safe": is_safe,
+                    "source": "groq_safeguard_batch",
+                    "category": "safe" if is_safe else "harassment_or_toxicity",
+                    "reason": ""
+                }
+
+        results = []
+
+        for item in normalized_items:
+            if item["id"] in result_map:
+                results.append(result_map[item["id"]])
+            else:
+                single_result = await moderate_text(item["content"])
+                results.append({
+                    "id": item["id"],
+                    **single_result
+                })
+
+        return results
+
+    except Exception as e:
+        print(f"Groq Batch Text Mod failed: {e}. Fallback to single moderation...")
+
+    results = []
+
+    for item in normalized_items:
+        single_result = await moderate_text(item["content"])
+        results.append({
+            "id": item["id"],
+            **single_result
+        })
+
+    return results
 async def moderate_image(image_bytes: bytes):
     try:
         model = genai.GenerativeModel('gemini-2.5-flash')
