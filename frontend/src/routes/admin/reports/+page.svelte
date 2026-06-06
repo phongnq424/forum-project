@@ -180,7 +180,7 @@
     <header class="page-header">
         <div>
             <p class="eyebrow">Admin Moderation</p>
-            <h1>Reports & Complaints</h1>
+            <h2>Reports & Complaints</h2>
             <p>
                 Review reported users, posts, comments and messages with target
                 context, risk signals and moderation notes.

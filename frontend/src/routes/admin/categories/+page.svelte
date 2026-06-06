@@ -242,7 +242,7 @@
     <div class="page-header">
         <div>
             <p class="eyebrow">Forum Structure</p>
-            <h1>Category & Topic Management</h1>
+            <h2>Category & Topic Management</h2>
             <p>
                 Manage high-level categories and organize their discussion
                 topics.

@@ -150,7 +150,7 @@
     <div class="page-header">
         <div>
             <p class="eyebrow">Admin Control</p>
-            <h1>User Management</h1>
+            <h2>User Management</h2>
             <p>Manage user accounts, roles and account status.</p>
         </div>
     </div>

@@ -23,7 +23,7 @@
     <div class="intro">
         <div>
             <p class="eyebrow">Algorithm Visualizer</p>
-            <h1>Understand algorithms by watching them run</h1>
+            <h2>Understand algorithms by watching them run</h2>
             <p class="subtitle">
                 Build inputs, control execution and observe every step of the
                 algorithm visually.

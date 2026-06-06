@@ -164,7 +164,7 @@
     <div class="page-header">
         <div>
             <p class="eyebrow">Coding Practice</p>
-            <h1>Challenge Management</h1>
+            <h2>Challenge Management</h2>
             <p>Create, edit and manage coding challenges for the platform.</p>
         </div>
 
