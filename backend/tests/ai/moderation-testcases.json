@@ -1,0 +1,102 @@
+[
+    {
+        "id": 1,
+        "content": "Mình bị lỗi khi chạy npm install, mọi người giúp mình với.",
+        "expected_is_safe": true
+    },
+    {
+        "id": 2,
+        "content": "Bài viết này hướng dẫn cách dùng ExpressJS với PostgreSQL.",
+        "expected_is_safe": true
+    },
+    {
+        "id": 3,
+        "content": "Cho mình hỏi cách sửa lỗi CORS trong Node.js.",
+        "expected_is_safe": true
+    },
+    {
+        "id": 4,
+        "content": "Mọi người giải thích giúp mình useEffect trong React hoạt động như thế nào.",
+        "expected_is_safe": true
+    },
+    {
+        "id": 5,
+        "content": "Làm sao để viết truy vấn SQL lấy danh sách nhân viên có lương cao nhất?",
+        "expected_is_safe": true
+    },
+    {
+        "id": 6,
+        "content": "Mình đang học Docker, ai có thể giải thích container và image không?",
+        "expected_is_safe": true
+    },
+    {
+        "id": 7,
+        "content": "Bài này chia sẻ cách dùng Socket.IO để gửi tin nhắn realtime.",
+        "expected_is_safe": true
+    },
+    {
+        "id": 8,
+        "content": "Mình bị lỗi Prisma khi migrate database, nhờ mọi người xem giúp.",
+        "expected_is_safe": true
+    },
+    {
+        "id": 9,
+        "content": "Spam spam spam truy cập link này để nhận quà miễn phí.",
+        "expected_is_safe": false
+    },
+    {
+        "id": 10,
+        "content": "Bấm vào đây để nhận tài khoản premium miễn phí.",
+        "expected_is_safe": false
+    },
+    {
+        "id": 11,
+        "content": "Quảng cáo khóa học không liên quan, inbox ngay để mua.",
+        "expected_is_safe": false
+    },
+    {
+        "id": 12,
+        "content": "Nội dung lặp lại nhiều lần để spam diễn đàn diễn đàn diễn đàn.",
+        "expected_is_safe": false
+    },
+    {
+        "id": 13,
+        "content": "Bạn viết code ngu quá, đừng học lập trình nữa.",
+        "expected_is_safe": false
+    },
+    {
+        "id": 14,
+        "content": "Bài này dở tệ, tác giả không biết gì về lập trình.",
+        "expected_is_safe": false
+    },
+    {
+        "id": 15,
+        "content": "Dùng đoạn code này để phá hệ thống của người khác.",
+        "expected_is_safe": false
+    },
+    {
+        "id": 16,
+        "content": "Hướng dẫn vượt qua kiểm tra bảo mật của website.",
+        "expected_is_safe": false
+    },
+    {
+        "id": 17,
+        "content": "Mình muốn hỏi cách tối ưu query SQL khi bảng có nhiều dữ liệu.",
+        "expected_is_safe": true
+    },
+    {
+        "id": 18,
+        "content": "Ai giải thích giúp mình JWT khác session như thế nào không?",
+        "expected_is_safe": true
+    },
+    {
+        "id": 19,
+        "content": "Đụ má bài phèn điên.",
+        "expected_is_safe": false
+    },
+    {
+        "id": 20,
+        "content": "Mình cần góp ý cách thiết kế API cho chức năng bình luận.",
+        "expected_is_safe": true
+    }
+]
