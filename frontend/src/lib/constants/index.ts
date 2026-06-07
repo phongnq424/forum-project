@@ -81,8 +81,14 @@ export const ENDPOINTS = {
             MESSAGE: (conversationId: string) =>
                 `conversations/group/${conversationId}/message`,
             LEAVE: (conversationId: string) =>
-                `conversations/group/${conversationId}/leave`
-        }
+                `conversations/group/${conversationId}/leave`,
+            JOIN: (conversationId: string) =>
+                `conversations/group/${conversationId}/join`,
+            PUBLIC: 'conversations/group/public',
+        },
+        ADMIN_GROUPS: {
+            BASE: "conversations/admin/groups",
+        },
     },
     CHALLENGE: {
         BASE: 'challenges',

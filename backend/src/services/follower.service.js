@@ -51,8 +51,8 @@ const FollowerService = {
         user_id: targetUserId,
         actor_id: currentUserId,
         type: 'FOLLOW',
-        title: 'Người theo dõi mới',
-        message: 'đã theo dõi bạn',
+        title: 'New Follower',
+        message: 'started following you',
         ref_id: currentUserId
       });
       return { followed: true };

@@ -4,7 +4,7 @@ import { Writable } from "stream";
 
 const docker = new Docker();
 
-const DEFAULT_MEMORY_MB = Number(process.env.SANDBOX_MEMORY_MB || 256);
+const DEFAULT_MEMORY_MB = Number(process.env.SANDBOX_MEMORY_MB || 1024);
 const DEFAULT_CPU_NANO = Number(process.env.SANDBOX_CPU_NANO || 1000000000);
 const DEFAULT_PIDS_LIMIT = Number(process.env.SANDBOX_PIDS_LIMIT || 64);
 const DEFAULT_MAX_OUTPUT = Number(process.env.SANDBOX_MAX_OUTPUT || 1024 * 1024);

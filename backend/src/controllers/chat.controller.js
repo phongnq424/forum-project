@@ -1,4 +1,4 @@
-const { ConversationService } = require('../services/conversation.service')
+const { ConversationService } = require('../services/conversation/conversation.service')
 const { buildBlockContext } = require('../contexts/block.context')
 
 const ChatController = {

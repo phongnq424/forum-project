@@ -414,19 +414,25 @@ model Conversation {
   topic_id     String?
   challenge_id String?
 
+  last_message_id String?
+  last_message_at DateTime?
+
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  Topic     Topic?     @relation(fields: [topic_id], references: [id], onDelete: SetNull)
-  Challenge Challenge? @relation(fields: [challenge_id], references: [id], onDelete: SetNull)
+  Topic       Topic?     @relation(fields: [topic_id], references: [id], onDelete: SetNull)
+  Challenge   Challenge? @relation(fields: [challenge_id], references: [id], onDelete: SetNull)
+  LastMessage Message?   @relation("ConversationLastMessage", fields: [last_message_id], references: [id], onDelete: SetNull)
 
   ConversationUser ConversationUser[]
-  Message          Message[]
+  Message          Message[]          @relation("ConversationMessages")
   Call             Call[]
+  messages         Message[]
 
   @@index([scope])
   @@index([topic_id])
   @@index([challenge_id])
+  @@index([last_message_at])
 }
 
 model ConversationUser {
@@ -454,12 +460,18 @@ model Message {
   is_deleted      Boolean   @default(false)
   deleted_at      DateTime?
 
-  Conversation  Conversation    @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  Conversation  Conversation    @relation("ConversationMessages", fields: [conversation_id], references: [id], onDelete: Cascade)
   Sender        User            @relation("sender", fields: [sender_id], references: [id], onDelete: Cascade)
   Attachment    Attachment[]
   ReportMessage ReportMessage[]
 
+  LastForConversation Conversation[] @relation("ConversationLastMessage")
+  conversation        Conversation?  @relation(fields: [conversationId], references: [id])
+  conversationId      String?
+
   @@index([conversation_id, sent_at])
+  @@index([conversation_id, is_deleted, sent_at])
+  @@index([conversation_id, is_read, is_deleted, sender_id])
 }
 
 model Attachment {

@@ -149,6 +149,11 @@
                 <strong>View Reports</strong>
                 <span>Moderation queue</span>
             </a>
+
+            <a href="/admin/groups" class="action-card">
+                <strong>Manage Groups</strong>
+                <span>Chat groups and conversations</span>
+            </a>
         </div>
     </div>
 </div>

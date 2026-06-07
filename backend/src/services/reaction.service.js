@@ -38,8 +38,8 @@ const ReactionService = {
                     user_id: post.user_id,
                     actor_id: userId,
                     type: 'POST_REACTION',
-                    title: 'Bài viết có reaction mới',
-                    message: 'đã reaction bài viết của bạn',
+                    title: 'New Reaction on your post',
+                    message: 'reacted to your post',
                     ref_id: postId
                 })
             }

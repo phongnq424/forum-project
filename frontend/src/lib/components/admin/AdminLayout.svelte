@@ -34,6 +34,11 @@
             href: "/admin/reports",
             description: "Moderation queue",
         },
+        {
+            label: "Groups",
+            href: "/admin/groups",
+            description: "Manage chat groups",
+        },
     ];
 
     function isActive(href: string) {

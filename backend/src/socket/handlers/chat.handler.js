@@ -1,4 +1,4 @@
-const { ConversationService } = require("../../services/conversation.service");
+const { ConversationService } = require("../../services/conversation/conversation.service");
 
 function chatHandler(socket) {
     socket.on('joinChat', (chatId) => {

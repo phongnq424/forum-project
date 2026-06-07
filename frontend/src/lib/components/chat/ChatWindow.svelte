@@ -7,39 +7,55 @@
     import Button from "$lib/components/ui/Button.svelte";
     import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
+    import type { ChatConversation } from "$lib/types/chat.type";
     import type {
         ChatAttachment,
-        ChatConversation,
         ChatMessage,
         ChatMessageApiItem,
-    } from "$lib/types/chat.type";
+    } from "$lib/types/chat-common.type";
+
+    type LocalChatMessage = ChatMessage & {
+        clientKey: string;
+    };
 
     let {
         activeChat,
         online = false,
         onConversationCreated,
         onMessagesChange,
+        onConversationPreviewUpdate,
     } = $props<{
         activeChat: ChatConversation;
         online?: boolean;
         onConversationCreated?: (chat: ChatConversation) => void;
         onMessagesChange?: (messages: ChatMessage[]) => void;
+        onConversationPreviewUpdate?: (data: {
+            conversationId: string;
+            message: any;
+            senderId?: string;
+            incrementUnread?: boolean;
+        }) => void;
     }>();
 
-    let messages = $state<ChatMessage[]>([]);
+    let messages = $state<LocalChatMessage[]>([]);
     let newMessage = $state("");
     let selectedFiles = $state<File[]>([]);
     let isLoading = $state(true);
     let isSending = $state(false);
+    let loadedConversationId = $state<string | null>(null);
 
-    function setMessages(next: ChatMessage[]) {
+    function setMessages(next: LocalChatMessage[]) {
         messages = next;
         onMessagesChange?.(next);
     }
 
-    function normalizeMessage(m: ChatMessageApiItem): ChatMessage {
+    function normalizeMessage(
+        m: ChatMessageApiItem,
+        clientKey?: string,
+    ): LocalChatMessage {
         return {
             id: m.id,
+            clientKey: clientKey || m.id,
             senderId: m.Sender?.id || m.sender_id || "",
             text: m.content || "",
             time: new Date(m.sent_at).toLocaleTimeString([], {
@@ -90,18 +106,22 @@
         tempId: string,
         realMessage: ChatMessageApiItem,
     ) {
-        const normalized = normalizeMessage(realMessage);
+        const normalized = normalizeMessage(realMessage, tempId);
+
         const realExists = messages.some((item) => item.id === normalized.id);
 
         if (realExists) {
-            setMessages(messages.filter((item) => item.id !== tempId));
+            setMessages(messages.filter((item) => item.clientKey !== tempId));
             return;
         }
 
         setMessages(
-            messages.map((item) => (item.id === tempId ? normalized : item)),
+            messages.map((item) =>
+                item.clientKey === tempId ? normalized : item,
+            ),
         );
     }
+
     async function ensureRealConversation(): Promise<ChatConversation> {
         if (!activeChat.id.startsWith("temp_")) {
             return activeChat;
@@ -151,26 +171,43 @@
 
     $effect(() => {
         async function fetchHistory() {
-            if (!activeChat || activeChat.id.startsWith("temp_")) {
+            const conversationId = activeChat?.id || "";
+
+            if (!conversationId) {
+                loadedConversationId = null;
                 setMessages([]);
                 isLoading = false;
                 return;
             }
 
-            const currentId = activeChat.id;
+            if (conversationId.startsWith("temp_")) {
+                loadedConversationId = conversationId;
+                setMessages([]);
+                isLoading = false;
+                return;
+            }
+
+            if (loadedConversationId === conversationId) {
+                return;
+            }
+
+            loadedConversationId = conversationId;
             isLoading = true;
 
             try {
-                const data = await chatService.getMessages(currentId);
+                const data = await chatService.getMessages(conversationId);
 
-                if (currentId === activeChat.id) {
-                    setMessages(data.map(normalizeMessage));
+                if (activeChat.id === conversationId) {
+                    setMessages(data.map((item) => normalizeMessage(item)));
                 }
             } catch (error) {
                 console.error("Lỗi tải lịch sử tin nhắn:", error);
-                messages = [];
+
+                if (activeChat.id === conversationId) {
+                    setMessages([]);
+                }
             } finally {
-                if (currentId === activeChat.id) {
+                if (activeChat.id === conversationId) {
                     isLoading = false;
                 }
             }
@@ -186,13 +223,45 @@
             const incomingConvId = data.conversationId || data.conversation_id;
             const msgData = data.message || data;
 
-            if (incomingConvId === activeChat.id) {
-                const exists = messages.some((m) => m.id === msgData.id);
+            if (incomingConvId !== activeChat.id) return;
 
-                if (!exists) {
-                    setMessages([...messages, normalizeMessage(msgData)]);
+            const incomingTempId =
+                data.tempId ||
+                data.temp_id ||
+                msgData.tempId ||
+                msgData.temp_id;
+
+            if (incomingTempId) {
+                const hasTempMessage = messages.some(
+                    (message) => message.clientKey === incomingTempId,
+                );
+
+                if (hasTempMessage) {
+                    const normalized = normalizeMessage(
+                        msgData,
+                        incomingTempId,
+                    );
+
+                    setMessages(
+                        messages.map((message) =>
+                            message.clientKey === incomingTempId
+                                ? normalized
+                                : message,
+                        ),
+                    );
+                    return;
                 }
             }
+
+            const normalized = normalizeMessage(msgData);
+
+            const realExists = messages.some(
+                (message) => message.id === normalized.id,
+            );
+
+            if (realExists) return;
+
+            setMessages([...messages, normalized]);
         });
 
         return unsub;
@@ -212,8 +281,9 @@
         const tempId = `temp-${Date.now()}`;
         const currentSocketId = socketService.socket?.id;
 
-        const optimisticMsg: ChatMessage = {
+        const optimisticMsg: LocalChatMessage = {
             id: tempId,
+            clientKey: tempId,
             senderId: authState.user?.id || "",
             text: text || buildFallbackText(files),
             time: new Date().toLocaleTimeString([], {
@@ -227,6 +297,16 @@
 
         try {
             const realConversation = await ensureRealConversation();
+            onConversationPreviewUpdate?.({
+                conversationId: realConversation.id,
+                message: {
+                    id: tempId,
+                    content: text || buildFallbackText(files),
+                    Attachment: [],
+                },
+                senderId: authState.user?.id,
+                incrementUnread: false,
+            });
 
             socketService.sendTyping(realConversation.id, false);
 
@@ -252,6 +332,12 @@
                 }
 
                 upsertRealMessage(tempId, result);
+                onConversationPreviewUpdate?.({
+                    conversationId: realConversation.id,
+                    message: result,
+                    senderId: authState.user?.id,
+                    incrementUnread: false,
+                });
                 return;
             }
 

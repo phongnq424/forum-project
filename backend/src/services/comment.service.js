@@ -61,8 +61,8 @@ const CommentService = {
         user_id: post.user_id,
         actor_id: userId,
         type: "POST_COMMENT",
-        title: "Bình luận mới",
-        message: `${comment?.User?.username ?? "?"} đã bình luận bài viết của bạn`,
+        title: "New Comment",
+        message: `${comment?.User?.username ?? "?"} commented on your post`,
         ref_id: postId,
         ref_sub_id: comment.id,
       });
@@ -73,8 +73,8 @@ const CommentService = {
         user_id: parentComment.user_id,
         actor_id: userId,
         type: "COMMENT_REPLY",
-        title: "Phản hồi bình luận",
-        message: `${comment?.User?.username ?? "?"} đã trả lời bình luận của bạn`,
+        title: "New Comment Reply",
+        message: `${comment?.User?.username ?? "?"} replied to your comment`,
         ref_id: postId,
         ref_sub_id: comment.id,
       });
