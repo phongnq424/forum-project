@@ -103,6 +103,9 @@ export const api = {
     put: <T>(path: string, data?: any, opts?: { params?: Record<string, any>, fetch?: typeof fetch }) =>
         send<T>({ method: 'PUT', path, data, ...opts }),
 
+    patch: <T>(path: string, data?: any, opts?: { params?: Record<string, any>, fetch?: typeof fetch }) =>
+        send<T>({ method: 'PATCH', path, data, ...opts }),
+
     delete: <T>(path: string, data?: any, opts?: { params?: Record<string, any>, fetch?: typeof fetch }) =>
         send<T>({ method: 'DELETE', path, data, ...opts })
 };

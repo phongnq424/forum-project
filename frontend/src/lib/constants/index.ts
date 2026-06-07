@@ -127,4 +127,11 @@ export const ENDPOINTS = {
         LEARNING: "/recommendations/learning",
         TOPIC_PROFILE: "/recommendations/topic-profile",
     },
+    NOTIFICATIONS: {
+        LIST: "/notifications",
+        UNREAD_COUNT: "/notifications/unread-count",
+        MARK_READ: (id: string) => `/notifications/${id}/read`,
+        MARK_ALL_READ: "/notifications/read-all",
+    },
+
 };

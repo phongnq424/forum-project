@@ -6,12 +6,12 @@
     import { authService } from "$lib/services/auth.service";
     import Modal from "$lib/components/ui/Modal.svelte";
     import Button from "$lib/components/ui/Button.svelte";
+    import NotificationBell from "$lib/components/notification/NotificationBell.svelte";
 
     let { data }: { data?: App.PageData } = $props();
 
     let currentUser = $derived(authState.user || data?.user);
 
-    // Quản lý menu tập trung - Dynamic based on user role
     let navItems = $derived([
         { name: "Discuss", href: "/discuss" },
         { name: "Challenges", href: "/challenges" },
@@ -22,15 +22,16 @@
             : []),
     ]);
 
-    // Avatar logic gọn gàng hơn
     let avatarUrl = $derived(currentUser?.avatar || null);
     let isUserMenuOpen = $state(false);
     let isMobileMenuOpen = $state(false);
     let isLogoutModalOpen = $state(false);
     let loading = $state(false);
+
     async function handleLogout(e: MouseEvent) {
         e.preventDefault();
         loading = true;
+
         try {
             await authService.logout();
             window.location.href = "/login";
@@ -39,6 +40,11 @@
         } finally {
             loading = false;
         }
+    }
+
+    function closeHeaderDropdowns() {
+        isUserMenuOpen = false;
+        isMobileMenuOpen = false;
     }
 </script>
 
@@ -50,6 +56,7 @@
                 aria-label="Open menu"
                 onclick={(e) => {
                     e.stopPropagation();
+                    isUserMenuOpen = false;
                     isMobileMenuOpen = !isMobileMenuOpen;
                 }}
             >
@@ -69,6 +76,7 @@
                 {/each}
             </Dropdown>
         </div>
+
         <a href="/" class="logo">
             <img src="/logo.png" alt="Windflow logo" class="logo-img" />
             <span class="brand">WINDFLOW</span>
@@ -102,15 +110,7 @@
                 <a href="/login" class="signin">Sign in</a>
                 <a href="/register" class="join">Join now</a>
             {:else}
-                <div class="notification-wrapper">
-                    <button
-                        class="notification-btn"
-                        aria-label="3 new notifications"
-                    >
-                        <Icon name="bell" size={22} class="bell-icon" />
-                        <span class="badge">3</span>
-                    </button>
-                </div>
+                <NotificationBell closeOthers={closeHeaderDropdowns} />
 
                 <div class="user-menu">
                     <span class="greeting">Hi, {currentUser.username}</span>
@@ -119,7 +119,8 @@
                         class="avatar-btn"
                         aria-label="Toggle user menu"
                         onclick={(e) => {
-                            e.stopPropagation(); // Cực kỳ quan trọng để không bị xung đột lúc click
+                            e.stopPropagation();
+                            isMobileMenuOpen = false;
                             isUserMenuOpen = !isUserMenuOpen;
                         }}
                     >
@@ -143,16 +144,17 @@
                         >
                             <Icon name="user" size={16} /> Profile
                         </a>
+
                         <a
                             href="/discuss/saved"
                             onclick={() => (isUserMenuOpen = false)}
                         >
                             <Icon name="bookmark" size={16} /> Saved Posts
                         </a>
+
                         {#if currentUser?.role === "ADMIN"}
-                            <div
-                                style="height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0;"
-                            ></div>
+                            <div class="dropdown-divider"></div>
+
                             <a
                                 href="/admin"
                                 onclick={() => (isUserMenuOpen = false)}
@@ -160,9 +162,9 @@
                                 <Icon name="settings" size={16} /> Admin Panel
                             </a>
                         {/if}
-                        <div
-                            style="height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0;"
-                        ></div>
+
+                        <div class="dropdown-divider"></div>
+
                         <button
                             class="logout-btn"
                             onclick={() => {
@@ -178,18 +180,21 @@
         </div>
     </div>
 </header>
+
 <Modal bind:open={isLogoutModalOpen} title="Confirm Logout" maxWidth="400px">
-    <div style="padding: 10px 0; color: #d1d5db; font-size: 15px;">
+    <div class="logout-message">
         Are you sure you want to log out of WINDFLOW?
     </div>
+
     {#snippet footer()}
-        <div
-            style="display: flex; gap: 12px; justify-content: flex-end; width: 100%;"
-        >
+        <div class="logout-actions">
             <Button
                 variant="secondary"
-                onclick={() => (isLogoutModalOpen = false)}>CANCEL</Button
+                onclick={() => (isLogoutModalOpen = false)}
             >
+                CANCEL
+            </Button>
+
             <Button variant="danger" onclick={handleLogout} disabled={loading}>
                 {loading ? "LOGGING OUT..." : "LOGOUT"}
             </Button>
@@ -198,7 +203,6 @@
 </Modal>
 
 <style>
-    /* ... (Giữ nguyên toàn bộ phần CSS của bạn ở đây) ... */
     .site-header {
         position: fixed;
         top: 0;
@@ -222,7 +226,6 @@
         gap: 36px;
     }
 
-    /* LOGO */
     .logo {
         display: flex;
         align-items: center;
@@ -241,11 +244,9 @@
         font-size: 20px;
         font-weight: 600;
         letter-spacing: 0.04em;
-        text-transform: none;
         color: #ffffff;
     }
 
-    /* NAV */
     .main-nav {
         display: flex;
         gap: 42px;
@@ -254,7 +255,12 @@
 
     .main-nav a {
         position: relative;
+        color: #cbd5e1;
+        text-decoration: none;
+        font-size: 15px;
+        transition: color 0.2s ease;
     }
+
     .main-nav a.active {
         color: #8b5cf6;
     }
@@ -280,15 +286,18 @@
         transition: width 0.25s ease;
     }
 
+    .main-nav a:hover {
+        color: #ffffff;
+    }
+
     .main-nav a:hover::after {
         width: 100%;
     }
 
-    /* SEARCH */
     .search {
         position: relative;
         margin-left: auto;
-        display: flex; /* Thêm cái này để căn icon dễ hơn */
+        display: flex;
         align-items: center;
     }
 
@@ -315,8 +324,8 @@
         background: #20232b;
         width: 260px;
     }
+
     :global(.search-icon) {
-        /* Dùng :global nếu class truyền từ ngoài vào component con */
         position: absolute;
         left: 12px;
         top: 50%;
@@ -325,9 +334,9 @@
         pointer-events: none;
         z-index: 2;
     }
-    /* --- MOBILE MENU --- */
+
     .mobile-menu-wrapper {
-        display: none; /* Mặc định ẩn trên màn hình bự */
+        display: none;
         position: relative;
     }
 
@@ -347,13 +356,19 @@
         color: #8b5cf6;
     }
 
+    .mobile-nav-link {
+        display: flex;
+        align-items: center;
+        color: #d1d5db;
+        text-decoration: none;
+    }
+
     .mobile-nav-link.active {
         color: #8b5cf6 !important;
         font-weight: 600;
         background: rgba(139, 92, 246, 0.1);
     }
 
-    /* AUTH */
     .auth {
         display: flex;
         align-items: center;
@@ -368,6 +383,7 @@
         position: relative;
         transition: color 0.2s ease;
     }
+
     .signin::after {
         content: "";
         position: absolute;
@@ -395,6 +411,7 @@
         font-weight: 600;
         font-size: 14px;
         color: white;
+        text-decoration: none;
         transition: all 0.2s ease;
         cursor: pointer;
     }
@@ -404,15 +421,15 @@
         border-color: #8b5cf6;
     }
 
-    .greeting {
-        font-size: 14px;
-        color: #9ca3af;
-    }
-    /* CSS CHO AVATAR */
     .user-menu {
         display: flex;
         align-items: center;
         gap: 12px;
+    }
+
+    .greeting {
+        font-size: 14px;
+        color: #9ca3af;
     }
 
     .avatar-btn {
@@ -434,7 +451,7 @@
         height: 38px;
         border-radius: 50%;
         object-fit: cover;
-        border: 2px solid rgba(139, 92, 246, 0.5); /* Viền tím mờ */
+        border: 2px solid rgba(139, 92, 246, 0.5);
         background: #1c1f26;
     }
 
@@ -451,57 +468,45 @@
         font-size: 16px;
         border: 2px solid rgba(255, 255, 255, 0.1);
     }
-    .notification-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
+
+    .dropdown-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.08);
+        margin: 6px 0;
     }
 
-    .notification-btn {
-        background: none;
+    .logout-btn {
+        width: 100%;
         border: none;
-        padding: 8px;
-        color: #9ca3af;
+        background: transparent;
+        color: inherit;
+        font: inherit;
         cursor: pointer;
-        position: relative;
-        transition:
-            color 0.2s ease,
-            transform 0.1s ease;
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: 8px;
+        text-align: left;
     }
 
-    .notification-btn:hover {
-        color: #8b5cf6; /* Tím khi hover */
-        transform: translateY(-1px);
+    .logout-message {
+        padding: 10px 0;
+        color: #d1d5db;
+        font-size: 15px;
     }
 
-    .badge {
-        position: absolute;
-        top: 4px;
-        right: 4px;
-        background: #ef4444; /* Màu đỏ thông báo */
-        color: white;
-        font-size: 10px;
-        font-weight: 700;
-        min-width: 16px;
-        height: 16px;
-        border-radius: 10px;
+    .logout-actions {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 4px;
-        border: 2px solid #282828; /* Viền trùng màu header để tách khối */
+        gap: 12px;
+        justify-content: flex-end;
+        width: 100%;
     }
 
-    /* ===== RESPONSIVE ===== */
     @media (max-width: 1180px) {
         .greeting {
             display: none;
         }
     }
-    /* Tablet */
+
     @media (max-width: 1100px) {
         .main-nav {
             gap: 28px;
@@ -510,47 +515,39 @@
         .search input {
             width: 180px;
         }
+
         .greeting {
             display: none;
         }
     }
 
-    /* Small tablet */
     @media (max-width: 900px) {
         .main-nav {
             display: none;
         }
-        .greeting {
-            display: none;
-        }
 
-        .search input {
-            width: 160px;
-        }
         .mobile-menu-wrapper {
             display: block;
         }
 
-        .greeting {
-            display: none;
-        }
         .search input {
             width: 160px;
         }
-    }
 
-    /* Mobile */
-    @media (max-width: 600px) {
-        .search {
+        .greeting {
             display: none;
         }
-        .greeting {
+    }
+
+    @media (max-width: 600px) {
+        .search {
             display: none;
         }
 
         .brand {
             font-size: 16px;
         }
+
         .nav {
             gap: 12px;
         }
@@ -559,8 +556,13 @@
             gap: 8px;
             margin-left: auto;
         }
+
         .join {
             padding: 8px 12px;
+        }
+
+        .greeting {
+            display: none;
         }
     }
 </style>
