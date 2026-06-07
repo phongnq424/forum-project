@@ -40,11 +40,20 @@ const FollowerService = {
       return { followed: false };
     }
     else {
-      await prisma.follower.create({
+      const follower = await prisma.follower.create({
         data: {
           follow_id: currentUserId,
           followed_id: targetUserId,
         },
+        include: {
+          follower: {
+            select: {
+              username: true,
+              fullname: true,
+              avatar: true
+            }
+          }
+        }
       });
 
       await NotificationService.create({
@@ -52,7 +61,7 @@ const FollowerService = {
         actor_id: currentUserId,
         type: 'FOLLOW',
         title: 'New Follower',
-        message: 'started following you',
+        message: `${follower.follower.fullname || follower.follower.username || 'Someone'} started following you`,
         ref_id: currentUserId
       });
       return { followed: true };

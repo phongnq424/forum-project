@@ -2,6 +2,8 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const { emitToUser } = require('../socket/emitter')
 
+const SYSTEM_AVATAR_URL = null
+
 const emitUnreadCount = async (userId) => {
     const count = await prisma.notification.count({
         where: {
@@ -15,14 +17,76 @@ const emitUnreadCount = async (userId) => {
     })
 }
 
+const enrichNotificationsWithActor = async (notifications) => {
+    if (!notifications || notifications.length === 0) {
+        return []
+    }
+
+    const actorIds = []
+
+    for (const notification of notifications) {
+        if (notification.actor_id && !actorIds.includes(notification.actor_id)) {
+            actorIds.push(notification.actor_id)
+        }
+    }
+
+    if (actorIds.length === 0) {
+        return notifications.map((notification) => ({
+            ...notification,
+            actor: null,
+            avatarUrl: SYSTEM_AVATAR_URL
+        }))
+    }
+
+    const actors = await prisma.user.findMany({
+        where: {
+            id: {
+                in: actorIds
+            },
+            is_deleted: false
+        },
+        select: {
+            id: true,
+            username: true,
+            fullname: true,
+            avatar: true
+        }
+    })
+
+    const actorMap = new Map()
+
+    for (const actor of actors) {
+        actorMap.set(actor.id, actor)
+    }
+
+    return notifications.map((notification) => {
+        const actor = notification.actor_id
+            ? actorMap.get(notification.actor_id) || null
+            : null
+
+        return {
+            ...notification,
+            actor,
+            avatarUrl: actor?.avatar || SYSTEM_AVATAR_URL
+        }
+    })
+}
+
+const enrichNotificationWithActor = async (notification) => {
+    const result = await enrichNotificationsWithActor([notification])
+    return result[0]
+}
+
 const NotificationService = {
     create: async (data) => {
-        const notification = await prisma.notification.create({
+        const created = await prisma.notification.create({
             data: {
                 ...data,
                 is_read: false
             }
         })
+
+        const notification = await enrichNotificationWithActor(created)
 
         emitToUser(data.user_id, 'notification:new', notification)
 
@@ -37,7 +101,7 @@ const NotificationService = {
         const skip = (page - 1) * take
 
         const where = {
-            user_id: userId,
+            user_id: userId
         }
 
         if (query.unread === 'true') {
@@ -47,15 +111,21 @@ const NotificationService = {
         const [notifications, total] = await Promise.all([
             prisma.notification.findMany({
                 where,
-                orderBy: { created_at: 'desc' },
+                orderBy: {
+                    created_at: 'desc'
+                },
                 skip,
                 take
             }),
-            prisma.notification.count({ where })
+            prisma.notification.count({
+                where
+            })
         ])
 
+        const enrichedNotifications = await enrichNotificationsWithActor(notifications)
+
         return {
-            data: notifications,
+            data: enrichedNotifications,
             pagination: {
                 total,
                 page,
@@ -72,7 +142,9 @@ const NotificationService = {
                 user_id: userId,
                 is_read: false
             },
-            data: { is_read: true }
+            data: {
+                is_read: true
+            }
         })
 
         if (result.count > 0) {
@@ -89,7 +161,9 @@ const NotificationService = {
                 user_id: userId,
                 is_read: false
             },
-            data: { is_read: true }
+            data: {
+                is_read: true
+            }
         })
 
         if (result.count > 0) {
@@ -108,7 +182,9 @@ const NotificationService = {
             }
         })
 
-        return { unreadCount: count }
+        return {
+            unreadCount: count
+        }
     }
 }
 

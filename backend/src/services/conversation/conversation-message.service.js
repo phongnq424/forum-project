@@ -357,17 +357,22 @@ const ConversationMessageService = {
                 message
             });
         });
+        if (conv.type === "CHAT" && otherUserId) {
+            const senderName =
+                message.Sender?.fullname ||
+                message.Sender?.username ||
+                "Someone";
 
-        if (conv.type === "CHAT") {
             NotificationService.create({
                 user_id: otherUserId,
                 actor_id: senderId,
                 type: "MESSAGE",
-                title: "New Message",
+                title: `${senderName} sent you a message`,
                 message: content || (uploadedFiles.length > 0 ? "Sent a file" : ""),
                 ref_id: conversationId
             }).catch(console.error);
         }
+
 
         return message;
     }

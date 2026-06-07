@@ -61,8 +61,8 @@ const CommentService = {
         user_id: post.user_id,
         actor_id: userId,
         type: "POST_COMMENT",
-        title: "New Comment",
-        message: `${comment?.User?.username ?? "?"} commented on your post`,
+        title: `${comment.User.fullname ?? comment.User.username ?? "Someone"} commented on your post`,
+        message: commentDetail.length > 100 ? commentDetail.substring(0, 100) + "..." : commentDetail,
         ref_id: postId,
         ref_sub_id: comment.id,
       });
@@ -73,8 +73,8 @@ const CommentService = {
         user_id: parentComment.user_id,
         actor_id: userId,
         type: "COMMENT_REPLY",
-        title: "New Comment Reply",
-        message: `${comment?.User?.username ?? "?"} replied to your comment`,
+        title: `${comment.User.fullname ?? comment.User.username ?? "Someone"} replied to your comment`,
+        message: commentDetail.length > 100 ? commentDetail.substring(0, 100) + "..." : commentDetail,
         ref_id: postId,
         ref_sub_id: comment.id,
       });

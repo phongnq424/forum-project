@@ -11,7 +11,7 @@ const ReactionService = {
 
         const post = await prisma.post.findUnique({
             where: { id: postId },
-            select: { id: true, user_id: true }
+            select: { id: true, user_id: true, title: true }
         })
         if (!post) throw new Error('POST_NOT_FOUND')
 
@@ -29,17 +29,18 @@ const ReactionService = {
 
         if (!existing) {
             reaction = await prisma.reaction.create({
-                data: { user_id: userId, post_id: postId, type }
+                data: { user_id: userId, post_id: postId, type },
+                include: { User: { select: { username: true, fullname: true, avatar: true } } }
             })
             action = 'added'
-
+            const actorName = reaction.User.fullname || reaction.User.username || 'Someone';
             if (post.user_id !== userId) {
                 await NotificationService.create({
                     user_id: post.user_id,
                     actor_id: userId,
                     type: 'POST_REACTION',
-                    title: 'New Reaction on your post',
-                    message: 'reacted to your post',
+                    title: `${actorName} reacted to your post`,
+                    message: `${actorName} reacted with ${type.toLowerCase()} to ${post.title}`,
                     ref_id: postId
                 })
             }

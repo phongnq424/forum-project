@@ -335,7 +335,6 @@ const ChatService = {
             conversationId: conversation.id,
             message
         });
-
         NotificationService.create({
             user_id: toUserId,
             actor_id: fromUserId,
