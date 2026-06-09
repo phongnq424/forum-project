@@ -1,168 +1,196 @@
 const { PrismaClient } = require("@prisma/client");
+const { ModerationService } = require("./moderation.service");
+
 const prisma = new PrismaClient();
 
-const ReportService = {
-    create: async (reporterId, data) => {
-        const { type, targetId, reason, title, severity = "MEDIUM" } = data;
+const TARGET_TYPES = ["USER", "POST", "COMMENT", "MESSAGE"];
 
-        if (!type || !targetId || !reason?.trim()) {
-            throw new Error("Missing required fields");
-        }
+const REPORT_CATEGORIES = [
+    "SPAM",
+    "HARASSMENT",
+    "HATE_SPEECH",
+    "SEXUAL_CONTENT",
+    "VIOLENCE",
+    "SELF_HARM",
+    "SCAM",
+    "IMPERSONATION",
+    "PRIVACY_VIOLATION",
+    "MISINFORMATION",
+    "COPYRIGHT",
+    "OTHER"
+];
 
-        return prisma.$transaction(async (tx) => {
-            const report = await tx.report.create({
-                data: {
-                    reporter_id: reporterId,
-                    title: title || `Report ${type}`,
-                    reason,
-                    severity,
-                    status: "OPEN"
-                }
-            });
+function parsePositiveInt(value, fallback, max) {
+    const parsed = Number.parseInt(value, 10);
 
-            if (type === "USER") {
-                await tx.reportUser.create({
-                    data: {
-                        id: report.id,
-                        reported_user_id: targetId
-                    }
-                });
-            } else if (type === "POST") {
-                await tx.reportPost.create({
-                    data: {
-                        id: report.id,
-                        reported_post_id: targetId
-                    }
-                });
-            } else if (type === "COMMENT") {
-                await tx.reportComment.create({
-                    data: {
-                        id: report.id,
-                        reported_comment_id: targetId
-                    }
-                });
-            } else if (type === "MESSAGE") {
-                await tx.reportMessage.create({
-                    data: {
-                        id: report.id,
-                        reported_message_id: targetId
-                    }
-                });
-            } else {
-                throw new Error("Invalid report type");
-            }
+    if (Number.isNaN(parsed) || parsed <= 0) {
+        return fallback;
+    }
 
-            return report;
-        });
-    },
+    if (max && parsed > max) {
+        return max;
+    }
 
-    list: async (query) => {
-        const page = parseInt(query.page) || 1;
-        const limit = parseInt(query.limit) || 10;
-        const skip = (page - 1) * limit;
+    return parsed;
+}
 
-        const where = {
-            is_deleted: false
-        };
+function validateCreatePayload(payload) {
+    if (!payload) {
+        throw new Error("Payload is required");
+    }
 
-        if (query.status) where.status = query.status;
-        if (query.severity) where.severity = query.severity;
+    if (!payload.target_type) {
+        throw new Error("Target type is required");
+    }
 
-        ReportService._applyTypeFilter(where, query.type);
+    if (!TARGET_TYPES.includes(payload.target_type)) {
+        throw new Error("Invalid target type");
+    }
 
-        if (query.q) {
-            where.OR = [
-                { title: { contains: query.q, mode: "insensitive" } },
-                { reason: { contains: query.q, mode: "insensitive" } },
-                {
-                    Reporter: {
-                        username: { contains: query.q, mode: "insensitive" }
-                    }
-                }
-            ];
-        }
+    if (!payload.target_id) {
+        throw new Error("Target id is required");
+    }
 
-        const [reports, total] = await Promise.all([
-            prisma.report.findMany({
-                where,
-                skip,
-                take: limit,
-                orderBy: { created_at: "desc" },
-                include: {
-                    Reporter: {
-                        select: {
-                            id: true,
-                            username: true,
-                            fullname: true,
-                            avatar: true
-                        }
-                    },
-                    ReportUser: {
-                        include: {
-                            ReportedUser: {
-                                select: {
-                                    id: true,
-                                    username: true,
-                                    fullname: true
-                                }
-                            }
-                        }
-                    },
-                    ReportPost: {
-                        include: {
-                            ReportedPost: {
-                                select: {
-                                    id: true,
-                                    title: true,
-                                    content: true
-                                }
-                            }
-                        }
-                    },
-                    ReportComment: {
-                        include: {
-                            ReportedComment: {
-                                select: {
-                                    id: true,
-                                    comment_detail: true
-                                }
-                            }
-                        }
-                    },
-                    ReportMessage: {
-                        include: {
-                            ReportedMessage: {
-                                select: {
-                                    id: true,
-                                    content: true
-                                }
-                            }
-                        }
-                    }
-                }
-            }),
-            prisma.report.count({ where })
-        ]);
+    if (!payload.category) {
+        throw new Error("Report category is required");
+    }
 
-        return {
-            data: await Promise.all(reports.map(ReportService._formatReportAsync)),
-            pagination: {
-                total,
-                page,
-                limit,
-                totalPages: Math.ceil(total / limit)
-            }
-        };
-    },
+    if (!REPORT_CATEGORIES.includes(payload.category)) {
+        throw new Error("Invalid report category");
+    }
 
-    getById: async (id) => {
-        const report = await prisma.report.findFirst({
+    if (!payload.reason || String(payload.reason).trim().length < 5) {
+        throw new Error("Reason must be at least 5 characters");
+    }
+
+    if (String(payload.reason).length > 3000) {
+        throw new Error("Reason is too long");
+    }
+
+    if (payload.evidence && String(payload.evidence).length > 5000) {
+        throw new Error("Evidence is too long");
+    }
+}
+
+async function getTargetInfo(targetType, targetId, reporterId) {
+    if (targetType === "USER") {
+        const user = await prisma.user.findFirst({
             where: {
-                id,
+                id: targetId,
                 is_deleted: false
             },
-            include: {
-                Reporter: {
+            select: {
+                id: true,
+                username: true,
+                fullname: true,
+                avatar: true,
+                status: true,
+                is_deleted: true
+            }
+        });
+
+        if (!user) {
+            throw new Error("Reported user not found");
+        }
+
+        if (user.id === reporterId) {
+            throw new Error("You cannot report yourself");
+        }
+
+        return {
+            ownerId: user.id,
+            target: user
+        };
+    }
+
+    if (targetType === "POST") {
+        const post = await prisma.post.findFirst({
+            where: {
+                id: targetId,
+                is_deleted: false
+            },
+            select: {
+                id: true,
+                user_id: true,
+                title: true,
+                content: true,
+                moderation_status: true,
+                created_at: true,
+                User: {
+                    select: {
+                        id: true,
+                        username: true,
+                        fullname: true,
+                        avatar: true
+                    }
+                }
+            }
+        });
+
+        if (!post) {
+            throw new Error("Reported post not found");
+        }
+
+        if (post.user_id === reporterId) {
+            throw new Error("You cannot report your own post");
+        }
+
+        return {
+            ownerId: post.user_id,
+            target: post
+        };
+    }
+
+    if (targetType === "COMMENT") {
+        const comment = await prisma.comment.findFirst({
+            where: {
+                id: targetId,
+                is_deleted: false
+            },
+            select: {
+                id: true,
+                user_id: true,
+                post_id: true,
+                comment_detail: true,
+                created_at: true,
+                User: {
+                    select: {
+                        id: true,
+                        username: true,
+                        fullname: true,
+                        avatar: true
+                    }
+                }
+            }
+        });
+
+        if (!comment) {
+            throw new Error("Reported comment not found");
+        }
+
+        if (comment.user_id === reporterId) {
+            throw new Error("You cannot report your own comment");
+        }
+
+        return {
+            ownerId: comment.user_id,
+            target: comment
+        };
+    }
+
+    if (targetType === "MESSAGE") {
+        const message = await prisma.message.findFirst({
+            where: {
+                id: targetId,
+                is_deleted: false
+            },
+            select: {
+                id: true,
+                conversation_id: true,
+                sender_id: true,
+                content: true,
+                sent_at: true,
+                Sender: {
                     select: {
                         id: true,
                         username: true,
@@ -170,355 +198,314 @@ const ReportService = {
                         avatar: true
                     }
                 },
-                ReportUser: {
-                    include: {
-                        ReportedUser: {
+                Conversation: {
+                    select: {
+                        id: true,
+                        ConversationUser: {
+                            where: {
+                                user_id: reporterId,
+                                left_at: null
+                            },
                             select: {
-                                id: true,
-                                username: true,
-                                fullname: true
+                                id: true
                             }
                         }
                     }
-                },
-                ReportPost: {
-                    include: {
-                        ReportedPost: {
-                            select: {
-                                id: true,
-                                title: true,
-                                content: true
-                            }
-                        }
-                    }
-                },
-                ReportComment: {
-                    include: {
-                        ReportedComment: {
-                            select: {
-                                id: true,
-                                comment_detail: true
-                            }
-                        }
-                    }
-                },
-                ReportMessage: {
-                    include: {
-                        ReportedMessage: {
-                            select: {
-                                id: true,
-                                content: true
-                            }
-                        }
-                    }
-                },
-                ReportReply: {
-                    orderBy: { created_at: "asc" }
                 }
             }
         });
 
-        if (!report) return null;
-        return ReportService._formatReportAsync(report);
-    },
+        if (!message) {
+            throw new Error("Reported message not found");
+        }
 
-    updateStatus: async (id, status) => {
-        return prisma.report.update({
-            where: { id },
-            data: { status }
+        if (message.sender_id === reporterId) {
+            throw new Error("You cannot report your own message");
+        }
+
+        if (!message.Conversation || message.Conversation.ConversationUser.length === 0) {
+            throw new Error("You can only report messages from conversations you belong to");
+        }
+
+        return {
+            ownerId: message.sender_id,
+            target: message
+        };
+    }
+
+    throw new Error("Unsupported target type");
+}
+
+async function ensureCanReport(reporterId) {
+    const now = new Date();
+
+    const trust = await prisma.reporterTrust.findUnique({
+        where: {
+            user_id: reporterId
+        }
+    });
+
+    if (trust && trust.cooldown_until && trust.cooldown_until > now) {
+        throw new Error("You are temporarily limited from submitting reports");
+    }
+
+    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const recentCount = await prisma.report.count({
+        where: {
+            reporter_id: reporterId,
+            created_at: {
+                gte: tenMinutesAgo
+            }
+        }
+    });
+
+    if (recentCount >= 5) {
+        await prisma.reporterTrust.upsert({
+            where: {
+                user_id: reporterId
+            },
+            update: {
+                cooldown_until: new Date(now.getTime() + 30 * 60 * 1000)
+            },
+            create: {
+                user_id: reporterId,
+                cooldown_until: new Date(now.getTime() + 30 * 60 * 1000)
+            }
         });
-    },
 
-    delete: async (id) => {
-        return prisma.report.update({
-            where: { id },
-            data: { is_deleted: true }
+        throw new Error("Too many reports submitted in a short time");
+    }
+
+    const dailyCount = await prisma.report.count({
+        where: {
+            reporter_id: reporterId,
+            created_at: {
+                gte: oneDayAgo
+            }
+        }
+    });
+
+    if (dailyCount >= 20) {
+        await prisma.reporterTrust.upsert({
+            where: {
+                user_id: reporterId
+            },
+            update: {
+                cooldown_until: new Date(now.getTime() + 24 * 60 * 60 * 1000)
+            },
+            create: {
+                user_id: reporterId,
+                cooldown_until: new Date(now.getTime() + 24 * 60 * 60 * 1000)
+            }
         });
-    },
 
-    reply: async (reportId, message) => {
-        if (!message?.trim()) throw new Error("Message is required");
+        throw new Error("Daily report limit reached");
+    }
+}
 
-        return prisma.reportReply.create({
+function legacyTargetCreate(tx, reportId, targetType, targetId) {
+    if (targetType === "USER") {
+        return tx.reportUser.create({
             data: {
-                report_id: reportId,
-                message
+                id: reportId,
+                reported_user_id: targetId
             }
         });
-    },
+    }
 
-    _getReportType: (report) => {
-        if (report.ReportUser) return "USER";
-        if (report.ReportPost) return "POST";
-        if (report.ReportComment) return "COMMENT";
-        if (report.ReportMessage) return "MESSAGE";
-        return "UNKNOWN";
-    },
+    if (targetType === "POST") {
+        return tx.reportPost.create({
+            data: {
+                id: reportId,
+                reported_post_id: targetId
+            }
+        });
+    }
 
-    _applyTypeFilter: (where, type) => {
-        if (!type) return;
+    if (targetType === "COMMENT") {
+        return tx.reportComment.create({
+            data: {
+                id: reportId,
+                reported_comment_id: targetId
+            }
+        });
+    }
 
-        if (type === "USER") {
-            where.ReportUser = { isNot: null };
-            return;
-        }
+    if (targetType === "MESSAGE") {
+        return tx.reportMessage.create({
+            data: {
+                id: reportId,
+                reported_message_id: targetId
+            }
+        });
+    }
 
-        if (type === "POST") {
-            where.ReportPost = { isNot: null };
-            return;
-        }
+    throw new Error("Unsupported target type");
+}
 
-        if (type === "COMMENT") {
-            where.ReportComment = { isNot: null };
-            return;
-        }
+const ReportService = {
+    create: async (reporterId, payload, meta = {}) => {
+        validateCreatePayload(payload);
+        await ensureCanReport(reporterId);
 
-        if (type === "MESSAGE") {
-            where.ReportMessage = { isNot: null };
-            return;
-        }
-    },
+        const targetType = payload.target_type;
+        const targetId = payload.target_id;
+        const category = payload.category;
+        const reason = String(payload.reason).trim();
+        const evidence = payload.evidence ? String(payload.evidence).trim() : null;
 
-    _getReportedTarget: (report) => {
-        if (report.ReportUser?.ReportedUser) {
-            return report.ReportUser.ReportedUser.username;
-        }
+        await getTargetInfo(targetType, targetId, reporterId);
 
-        if (report.ReportPost?.ReportedPost) {
-            return report.ReportPost.ReportedPost.title;
-        }
+        const activeKey = `${targetType}:${targetId}`;
+        const now = new Date();
 
-        if (report.ReportComment?.ReportedComment) {
-            return report.ReportComment.ReportedComment.comment_detail;
-        }
+        let createdReportId = null;
+        let caseId = null;
 
-        if (report.ReportMessage?.ReportedMessage) {
-            return report.ReportMessage.ReportedMessage.content;
-        }
-
-        return null;
-    },
-
-    _formatReport: (report) => {
-        return {
-            id: report.id,
-            title: report.title || `Report ${ReportService._getReportType(report)}`,
-            description: report.reason,
-            reportedBy:
-                report.Reporter?.fullname ||
-                report.Reporter?.username ||
-                "Unknown",
-            reportedUser: report.ReportUser?.ReportedUser?.username || null,
-            reportedContent: ReportService._getReportedTarget(report),
-            type: ReportService._getReportType(report),
-            status: report.status,
-            severity: report.severity,
-            createdAt: report.created_at,
-            updatedAt: report.updated_at
-        };
-    },
-    _getReportedTargetInfo: (report) => {
-        if (report.ReportUser?.ReportedUser) {
-            const user = report.ReportUser.ReportedUser;
-
-            return {
-                id: user.id,
-                type: "USER",
-                title: user.fullname || user.username || "Reported user",
-                content: user.username || null,
-                owner: null,
-                url: `/profile/${user.id}`
-            };
-        }
-
-        if (report.ReportPost?.ReportedPost) {
-            const post = report.ReportPost.ReportedPost;
-
-            return {
-                id: post.id,
-                type: "POST",
-                title: post.title || "Reported post",
-                content: post.content || null,
-                owner: post.User
-                    ? {
-                        id: post.User.id,
-                        username: post.User.username,
-                        fullname: post.User.fullname,
-                        avatar: post.User.avatar
+        try {
+            const result = await prisma.$transaction(async (tx) => {
+                const reportCase = await tx.reportCase.upsert({
+                    where: {
+                        active_key: activeKey
+                    },
+                    update: {
+                        last_reported_at: now
+                    },
+                    create: {
+                        active_key: activeKey,
+                        target_type: targetType,
+                        target_id: targetId,
+                        status: "OPEN",
+                        severity: "MEDIUM",
+                        priority_score: 0,
+                        report_count: 0,
+                        category_main: category,
+                        categories: [category],
+                        first_reported_at: now,
+                        last_reported_at: now
                     }
-                    : null,
-                url: `/discuss/${post.id}`
-            };
-        }
+                });
 
-        if (report.ReportComment?.ReportedComment) {
-            const comment = report.ReportComment.ReportedComment;
-
-            return {
-                id: comment.id,
-                type: "COMMENT",
-                title: "Reported comment",
-                content: comment.comment_detail || null,
-                owner: comment.User
-                    ? {
-                        id: comment.User.id,
-                        username: comment.User.username,
-                        fullname: comment.User.fullname,
-                        avatar: comment.User.avatar
+                const report = await tx.report.create({
+                    data: {
+                        case_id: reportCase.id,
+                        reporter_id: reporterId,
+                        category,
+                        reason,
+                        evidence,
+                        reporter_ip: meta.ip || null,
+                        user_agent: meta.userAgent || null
                     }
-                    : null,
-                url: null
-            };
-        }
+                });
 
-        if (report.ReportMessage?.ReportedMessage) {
-            const message = report.ReportMessage.ReportedMessage;
+                await legacyTargetCreate(tx, report.id, targetType, targetId);
 
-            return {
-                id: message.id,
-                type: "MESSAGE",
-                title: "Reported message",
-                content: message.content || null,
-                owner: message.Sender
-                    ? {
-                        id: message.Sender.id,
-                        username: message.Sender.username,
-                        fullname: message.Sender.fullname,
-                        avatar: message.Sender.avatar
+                await tx.reporterTrust.upsert({
+                    where: {
+                        user_id: reporterId
+                    },
+                    update: {
+                        total_reports: {
+                            increment: 1
+                        },
+                        last_reported_at: now
+                    },
+                    create: {
+                        user_id: reporterId,
+                        total_reports: 1,
+                        last_reported_at: now,
+                        trust_score: 0.5
                     }
-                    : null,
-                url: null
-            };
-        }
+                });
 
-        return {
-            id: null,
-            type: "UNKNOWN",
-            title: "Unknown target",
-            content: null,
-            owner: null,
-            url: null
-        };
-    },
-    _getTargetCountWhere: (type, targetId) => {
-        if (!type || !targetId) return null;
-
-        if (type === "USER") {
-            return {
-                is_deleted: false,
-                ReportUser: {
-                    is: {
-                        reported_user_id: targetId
+                await tx.moderationSignal.create({
+                    data: {
+                        case_id: reportCase.id,
+                        type: "USER_REPORT",
+                        score: 1,
+                        weight: 1,
+                        metadata: {
+                            report_id: report.id,
+                            category,
+                            reporter_id: reporterId
+                        }
                     }
-                }
-            };
-        }
+                });
 
-        if (type === "POST") {
-            return {
-                is_deleted: false,
-                ReportPost: {
-                    is: {
-                        reported_post_id: targetId
-                    }
-                }
-            };
-        }
-
-        if (type === "COMMENT") {
-            return {
-                is_deleted: false,
-                ReportComment: {
-                    is: {
-                        reported_comment_id: targetId
-                    }
-                }
-            };
-        }
-
-        if (type === "MESSAGE") {
-            return {
-                is_deleted: false,
-                ReportMessage: {
-                    is: {
-                        reported_message_id: targetId
-                    }
-                }
-            };
-        }
-
-        return null;
-    },
-    _getRecommendedSeverity: (type, targetReportCount, currentSeverity) => {
-        if (currentSeverity === "CRITICAL") return "CRITICAL";
-
-        if (targetReportCount >= 10) return "CRITICAL";
-
-        if (targetReportCount >= 5) return "HIGH";
-
-        if (targetReportCount >= 2) {
-            if (type === "USER" || type === "MESSAGE") return "HIGH";
-            return "MEDIUM";
-        }
-
-        return currentSeverity || "MEDIUM";
-    },
-    _formatReportAsync: async (report) => {
-        const type = ReportService._getReportType(report);
-        const target = ReportService._getReportedTargetInfo(report);
-
-        let targetReportCount = 0;
-
-        const countWhere = ReportService._getTargetCountWhere(type, target.id);
-
-        if (countWhere) {
-            targetReportCount = await prisma.report.count({
-                where: countWhere
+                return {
+                    report,
+                    reportCase
+                };
             });
+
+            createdReportId = result.report.id;
+            caseId = result.reportCase.id;
+        } catch (e) {
+            if (e.code === "P2002") {
+                throw new Error("You have already reported this target");
+            }
+
+            throw e;
         }
 
-        const recommendedSeverity = ReportService._getRecommendedSeverity(
-            type,
-            targetReportCount,
-            report.severity
-        );
+        await ModerationService.recalculateCase(caseId);
+        await ModerationService.applyAutoActionIfNeeded(caseId);
+
+        const report = await prisma.report.findUnique({
+            where: {
+                id: createdReportId
+            },
+            include: {
+                Case: true
+            }
+        });
+
+        return report;
+    },
+
+    listMine: async (userId, query = {}) => {
+        const page = parsePositiveInt(query.page, 1, 100000);
+        const limit = parsePositiveInt(query.limit, 10, 50);
+        const skip = (page - 1) * limit;
+
+        const where = {
+            reporter_id: userId,
+            is_deleted: false
+        };
+
+        if (query.category && REPORT_CATEGORIES.includes(query.category)) {
+            where.category = query.category;
+        }
+
+        const [items, total] = await Promise.all([
+            prisma.report.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: {
+                    created_at: "desc"
+                },
+                include: {
+                    Case: true
+                }
+            }),
+            prisma.report.count({
+                where
+            })
+        ]);
 
         return {
-            id: report.id,
-            title: report.title || `Report ${type}`,
-            description: report.reason,
-
-            reporter: report.Reporter
-                ? {
-                    id: report.Reporter.id,
-                    username: report.Reporter.username,
-                    fullname: report.Reporter.fullname,
-                    avatar: report.Reporter.avatar
-                }
-                : null,
-
-            reportedBy:
-                report.Reporter?.fullname ||
-                report.Reporter?.username ||
-                "Unknown",
-
-            type,
-            target,
-            reportedUser: report.ReportUser?.ReportedUser?.username || null,
-            reportedContent: target.content,
-
-            targetReportCount,
-            recommendedSeverity,
-
-            status: report.status,
-            severity: report.severity,
-
-            replies: report.ReportReply || [],
-
-            createdAt: report.created_at,
-            updatedAt: report.updated_at
+            data: items,
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
         };
-    },
+    }
 };
 
 module.exports = { ReportService };

@@ -4,69 +4,37 @@ const ReportController = {
     create: async (req, res) => {
         try {
             const reporterId = req.user.id;
-            const report = await ReportService.create(reporterId, req.body);
-            return res.status(201).json(report);
+
+            const meta = {
+                ip: req.ip || req.headers["x-forwarded-for"] || req.socket?.remoteAddress || null,
+                userAgent: req.headers["user-agent"] || null
+            };
+
+            const result = await ReportService.create(reporterId, req.body, meta);
+
+            return res.status(201).json({
+                message: "Report submitted successfully",
+                data: result
+            });
         } catch (e) {
-            return res.status(400).json({ message: e.message });
+            return res.status(400).json({
+                message: e.message
+            });
         }
     },
 
-    list: async (req, res) => {
+    listMine: async (req, res) => {
         try {
-            const result = await ReportService.list(req.query);
-            return res.status(200).json(result);
+            const result = await ReportService.listMine(req.user.id, req.query);
+
+            return res.status(200).json({
+                message: "Reports fetched successfully",
+                ...result
+            });
         } catch (e) {
-            return res.status(500).json({ message: e.message });
-        }
-    },
-
-    getById: async (req, res) => {
-        try {
-            const report = await ReportService.getById(req.params.id);
-            if (!report) {
-                return res.status(404).json({ message: "Report not found" });
-            }
-
-            return res.status(200).json(report);
-        } catch (e) {
-            return res.status(500).json({ message: e.message });
-        }
-    },
-
-    updateStatus: async (req, res) => {
-        try {
-            const { status } = req.body;
-            if (!status) {
-                return res.status(400).json({ message: "Status is required" });
-            }
-
-            const updated = await ReportService.updateStatus(
-                req.params.id,
-                status
-            );
-
-            return res.status(200).json(updated);
-        } catch (e) {
-            return res.status(400).json({ message: e.message });
-        }
-    },
-
-    reply: async (req, res) => {
-        try {
-            const { message } = req.body;
-            const reply = await ReportService.reply(req.params.id, message);
-            return res.status(201).json(reply);
-        } catch (e) {
-            return res.status(400).json({ message: e.message });
-        }
-    },
-
-    delete: async (req, res) => {
-        try {
-            await ReportService.delete(req.params.id);
-            return res.status(200).json({ message: "Deleted" });
-        } catch (e) {
-            return res.status(400).json({ message: e.message });
+            return res.status(500).json({
+                message: e.message
+            });
         }
     }
 };

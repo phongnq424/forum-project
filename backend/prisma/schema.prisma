@@ -111,6 +111,7 @@ enum ChallengeDifficulty {
 
 enum ReportStatus {
   OPEN
+  TRIAGED
   IN_PROGRESS
   RESOLVED
   CLOSED
@@ -121,6 +122,61 @@ enum ReportSeverity {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+enum ReportTargetType {
+  USER
+  POST
+  COMMENT
+  MESSAGE
+}
+
+enum ReportCategory {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  SEXUAL_CONTENT
+  VIOLENCE
+  SELF_HARM
+  SCAM
+  IMPERSONATION
+  PRIVACY_VIOLATION
+  MISINFORMATION
+  COPYRIGHT
+  OTHER
+}
+
+enum ReportResolution {
+  VALID
+  INVALID
+  DUPLICATE
+  NOT_ENOUGH_EVIDENCE
+  AUTO_RESOLVED
+}
+
+enum ModerationActionType {
+  NONE
+  HIDE_CONTENT
+  RESTORE_CONTENT
+  DELETE_CONTENT
+  LOCK_CONTENT
+  WARN_USER
+  TEMP_BAN_USER
+  PERMANENT_BAN_USER
+  LIMIT_USER
+  DISMISS_REPORT
+}
+
+enum ModerationSignalType {
+  USER_REPORT
+  REPORT_COUNT
+  REPORTER_TRUST
+  AI_TEXT_SCORE
+  AI_IMAGE_SCORE
+  TARGET_AUTHOR_HISTORY
+  TARGET_VELOCITY
+  DUPLICATE_REPORT
+  RATE_LIMIT_TRIGGER
 }
 
 enum CONVERSATION_SCOPE {
@@ -180,6 +236,11 @@ model User {
   attachments             Attachment[]
   learningRecommendations LearningRecommendation[]
   userTopicMasteries      UserTopicMastery[]
+  assignedReportCases     ReportCase[]             @relation("case_assigned_to")
+  resolvedReportCases     ReportCase[]             @relation("case_resolved_by")
+  reporterTrust           ReporterTrust?
+  moderationActionLogs    ModerationActionLog[]
+  reportCases             ReportCase[]
 }
 
 enum MODERATION_STATUS {
@@ -750,26 +811,146 @@ model Notification {
   @@index([user_id, type])
 }
 
-model Report {
-  id          String         @id @default(uuid())
-  reporter_id String
-  title       String?        @db.VarChar(255)
-  reason      String
-  status      ReportStatus   @default(OPEN)
-  severity    ReportSeverity @default(MEDIUM)
-  created_at  DateTime       @default(now())
-  updated_at  DateTime       @default(now()) @updatedAt
-  is_deleted  Boolean        @default(false)
+model ReportCase {
+  id         String  @id @default(uuid())
+  active_key String? @unique
 
-  Reporter      User            @relation("reporter", fields: [reporter_id], references: [id], onDelete: Cascade)
-  ReportUser    ReportUser?
-  ReportPost    ReportPost?
-  ReportComment ReportComment?
-  ReportReply   ReportReply[]
-  ReportMessage ReportMessage[]
+  target_type ReportTargetType
+  target_id   String
+
+  status         ReportStatus   @default(OPEN)
+  severity       ReportSeverity @default(MEDIUM)
+  priority_score Int            @default(0)
+
+  report_count  Int              @default(0)
+  category_main ReportCategory?
+  categories    ReportCategory[]
+
+  is_auto_hidden Boolean   @default(false)
+  auto_action_at DateTime?
+
+  assigned_to_id String?
+  resolved_by_id String?
+
+  resolution     ReportResolution?
+  action_taken   ModerationActionType?
+  moderator_note String?
+
+  first_reported_at DateTime  @default(now())
+  last_reported_at  DateTime  @default(now())
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @default(now()) @updatedAt
+  resolved_at       DateTime?
+  closed_at         DateTime?
+
+  Reports    Report[]
+  Signals    ModerationSignal[]
+  ActionLogs ModerationActionLog[]
+
+  AssignedTo User?   @relation("case_assigned_to", fields: [assigned_to_id], references: [id], onDelete: SetNull)
+  ResolvedBy User?   @relation("case_resolved_by", fields: [resolved_by_id], references: [id], onDelete: SetNull)
+  user       User?   @relation(fields: [userId], references: [id])
+  userId     String?
 
   @@index([status])
   @@index([severity])
+  @@index([priority_score])
+  @@index([target_type, target_id])
+  @@index([created_at])
+}
+
+model Report {
+  id String @id @default(uuid())
+
+  case_id     String
+  reporter_id String
+
+  category ReportCategory
+  reason   String         @db.Text
+  evidence String?        @db.Text
+
+  reporter_ip String?
+  user_agent  String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  is_deleted Boolean  @default(false)
+
+  Case           ReportCase      @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  Reporter       User            @relation("reporter", fields: [reporter_id], references: [id], onDelete: Cascade)
+  reportUsers    ReportUser[]
+  reportPosts    ReportPost[]
+  reportComments ReportComment[]
+  reportMessages ReportMessage[]
+  reportReplies  ReportReply[]
+
+  @@unique([case_id, reporter_id])
+  @@index([reporter_id])
+  @@index([case_id])
+  @@index([category])
+  @@index([created_at])
+}
+
+model ReporterTrust {
+  id      String @id @default(uuid())
+  user_id String @unique
+
+  trust_score     Float @default(0.5)
+  valid_reports   Int   @default(0)
+  invalid_reports Int   @default(0)
+  total_reports   Int   @default(0)
+
+  last_reported_at DateTime?
+  cooldown_until   DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([trust_score])
+}
+
+model ModerationSignal {
+  id      String @id @default(uuid())
+  case_id String
+
+  type   ModerationSignalType
+  score  Float                @default(0)
+  weight Float                @default(1)
+
+  metadata   Json?
+  created_at DateTime @default(now())
+
+  Case ReportCase @relation(fields: [case_id], references: [id], onDelete: Cascade)
+
+  @@index([case_id])
+  @@index([type])
+  @@index([created_at])
+}
+
+model ModerationActionLog {
+  id      String @id @default(uuid())
+  case_id String
+
+  actor_id String?
+  action   ModerationActionType
+
+  previous_status ReportStatus?
+  new_status      ReportStatus?
+
+  previous_data Json?
+  new_data      Json?
+
+  reason     String?  @db.Text
+  created_at DateTime @default(now())
+
+  Case  ReportCase @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  Actor User?      @relation(fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([case_id])
+  @@index([actor_id])
+  @@index([action])
   @@index([created_at])
 }
 
