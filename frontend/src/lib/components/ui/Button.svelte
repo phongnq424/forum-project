@@ -26,30 +26,32 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        padding: 10px 18px;
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 600;
-        letter-spacing: 0.3px;
+        padding: 9px 16px;
+        border-radius: 11px;
+        font-size: 13px;
+        font-weight: 560;
+        letter-spacing: 0.2px;
         border: none;
         cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
+
     .sm {
-        padding: 6px 12px;
+        padding: 5px 11px;
         font-size: 12px;
         border-radius: 8px;
         gap: 4px;
+        font-weight: 550;
     }
 
     .md {
-        padding: 10px 18px;
-        font-size: 14px;
+        padding: 9px 16px;
+        font-size: 13px;
     }
 
     .btn:focus-visible {
         outline: none;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.32);
     }
 
     .btn:active:not(:disabled) {
@@ -61,19 +63,18 @@
         cursor: not-allowed;
     }
 
-    /* PRIMARY */
     .primary {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        background: linear-gradient(135deg, #585bf0, #7c4fe6);
         color: white;
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        box-shadow: 0 6px 16px rgba(99, 102, 241, 0.22);
     }
 
     .primary:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 30px rgba(99, 102, 241, 0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 9px 22px rgba(99, 102, 241, 0.3);
+        filter: brightness(1.02);
     }
 
-    /* SECONDARY */
     .secondary {
         background: #1c1f26;
         color: #e5e7eb;
@@ -85,7 +86,6 @@
         border-color: #3a3f4a;
     }
 
-    /* GHOST */
     .ghost {
         background: transparent;
         color: #a1a1aa;
@@ -96,21 +96,20 @@
         color: white;
     }
 
-    /* DANGER */
     .danger {
         background: transparent;
-        color: #ef4444;
-        border: 1px solid #ef4444;
+        color: #ef5555;
+        border: 1px solid rgba(239, 68, 68, 0.75);
         box-shadow: none;
-        opacity: 0.8;
+        opacity: 0.82;
     }
 
     .danger:hover:not(:disabled) {
-        background: rgba(239, 68, 68, 0.1);
-        color: #dc2626;
-        border-color: #dc2626;
+        background: rgba(239, 68, 68, 0.08);
+        color: #ef4444;
+        border-color: rgba(239, 68, 68, 0.9);
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+        box-shadow: 0 4px 10px rgba(239, 68, 68, 0.1);
         opacity: 1;
     }
 </style>

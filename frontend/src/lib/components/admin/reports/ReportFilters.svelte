@@ -1,26 +1,26 @@
 <script lang="ts">
     import Button from "$lib/components/ui/Button.svelte";
-    import Input from "$lib/components/ui/Input.svelte";
     import Select from "$lib/components/ui/Select.svelte";
     import type {
+        ReportCategory,
         ReportSeverity,
         ReportStatus,
-        ReportType,
+        ReportTargetType,
     } from "$lib/types/report.type";
 
     let {
-        search = $bindable(""),
         statusFilter = $bindable<ReportStatus | "">(""),
         severityFilter = $bindable<ReportSeverity | "">(""),
-        typeFilter = $bindable<Exclude<ReportType, "UNKNOWN"> | "">(""),
+        targetTypeFilter = $bindable<ReportTargetType | "">(""),
+        categoryFilter = $bindable<ReportCategory | "">(""),
         loading = false,
         onSearch,
         onReset,
     } = $props<{
-        search: string;
         statusFilter: ReportStatus | "";
         severityFilter: ReportSeverity | "";
-        typeFilter: Exclude<ReportType, "UNKNOWN"> | "";
+        targetTypeFilter: ReportTargetType | "";
+        categoryFilter: ReportCategory | "";
         loading?: boolean;
         onSearch: () => void;
         onReset: () => void;
@@ -29,6 +29,7 @@
     const statusOptions: { value: "" | ReportStatus; label: string }[] = [
         { value: "", label: "All Status" },
         { value: "OPEN", label: "Open" },
+        { value: "TRIAGED", label: "Triaged" },
         { value: "IN_PROGRESS", label: "In Progress" },
         { value: "RESOLVED", label: "Resolved" },
         { value: "CLOSED", label: "Closed" },
@@ -42,34 +43,42 @@
         { value: "CRITICAL", label: "Critical" },
     ];
 
-    const typeOptions: {
-        value: "" | Exclude<ReportType, "UNKNOWN">;
+    const targetTypeOptions: {
+        value: "" | ReportTargetType;
         label: string;
     }[] = [
-        { value: "", label: "All Types" },
+        { value: "", label: "All Targets" },
         { value: "USER", label: "User" },
         { value: "POST", label: "Post" },
         { value: "COMMENT", label: "Comment" },
         { value: "MESSAGE", label: "Message" },
     ];
+
+    const categoryOptions: { value: "" | ReportCategory; label: string }[] = [
+        { value: "", label: "All Categories" },
+        { value: "SPAM", label: "Spam" },
+        { value: "HARASSMENT", label: "Harassment" },
+        { value: "HATE_SPEECH", label: "Hate Speech" },
+        { value: "SEXUAL_CONTENT", label: "Sexual Content" },
+        { value: "VIOLENCE", label: "Violence" },
+        { value: "SELF_HARM", label: "Self Harm" },
+        { value: "SCAM", label: "Scam" },
+        { value: "IMPERSONATION", label: "Impersonation" },
+        { value: "PRIVACY_VIOLATION", label: "Privacy Violation" },
+        { value: "MISINFORMATION", label: "Misinformation" },
+        { value: "COPYRIGHT", label: "Copyright" },
+        { value: "OTHER", label: "Other" },
+    ];
 </script>
 
 <section class="report-filters">
     <div class="filter-row">
-        <Input
-            bind:value={search}
-            placeholder="Search by title, reason or reporter..."
-            disabled={loading}
-            onkeydown={(e: KeyboardEvent) => {
-                if (e.key === "Enter") onSearch();
-            }}
-        />
-
         <div class="filter-select">
             <Select
                 bind:value={statusFilter}
                 options={statusOptions}
                 placeholder="All Status"
+                disabled={loading}
             />
         </div>
 
@@ -78,14 +87,25 @@
                 bind:value={severityFilter}
                 options={severityOptions}
                 placeholder="All Severity"
+                disabled={loading}
             />
         </div>
 
         <div class="filter-select">
             <Select
-                bind:value={typeFilter}
-                options={typeOptions}
-                placeholder="All Types"
+                bind:value={targetTypeFilter}
+                options={targetTypeOptions}
+                placeholder="All Targets"
+                disabled={loading}
+            />
+        </div>
+
+        <div class="filter-select">
+            <Select
+                bind:value={categoryFilter}
+                options={categoryOptions}
+                placeholder="All Categories"
+                disabled={loading}
             />
         </div>
 
@@ -107,7 +127,7 @@
 
     .filter-row {
         display: grid;
-        grid-template-columns: minmax(260px, 1fr) 160px 160px 160px auto auto;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) auto auto;
         gap: 10px;
         align-items: center;
     }

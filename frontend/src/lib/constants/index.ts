@@ -109,8 +109,16 @@ export const ENDPOINTS = {
         BY_CHALLENGE: (id: string) => `/leaderboards/${id}`,
     },
     REPORTS: {
-        BASE: "reports",
-        BY_ID: (id: string) => `reports/${id}`
+        BASE: "/reports",
+        ME: "/reports/me",
+        CASES: {
+            BASE: "/reports/cases",
+            BY_ID: (id: string) => `/reports/cases/${id}`,
+            ASSIGN: (id: string) => `/reports/cases/${id}/assign`,
+            ACTION: (id: string) => `/reports/cases/${id}/action`,
+            RESOLVE: (id: string) => `/reports/cases/${id}/resolve`,
+            CLOSE: (id: string) => `/reports/cases/${id}/close`,
+        },
     },
     FOLLOWERS: {
         TOGGLE: "/followers/toggle",

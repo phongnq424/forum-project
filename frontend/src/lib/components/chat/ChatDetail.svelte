@@ -4,10 +4,8 @@
     import Icon from "$lib/components/ui/Icon.svelte";
     import { goto } from "$app/navigation";
     import { chatService } from "$lib/services/chat.service";
-    import type {
-        ChatAttachment,
-        ChatConversation,
-    } from "$lib/types/chat.type";
+    import type { ChatConversation } from "$lib/types/chat.type";
+    import type { ChatAttachment } from "$lib/types/chat-common.type";
 
     let {
         activeChat,

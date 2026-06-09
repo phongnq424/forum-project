@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
-
+    import { toastState } from "$lib/states/toast.svelte";
     import { profileService } from "$lib/services/profile.service";
     import { postService } from "$lib/services/post.service";
     import { reportService } from "$lib/services/report.service";
@@ -114,16 +114,16 @@
 
         try {
             await reportService.create({
-                type: "USER",
-                targetId: profile.User.id,
-                title: `Report user: ${profile.User.username}`,
+                target_type: "USER",
+                target_id: profile.User.id,
+                category: "OTHER",
                 reason: "This user was reported by another user.",
-                severity: "MEDIUM",
+                evidence: `Reported user: ${profile.User.username}`,
             });
-
-            console.log("Report submitted");
+            toastState.success("Report submitted successfully.");
         } catch (error) {
             console.error("Report user failed:", error);
+            toastState.error("Failed to submit report.");
         }
     }
 </script>

@@ -10,6 +10,8 @@
     import { onMount } from "svelte";
     import { marked } from "marked";
     import DOMPurify from "dompurify";
+    import VoiceButton from "$lib/components/ui/VoiceButton.svelte";
+    import { speakText } from "$lib/utils/speech.client";
 
     type ChatCard = {
         id: string;
@@ -125,10 +127,12 @@
         isOpen = !isOpen;
     }
 
-    async function sendMessage() {
-        if (!newMessage.trim() || isTyping) return;
+    async function sendMessage(textFromVoice?: string) {
+        const sourceText = textFromVoice || newMessage;
 
-        const text = newMessage.trim();
+        if (!sourceText.trim() || isTyping) return;
+
+        const text = sourceText.trim();
         newMessage = "";
 
         const time = new Date().toLocaleTimeString([], {
@@ -167,19 +171,26 @@
                             : [],
                     },
                 ];
+
+                speakText(response.reply);
             }
         } catch (error) {
             console.error("Failed to send message:", error);
+
+            const fallbackText =
+                "Sorry, something went wrong. Please try again later.";
 
             messages = [
                 ...messages,
                 {
                     id: `bot-${Date.now()}`,
                     senderId: "bot",
-                    text: "Sorry, something went wrong. Please try again later.",
+                    text: fallbackText,
                     time: "AI",
                 },
             ];
+
+            speakText(fallbackText);
         } finally {
             isTyping = false;
         }
@@ -339,10 +350,19 @@
                         sendMessage();
                     }}
                 >
+                    <VoiceButton
+                        disabled={isTyping}
+                        onText={(text) => {
+                            newMessage = text;
+                            sendMessage(text);
+                        }}
+                        onError={(message) => console.error(message)}
+                    />
+
                     <div class="input-wrapper">
                         <Input
                             bind:value={newMessage}
-                            placeholder="Hỏi AI gì đó..."
+                            placeholder="Ask AI something..."
                         />
                     </div>
 

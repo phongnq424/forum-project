@@ -7,6 +7,7 @@
     import Button from "$lib/components/ui/Button.svelte";
     import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
+    import VoiceButton from "$lib/components/ui/VoiceButton.svelte";
     import type { ChatConversation } from "$lib/types/chat.type";
     import type {
         ChatAttachment,
@@ -43,6 +44,7 @@
     let isLoading = $state(true);
     let isSending = $state(false);
     let loadedConversationId = $state<string | null>(null);
+    let voiceError = $state("");
 
     function setMessages(next: LocalChatMessage[]) {
         messages = next;
@@ -72,9 +74,9 @@
         const hasImage = files.some((file) => file.type.startsWith("image/"));
         const hasVideo = files.some((file) => file.type.startsWith("video/"));
 
-        if (hasImage) return "Đang gửi ảnh...";
-        if (hasVideo) return "Đang gửi video...";
-        return "Đang gửi tệp đính kèm...";
+        if (hasImage) return "Sending photo...";
+        if (hasVideo) return "Sending video...";
+        return "Sending attachment...";
     }
 
     function formatSize(size?: number | null) {
@@ -93,12 +95,25 @@
         selectedFiles = selectedFiles.filter((_, i) => i !== index);
     }
 
+    function handleVoiceText(text: string) {
+        voiceError = "";
+        newMessage = text;
+
+        if (!activeChat.id.startsWith("temp_")) {
+            socketService.sendTyping(activeChat.id, true);
+        }
+    }
+
+    function handleVoiceError(message: string) {
+        voiceError = message;
+    }
+
     async function openAttachment(attachment: ChatAttachment) {
         try {
             const result = await chatService.getAttachmentUrl(attachment.id);
             window.open(result.url, "_blank");
         } catch (error) {
-            console.error("Lỗi mở attachment:", error);
+            console.error("Error opening attachment:", error);
         }
     }
 
@@ -193,6 +208,7 @@
 
             loadedConversationId = conversationId;
             isLoading = true;
+            voiceError = "";
 
             try {
                 const data = await chatService.getMessages(conversationId);
@@ -201,7 +217,7 @@
                     setMessages(data.map((item) => normalizeMessage(item)));
                 }
             } catch (error) {
-                console.error("Lỗi tải lịch sử tin nhắn:", error);
+                console.error("Error loading message history:", error);
 
                 if (activeChat.id === conversationId) {
                     setMessages([]);
@@ -267,8 +283,8 @@
         return unsub;
     });
 
-    async function sendMessage() {
-        const text = newMessage.trim();
+    async function sendMessage(textFromVoice?: string) {
+        const text = (textFromVoice || newMessage).trim();
         const files = selectedFiles;
 
         if (!text && files.length === 0) return;
@@ -276,6 +292,7 @@
 
         newMessage = "";
         selectedFiles = [];
+        voiceError = "";
         isSending = true;
 
         const tempId = `temp-${Date.now()}`;
@@ -297,6 +314,7 @@
 
         try {
             const realConversation = await ensureRealConversation();
+
             onConversationPreviewUpdate?.({
                 conversationId: realConversation.id,
                 message: {
@@ -332,12 +350,14 @@
                 }
 
                 upsertRealMessage(tempId, result);
+
                 onConversationPreviewUpdate?.({
                     conversationId: realConversation.id,
                     message: result,
                     senderId: authState.user?.id,
                     incrementUnread: false,
                 });
+
                 return;
             }
 
@@ -348,7 +368,7 @@
                 socketId: currentSocketId,
             });
         } catch (error) {
-            console.error("Lỗi gửi tin nhắn:", error);
+            console.error("Error sending message:", error);
 
             setMessages(
                 messages.map((m) =>
@@ -495,6 +515,10 @@
             </div>
         {/if}
 
+        {#if voiceError}
+            <div class="voice-error">{voiceError}</div>
+        {/if}
+
         <form
             onsubmit={(e) => {
                 e.preventDefault();
@@ -510,6 +534,12 @@
                     onchange={handleFiles}
                 />
             </label>
+
+            <VoiceButton
+                disabled={isSending}
+                onText={handleVoiceText}
+                onError={handleVoiceError}
+            />
 
             <div class="input-wrapper">
                 <Input
@@ -759,5 +789,39 @@
         cursor: pointer;
         font-size: 16px;
         line-height: 1;
+    }
+
+    .voice-error {
+        margin-bottom: 10px;
+        color: #fca5a5;
+        font-size: 12px;
+    }
+
+    @media (max-width: 640px) {
+        .chat-header {
+            padding: 14px 16px;
+        }
+
+        .message-list {
+            padding: 18px 14px;
+            gap: 16px;
+        }
+
+        .msg-wrapper {
+            max-width: 86%;
+        }
+
+        .chat-input-area {
+            padding: 12px;
+        }
+
+        .chat-input-area form {
+            gap: 8px;
+        }
+
+        .file-button {
+            width: 38px;
+            min-width: 38px;
+        }
     }
 </style>

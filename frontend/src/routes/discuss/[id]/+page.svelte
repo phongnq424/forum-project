@@ -82,11 +82,11 @@
 
         try {
             await reportService.create({
-                type: "POST",
-                targetId: post.id,
-                title: `Report post: ${post.title}`,
+                target_type: "POST",
+                target_id: post.id,
+                category: "OTHER",
                 reason: "This post was reported by a user.",
-                severity: "MEDIUM",
+                evidence: `Post title: ${post.title}`,
             });
 
             toastState.success("Report submitted successfully.");

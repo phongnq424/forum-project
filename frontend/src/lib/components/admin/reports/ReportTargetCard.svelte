@@ -1,71 +1,106 @@
 <script lang="ts">
-    import Button from "$lib/components/ui/Button.svelte";
-    import type { ReportTarget } from "$lib/types/report.type";
+    import type {
+        ReportTargetPreview,
+        ReportTargetType,
+    } from "$lib/types/report.type";
     import { typeLabel } from "$lib/utils/report.utils";
 
-    let { target } = $props<{
-        target: ReportTarget;
+    let { target, targetType, targetId } = $props<{
+        target?: ReportTargetPreview | null;
+        targetType: ReportTargetType;
+        targetId: string;
     }>();
+
+    const title = $derived.by(() => {
+        if (!target) return "Unknown target";
+
+        if (targetType === "USER") {
+            return target.fullname || target.username || target.id;
+        }
+
+        if (targetType === "POST") {
+            return target.title || target.id;
+        }
+
+        if (targetType === "COMMENT") {
+            return "Comment";
+        }
+
+        if (targetType === "MESSAGE") {
+            return "Message";
+        }
+
+        return "Unknown target";
+    });
+
+    const content = $derived.by(() => {
+        if (!target) return null;
+
+        if (targetType === "POST") return target.content || null;
+        if (targetType === "COMMENT") return target.comment_detail || null;
+        if (targetType === "MESSAGE") return target.content || null;
+
+        return null;
+    });
+
+    const owner = $derived.by(() => {
+        if (!target) return null;
+
+        if (target.User) return target.User;
+        if (target.Sender) return target.Sender;
+
+        if (targetType === "USER") {
+            return {
+                id: target.id,
+                username: target.username,
+                fullname: target.fullname,
+                avatar: target.avatar,
+                status: target.status,
+            };
+        }
+
+        return null;
+    });
 </script>
 
 <section class="target-card">
     <div class="section-header">
         <div>
             <p class="eyebrow">Reported Target</p>
-            <h3>{target.title || "Unknown target"}</h3>
+            <h3>{title}</h3>
         </div>
 
-        <span class="type-pill">{typeLabel(target.type)}</span>
+        <span class="type-pill">{typeLabel(targetType)}</span>
     </div>
 
     <div class="meta-grid">
         <div>
             <span>Target ID</span>
-            <p>{target.id || "-"}</p>
+            <p>{targetId}</p>
         </div>
 
         <div>
             <span>Target Type</span>
-            <p>{typeLabel(target.type)}</p>
+            <p>{typeLabel(targetType)}</p>
         </div>
     </div>
 
-    {#if target.owner}
+    {#if owner}
         <div class="owner-block">
             <span>Owner</span>
             <p>
-                {target.owner.fullname ||
-                    target.owner.username ||
-                    target.owner.id}
+                {owner.fullname || owner.username || owner.id}
             </p>
         </div>
     {/if}
 
-    {#if target.content}
+    {#if content}
         <div class="content-block">
-            {target.content}
+            {content}
         </div>
     {:else}
         <div class="empty-content">
             No target content is available from backend.
-        </div>
-    {/if}
-
-    {#if target.url}
-        <div class="footer">
-            <Button
-                variant="secondary"
-                type="button"
-                onclick={() => {
-                    window.open(
-                        target.url || "",
-                        "_blank",
-                        "noopener,noreferrer",
-                    );
-                }}
-            >
-                Open Target
-            </Button>
         </div>
     {/if}
 </section>
@@ -169,11 +204,6 @@
     .empty-content {
         color: #64748b;
         font-style: italic;
-    }
-
-    .footer {
-        display: flex;
-        justify-content: flex-end;
     }
 
     @media (max-width: 640px) {

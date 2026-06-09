@@ -1,72 +1,76 @@
 <script lang="ts">
     import Badge from "$lib/components/ui/Badge.svelte";
-    import type { Report, ReportSeverity } from "$lib/types/report.type";
-    import {
-        getRiskText,
-        severityColor,
-        severityLabel,
-        shouldShowRecommendedSeverity,
-    } from "$lib/utils/report.utils";
+    import type { ReportCase } from "$lib/types/report.type";
+    import { severityColor, severityLabel } from "$lib/utils/report.utils";
 
-    let { report } = $props<{
-        report: Report;
+    let { reportCase } = $props<{
+        reportCase: ReportCase;
     }>();
 
-    function getCountLabel(count?: number) {
-        const value = count ?? 0;
-
-        if (value === 1) return "1 report";
-        return `${value} reports`;
+    function getCountLabel(count: number) {
+        if (count === 1) return "1 report";
+        return `${count} reports`;
     }
 
-    function getRecommendationLabel(severity?: ReportSeverity | null) {
-        if (!severity) return "-";
-        return severityLabel(severity);
-    }
+    const riskText = $derived.by(() => {
+        if (reportCase.priority_score >= 90) {
+            return "This case has a critical priority score and should be reviewed immediately.";
+        }
+
+        if (reportCase.priority_score >= 65) {
+            return "This case has strong moderation signals and should be prioritized.";
+        }
+
+        if (reportCase.priority_score >= 35) {
+            return "This case has moderate signals and should be reviewed normally.";
+        }
+
+        return "This case currently has low risk signals.";
+    });
 </script>
 
 <section class="risk-panel">
     <div class="risk-header">
         <div>
             <p class="eyebrow">Risk Signal</p>
-            <h3>Target report frequency</h3>
+            <h3>Case priority and report frequency</h3>
         </div>
 
         <div class="count-pill">
-            {getCountLabel(report.targetReportCount)}
+            {getCountLabel(reportCase.report_count)}
         </div>
     </div>
 
-    <p class="risk-text">{getRiskText(report)}</p>
+    <p class="risk-text">{riskText}</p>
 
     <div class="risk-grid">
         <div class="risk-item">
-            <span>Current Severity</span>
-            <Badge color={severityColor(report.severity)} size="sm">
-                {severityLabel(report.severity)}
+            <span>Severity</span>
+            <Badge color={severityColor(reportCase.severity)} size="sm">
+                {severityLabel(reportCase.severity)}
             </Badge>
         </div>
 
         <div class="risk-item">
-            <span>Recommended</span>
+            <span>Priority Score</span>
+            <p>{reportCase.priority_score}</p>
+        </div>
 
-            {#if report.recommendedSeverity}
-                <Badge
-                    color={severityColor(report.recommendedSeverity)}
-                    size="sm"
-                >
-                    {getRecommendationLabel(report.recommendedSeverity)}
-                </Badge>
-            {:else}
-                <p>-</p>
-            {/if}
+        <div class="risk-item">
+            <span>Main Category</span>
+            <p>{reportCase.category_main || "-"}</p>
+        </div>
+
+        <div class="risk-item">
+            <span>Auto Hidden</span>
+            <p>{reportCase.is_auto_hidden ? "Yes" : "No"}</p>
         </div>
     </div>
 
-    {#if shouldShowRecommendedSeverity(report)}
+    {#if reportCase.is_auto_hidden}
         <div class="recommendation-note">
-            System signal suggests reviewing severity. Admin should still make
-            the final moderation decision.
+            This target was automatically hidden because the case reached the
+            auto-action threshold. Admin should still make the final decision.
         </div>
     {/if}
 </section>

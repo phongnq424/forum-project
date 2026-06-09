@@ -2,10 +2,9 @@
     import Badge from "$lib/components/ui/Badge.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
-    import type { Report } from "$lib/types/report.type";
+    import type { ReportCase } from "$lib/types/report.type";
     import {
         formatDate,
-        getTargetFromReport,
         severityColor,
         severityLabel,
         statusColor,
@@ -14,7 +13,7 @@
     } from "$lib/utils/report.utils";
 
     let {
-        reports = [],
+        cases = [],
         loading = false,
         page = 1,
         limit = 10,
@@ -24,13 +23,13 @@
         onPrevious,
         onNext,
     } = $props<{
-        reports: Report[];
+        cases: ReportCase[];
         loading?: boolean;
         page: number;
         limit: number;
         total: number;
         totalPages: number;
-        onView: (report: Report) => void;
+        onView: (reportCase: ReportCase) => void;
         onPrevious: () => void;
         onNext: () => void;
     }>();
@@ -43,16 +42,53 @@
     function getShowingEnd() {
         return Math.min(page * limit, total);
     }
+
+    function getTargetTitle(reportCase: ReportCase) {
+        const target = reportCase.target;
+
+        if (!target) return "Unknown target";
+
+        if (reportCase.target_type === "USER") {
+            return target.fullname || target.username || target.id;
+        }
+
+        if (reportCase.target_type === "POST") {
+            return target.title || target.id;
+        }
+
+        if (reportCase.target_type === "COMMENT") {
+            return "Comment";
+        }
+
+        if (reportCase.target_type === "MESSAGE") {
+            return "Message";
+        }
+
+        return target.id;
+    }
+
+    function getTargetContent(reportCase: ReportCase) {
+        const target = reportCase.target;
+
+        if (!target) return "";
+
+        if (reportCase.target_type === "POST") return target.content || "";
+        if (reportCase.target_type === "COMMENT")
+            return target.comment_detail || "";
+        if (reportCase.target_type === "MESSAGE") return target.content || "";
+
+        return "";
+    }
 </script>
 
 <section class="report-table-panel">
     {#if loading}
-        <div class="empty-state">Loading reports...</div>
-    {:else if reports.length === 0}
+        <div class="empty-state">Loading report cases...</div>
+    {:else if cases.length === 0}
         <div class="empty-state">
             <div class="empty-icon">Report</div>
-            <p>No reports found</p>
-            <span>No report matched the current filters.</span>
+            <p>No report cases found</p>
+            <span>No case matched the current filters.</span>
         </div>
     {:else}
         <div class="table-scroll">
@@ -62,90 +98,96 @@
                         <th>Case</th>
                         <th>Target</th>
                         <th>Type</th>
+                        <th>Category</th>
                         <th>Status</th>
                         <th>Severity</th>
-                        <th>Reporter</th>
+                        <th>Reports</th>
+                        <th>Priority</th>
                         <th>Created</th>
                         <th class="text-right">Action</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    {#each reports as report (report.id)}
-                        {@const target = getTargetFromReport(report)}
+                    {#each cases as reportCase (reportCase.id)}
+                        {@const targetContent = getTargetContent(reportCase)}
 
                         <tr>
                             <td>
-                                <div class="case-title">{report.title}</div>
+                                <div class="case-title">
+                                    Case #{reportCase.id.slice(0, 8)}
+                                </div>
                                 <div class="case-desc">
-                                    {report.description || "No description"}
+                                    {reportCase.is_auto_hidden
+                                        ? "Auto-hidden"
+                                        : "Manual review"}
                                 </div>
                             </td>
 
                             <td>
                                 <div class="target-title">
-                                    {target.title || "Unknown target"}
+                                    {getTargetTitle(reportCase)}
                                 </div>
 
-                                {#if target.content}
+                                {#if targetContent}
                                     <div class="target-desc">
-                                        {target.content}
-                                    </div>
-                                {/if}
-
-                                {#if report.targetReportCount}
-                                    <div class="report-count">
-                                        {report.targetReportCount} report{report.targetReportCount ===
-                                        1
-                                            ? ""
-                                            : "s"} on this target
+                                        {targetContent}
                                     </div>
                                 {/if}
                             </td>
 
                             <td>
                                 <span class="type-pill">
-                                    {typeLabel(report.type)}
+                                    {typeLabel(reportCase.target_type)}
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="category">
+                                    {reportCase.category_main || "-"}
                                 </span>
                             </td>
 
                             <td>
                                 <Badge
-                                    color={statusColor(report.status)}
+                                    color={statusColor(reportCase.status)}
                                     size="sm"
                                 >
-                                    {statusLabel(report.status)}
+                                    {statusLabel(reportCase.status)}
                                 </Badge>
                             </td>
 
                             <td>
                                 <Badge
-                                    color={severityColor(report.severity)}
+                                    color={severityColor(reportCase.severity)}
                                     size="sm"
                                 >
-                                    {severityLabel(report.severity)}
+                                    {severityLabel(reportCase.severity)}
                                 </Badge>
                             </td>
 
                             <td>
-                                <span class="reporter">
-                                    {report.reporter?.fullname ||
-                                        report.reporter?.username ||
-                                        report.reportedBy ||
-                                        "Unknown"}
+                                <div class="report-count">
+                                    {reportCase.report_count}
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="priority-score">
+                                    {reportCase.priority_score}
                                 </span>
                             </td>
 
-                            <td>{formatDate(report.createdAt)}</td>
+                            <td>{formatDate(reportCase.created_at)}</td>
 
                             <td>
                                 <div class="actions">
                                     <button
                                         type="button"
                                         class="icon-btn"
-                                        aria-label={`View report ${report.title}`}
-                                        title="View report"
-                                        onclick={() => onView(report)}
+                                        aria-label={`View case ${reportCase.id}`}
+                                        title="View case"
+                                        onclick={() => onView(reportCase)}
                                     >
                                         <Icon name="search" size={16} />
                                     </button>
@@ -159,7 +201,7 @@
 
         <div class="pagination">
             <p>
-                Showing {getShowingStart()}–{getShowingEnd()} of {total} reports
+                Showing {getShowingStart()}–{getShowingEnd()} of {total} cases
             </p>
 
             <div class="pagination-actions">
@@ -216,7 +258,7 @@
 
     table {
         width: 100%;
-        min-width: 1120px;
+        min-width: 1180px;
         border-collapse: collapse;
     }
 
@@ -276,7 +318,6 @@
 
     .report-count {
         width: fit-content;
-        margin-top: 8px;
         padding: 3px 8px;
         border-radius: 999px;
         background: rgba(245, 158, 11, 0.1);
@@ -297,7 +338,8 @@
         font-weight: 600;
     }
 
-    .reporter {
+    .category,
+    .priority-score {
         color: #e5e7eb;
         font-size: 13px;
         font-weight: 500;

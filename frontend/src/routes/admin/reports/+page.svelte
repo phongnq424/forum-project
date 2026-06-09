@@ -6,53 +6,58 @@
     import ReportTable from "$lib/components/admin/reports/ReportTable.svelte";
     import { reportService } from "$lib/services/report.service";
     import type {
-        Report,
+        ModerationActionType,
+        ReportCase,
+        ReportCategory,
+        ReportResolution,
         ReportSeverity,
         ReportStatus,
-        ReportType,
+        ReportTargetType,
     } from "$lib/types/report.type";
 
-    let reports = $state<Report[]>([]);
-    let selectedReport = $state<Report | null>(null);
+    let cases = $state<ReportCase[]>([]);
+    let selectedCase = $state<ReportCase | null>(null);
 
     let page = $state(1);
     let limit = $state(10);
     let total = $state(0);
     let totalPages = $derived(Math.max(1, Math.ceil(total / limit)));
 
-    let search = $state("");
     let statusFilter = $state<ReportStatus | "">("");
     let severityFilter = $state<ReportSeverity | "">("");
-    let typeFilter = $state<Exclude<ReportType, "UNKNOWN"> | "">("");
+    let targetTypeFilter = $state<ReportTargetType | "">("");
+    let categoryFilter = $state<ReportCategory | "">("");
 
     let loading = $state(false);
     let error = $state("");
     let modalError = $state("");
     let modalLoading = $state(false);
     let showDetailModal = $state(false);
-    let replyMessage = $state("");
+    let note = $state("");
 
-    onMount(loadReports);
+    onMount(loadCases);
 
-    async function loadReports() {
+    async function loadCases() {
         loading = true;
         error = "";
 
         try {
-            const result = await reportService.list({
+            const result = await reportService.listCases({
                 page,
                 limit,
-                q: search.trim() || undefined,
                 status: statusFilter || undefined,
                 severity: severityFilter || undefined,
-                type: typeFilter || undefined,
+                target_type: targetTypeFilter || undefined,
+                category: categoryFilter || undefined,
+                sortBy: "priority",
             });
 
-            reports = result.data ?? [];
-            total = result.pagination?.total ?? 0;
+            cases = result.data ?? [];
+            total = result.meta?.total ?? 0;
         } catch (e) {
-            error = e instanceof Error ? e.message : "Failed to load reports";
-            reports = [];
+            error =
+                e instanceof Error ? e.message : "Failed to load report cases";
+            cases = [];
             total = 0;
         } finally {
             loading = false;
@@ -61,94 +66,119 @@
 
     function handleSearch() {
         page = 1;
-        loadReports();
+        loadCases();
     }
 
     function resetFilters() {
-        search = "";
         statusFilter = "";
         severityFilter = "";
-        typeFilter = "";
+        targetTypeFilter = "";
+        categoryFilter = "";
         page = 1;
-        loadReports();
+        loadCases();
     }
 
-    async function openDetail(report: Report) {
-        selectedReport = report;
+    async function openDetail(reportCase: ReportCase) {
+        selectedCase = reportCase;
         modalError = "";
-        replyMessage = "";
+        note = "";
         showDetailModal = true;
 
         try {
-            selectedReport = await reportService.getById(report.id);
+            selectedCase = await reportService.getCaseById(reportCase.id);
         } catch (e) {
             modalError =
-                e instanceof Error ? e.message : "Failed to load report detail";
+                e instanceof Error
+                    ? e.message
+                    : "Failed to load report case detail";
         }
     }
 
-    async function updateStatus(status: ReportStatus) {
-        if (!selectedReport) return;
-        if (selectedReport.status === status) return;
+    async function assignCase() {
+        if (!selectedCase) return;
 
         modalLoading = true;
         modalError = "";
 
         try {
-            const updated = await reportService.updateStatus(
-                selectedReport.id,
-                status,
-            );
-
-            selectedReport = updated;
-            await loadReports();
+            selectedCase = await reportService.assignCase(selectedCase.id);
+            await loadCases();
         } catch (e) {
             modalError =
-                e instanceof Error ? e.message : "Failed to update status";
+                e instanceof Error ? e.message : "Failed to assign case";
         } finally {
             modalLoading = false;
         }
     }
 
-    async function updateSeverity(severity: ReportSeverity) {
-        if (!selectedReport) return;
-        if (selectedReport.severity === severity) return;
+    async function applyAction(
+        action: ModerationActionType,
+        actionNote: string,
+    ) {
+        if (!selectedCase) return;
 
         modalLoading = true;
         modalError = "";
 
         try {
-            const updated = await reportService.updateSeverity(
-                selectedReport.id,
-                severity,
-            );
+            selectedCase = await reportService.applyAction(selectedCase.id, {
+                action,
+                note: actionNote.trim() || null,
+            });
 
-            selectedReport = updated;
-            await loadReports();
+            selectedCase = await reportService.getCaseById(selectedCase.id);
+            await loadCases();
         } catch (e) {
             modalError =
-                e instanceof Error ? e.message : "Failed to update severity";
+                e instanceof Error ? e.message : "Failed to apply action";
         } finally {
             modalLoading = false;
         }
     }
 
-    async function addReply() {
-        if (!selectedReport) return;
-
-        const message = replyMessage.trim();
-
-        if (!message) return;
+    async function resolveCase(
+        resolution: ReportResolution,
+        action: ModerationActionType,
+        resolveNote: string,
+    ) {
+        if (!selectedCase) return;
 
         modalLoading = true;
         modalError = "";
 
         try {
-            await reportService.reply(selectedReport.id, message);
-            selectedReport = await reportService.getById(selectedReport.id);
-            replyMessage = "";
+            selectedCase = await reportService.resolveCase(selectedCase.id, {
+                resolution,
+                action,
+                note: resolveNote.trim() || null,
+            });
+
+            selectedCase = await reportService.getCaseById(selectedCase.id);
+            await loadCases();
         } catch (e) {
-            modalError = e instanceof Error ? e.message : "Failed to add note";
+            modalError =
+                e instanceof Error ? e.message : "Failed to resolve case";
+        } finally {
+            modalLoading = false;
+        }
+    }
+
+    async function closeCase(closeNote: string) {
+        if (!selectedCase) return;
+
+        modalLoading = true;
+        modalError = "";
+
+        try {
+            selectedCase = await reportService.closeCase(selectedCase.id, {
+                note: closeNote.trim() || null,
+            });
+
+            await loadCases();
+            closeDetail();
+        } catch (e) {
+            modalError =
+                e instanceof Error ? e.message : "Failed to close case";
         } finally {
             modalLoading = false;
         }
@@ -158,21 +188,21 @@
         if (page <= 1) return;
 
         page = page - 1;
-        loadReports();
+        loadCases();
     }
 
     function nextPage() {
         if (page >= totalPages) return;
 
         page = page + 1;
-        loadReports();
+        loadCases();
     }
 
     function closeDetail() {
         showDetailModal = false;
-        selectedReport = null;
+        selectedCase = null;
         modalError = "";
-        replyMessage = "";
+        note = "";
     }
 </script>
 
@@ -180,19 +210,19 @@
     <header class="page-header">
         <div>
             <p class="eyebrow">Admin Moderation</p>
-            <h2>Reports & Complaints</h2>
+            <h2>Report Cases</h2>
             <p>
-                Review reported users, posts, comments and messages with target
-                context, risk signals and moderation notes.
+                Review reported users, posts, comments and messages with case
+                priority, report signals and moderation history.
             </p>
         </div>
     </header>
 
     <ReportFilters
-        bind:search
         bind:statusFilter
         bind:severityFilter
-        bind:typeFilter
+        bind:targetTypeFilter
+        bind:categoryFilter
         {loading}
         onSearch={handleSearch}
         onReset={resetFilters}
@@ -205,7 +235,7 @@
     {/if}
 
     <ReportTable
-        {reports}
+        {cases}
         {loading}
         {page}
         {limit}
@@ -218,19 +248,20 @@
 </div>
 
 <Modal bind:open={showDetailModal} title="Report Case" maxWidth="980px">
-    {#if selectedReport}
+    {#if selectedCase}
         <ReportDetailModal
-            report={selectedReport}
+            reportCase={selectedCase}
             loading={modalLoading}
             error={modalError}
-            bind:replyMessage
-            onStatusChange={updateStatus}
-            onSeverityChange={updateSeverity}
-            onReply={addReply}
+            bind:note
+            onAssign={assignCase}
+            onApplyAction={applyAction}
+            onResolve={resolveCase}
+            onCloseCase={closeCase}
             onClose={closeDetail}
         />
     {:else}
-        <div class="detail-loading">Loading report detail...</div>
+        <div class="detail-loading">Loading report case detail...</div>
     {/if}
 </Modal>
 
@@ -256,6 +287,7 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
+
     .page-header p:not(.eyebrow) {
         max-width: 720px;
         margin: 8px 0 0;

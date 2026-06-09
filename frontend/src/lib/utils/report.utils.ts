@@ -1,13 +1,15 @@
 import type {
-    Report,
     ReportSeverity,
     ReportStatus,
-    ReportTarget,
-    ReportType,
+    ReportTargetType,
+    ReportCategory,
+    ModerationActionType,
+    ReportResolution,
 } from "$lib/types/report.type";
 
 export function statusLabel(status: ReportStatus) {
     if (status === "OPEN") return "Open";
+    if (status === "TRIAGED") return "Triaged";
     if (status === "IN_PROGRESS") return "In Progress";
     if (status === "RESOLVED") return "Resolved";
     return "Closed";
@@ -20,7 +22,7 @@ export function severityLabel(severity: ReportSeverity) {
     return "Critical";
 }
 
-export function typeLabel(type: ReportType) {
+export function typeLabel(type: ReportTargetType) {
     if (type === "USER") return "User";
     if (type === "POST") return "Post";
     if (type === "COMMENT") return "Comment";
@@ -28,8 +30,63 @@ export function typeLabel(type: ReportType) {
     return "Unknown";
 }
 
+export function categoryLabel(category?: ReportCategory | null) {
+    if (!category) return "-";
+
+    const map: Record<ReportCategory, string> = {
+        SPAM: "Spam",
+        HARASSMENT: "Harassment",
+        HATE_SPEECH: "Hate Speech",
+        SEXUAL_CONTENT: "Sexual Content",
+        VIOLENCE: "Violence",
+        SELF_HARM: "Self Harm",
+        SCAM: "Scam",
+        IMPERSONATION: "Impersonation",
+        PRIVACY_VIOLATION: "Privacy Violation",
+        MISINFORMATION: "Misinformation",
+        COPYRIGHT: "Copyright",
+        OTHER: "Other",
+    };
+
+    return map[category] || category;
+}
+
+export function actionLabel(action?: ModerationActionType | null) {
+    if (!action) return "-";
+
+    const map: Record<ModerationActionType, string> = {
+        NONE: "No Action",
+        HIDE_CONTENT: "Hide Content",
+        RESTORE_CONTENT: "Restore Content",
+        DELETE_CONTENT: "Delete Content",
+        LOCK_CONTENT: "Lock Content",
+        WARN_USER: "Warn User",
+        TEMP_BAN_USER: "Temporary Ban User",
+        PERMANENT_BAN_USER: "Permanent Ban User",
+        LIMIT_USER: "Limit User",
+        DISMISS_REPORT: "Dismiss Report",
+    };
+
+    return map[action] || action;
+}
+
+export function resolutionLabel(resolution?: ReportResolution | null) {
+    if (!resolution) return "-";
+
+    const map: Record<ReportResolution, string> = {
+        VALID: "Valid",
+        INVALID: "Invalid",
+        DUPLICATE: "Duplicate",
+        NOT_ENOUGH_EVIDENCE: "Not Enough Evidence",
+        AUTO_RESOLVED: "Auto Resolved",
+    };
+
+    return map[resolution] || resolution;
+}
+
 export function statusColor(status: ReportStatus) {
     if (status === "OPEN") return "danger";
+    if (status === "TRIAGED") return "warning";
     if (status === "IN_PROGRESS") return "warning";
     if (status === "RESOLVED") return "success";
     return "default";
@@ -60,52 +117,4 @@ export function formatDateTime(value?: string | null) {
     if (Number.isNaN(date.getTime())) return "-";
 
     return date.toLocaleString();
-}
-
-export function getTargetFromReport(report: Report): ReportTarget {
-    if (report.target) {
-        return report.target;
-    }
-
-    return {
-        id: null,
-        type: report.type,
-        title:
-            report.reportedUser ||
-            report.reportedContent ||
-            report.title ||
-            "Reported target",
-        content: report.reportedContent || null,
-        owner: null,
-        url: null,
-    };
-}
-
-export function getRiskText(report: Report) {
-    const count = report.targetReportCount ?? 0;
-
-    if (report.severity === "CRITICAL") {
-        return "Requires immediate moderation attention.";
-    }
-
-    if (count >= 10) {
-        return "This target has been reported many times and should be reviewed urgently.";
-    }
-
-    if (count >= 5) {
-        return "This target has multiple reports and may require priority review.";
-    }
-
-    if (count >= 2) {
-        return "This target has repeated reports.";
-    }
-
-    return "Single or low-frequency report.";
-}
-
-export function shouldShowRecommendedSeverity(report: Report) {
-    return Boolean(
-        report.recommendedSeverity &&
-        report.recommendedSeverity !== report.severity,
-    );
 }
