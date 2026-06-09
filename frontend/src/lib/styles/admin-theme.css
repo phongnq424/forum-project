@@ -3,6 +3,31 @@
 /* =========================================================
    ADMIN DESIGN TOKENS
    ========================================================= */
+:root {
+    --adm-radius-xs: 8px;
+    --adm-radius-sm: 10px;
+    --adm-radius-md: 12px;
+    --adm-radius-lg: 14px;
+    --adm-radius-xl: 16px;
+    --adm-radius-2xl: 18px;
+    --adm-radius-shell: 24px;
+
+    --adm-font-xs: 11px;
+    --adm-font-sm: 12px;
+    --adm-font-md: 13px;
+    --adm-font-base: 14px;
+    --adm-font-lg: 16px;
+    --adm-font-xl: 18px;
+    --adm-font-title: 24px;
+
+    --adm-weight-normal: 400;
+    --adm-weight-medium: 500;
+    --adm-weight-semibold: 600;
+    --adm-weight-bold: 700;
+
+    --adm-transition-fast: 0.16s ease;
+    --adm-transition-base: 0.2s ease;
+}
 
 :root,
 [data-theme="dark"] {
@@ -1626,4 +1651,116 @@
     .adm-meta-grid.cols-5 {
         grid-template-columns: 1fr;
     }
+}
+
+@media (max-width: 760px) {
+    .adm-filter-row .adm-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .adm-filter-row .adm-actions :global(button),
+    .adm-filter-row .adm-actions button {
+        flex: 1;
+    }
+}
+
+/* =========================================================
+   ADMIN CONTRAST BOOST
+   ========================================================= */
+
+:root,
+[data-theme="dark"] {
+    --adm-surface-subtle: #171a22;
+    --adm-border-soft: rgba(255, 255, 255, 0.09);
+    --adm-border: rgba(255, 255, 255, 0.11);
+    --adm-text-muted: #a8b3c4;
+    --adm-text-soft: #7b8494;
+    --adm-surface-hover: rgba(139, 92, 246, 0.12);
+}
+
+/* Detail modal should be flat, but not invisible */
+.adm-detail {
+    gap: 20px;
+}
+
+.adm-detail>.adm-detail-header {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--adm-border);
+}
+
+.adm-detail .adm-detail-section {
+    background: var(--adm-surface-subtle);
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius-xl);
+    box-shadow: none;
+}
+
+/* Section title needs stronger hierarchy */
+.adm-detail .adm-section-title {
+    color: var(--adm-text-strong);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* Latest message / body text should not look disabled */
+.adm-detail .adm-row-muted {
+    color: var(--adm-text);
+}
+
+/* Meta grid: keep flat but add separation */
+.adm-detail .adm-meta-grid {
+    padding: 12px 0 4px;
+    border-bottom: 1px solid var(--adm-border-soft);
+}
+
+.adm-detail .adm-meta-item.plain {
+    padding: 0 12px 10px 0;
+    border-bottom: none;
+}
+
+.adm-detail .adm-meta-label {
+    color: var(--adm-text-soft);
+}
+
+.adm-detail .adm-meta-value {
+    color: var(--adm-text-strong);
+    font-weight: 600;
+}
+
+/* Member rows need clearer hover */
+.adm-detail .adm-list-item {
+    padding: 10px 8px;
+    border-radius: var(--adm-radius-md);
+    border-bottom: none;
+    transition:
+        background-color var(--adm-transition-fast),
+        color var(--adm-transition-fast);
+}
+
+.adm-detail .adm-list-item:hover {
+    background: var(--adm-surface-hover);
+}
+
+/* Make count pill more visible */
+.adm-detail .adm-pill {
+    background: var(--adm-primary-soft);
+    color: var(--adm-primary-text);
+    border: 1px solid var(--adm-primary-border);
+}
+
+/* Footer should have a subtle top line */
+.adm-detail>.adm-modal-footer {
+    padding-top: 16px;
+    border-top: 1px solid var(--adm-border);
+}
+
+.adm-detail-section>.adm-detail-header {
+    padding-bottom: 12px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--adm-border);
+}
+
+.adm-detail-section>.adm-list {
+    margin-top: 2px;
 }

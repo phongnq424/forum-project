@@ -6,6 +6,7 @@
     import Input from "$lib/components/ui/Input.svelte";
     import Select from "$lib/components/ui/Select.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
+    import Badge from "$lib/components/ui/Badge.svelte";
     import { adminTopicService } from "$lib/services/topic.service";
     import { challengeService } from "$lib/services/challenge.service";
     import type { ConversationScope } from "$lib/types/chat-common.type";
@@ -248,27 +249,29 @@
     }
 </script>
 
-<div class="detail">
-    <section class="header-row">
-        <div class="summary">
+<div class="adm-detail">
+    <section class="adm-detail-header">
+        <div class="adm-summary-row">
             <Avatar
                 name={getName()}
                 src={group.avatar ?? undefined}
                 size="md"
             />
 
-            <div class="summary-text">
-                <h3>{getName()}</h3>
+            <div class="adm-summary-text">
+                <h3 class="adm-summary-title">{getName()}</h3>
 
-                <p>
+                <p class="adm-summary-description">
                     {getScopeLabel()} · {group.memberCount || 0} members
                 </p>
 
-                <span>{group.conversationId || group.id}</span>
+                <span class="adm-summary-id">
+                    {group.conversationId || group.id}
+                </span>
             </div>
         </div>
 
-        <div class="header-actions">
+        <div class="adm-header-actions">
             {#if !editing}
                 <Button
                     variant="secondary"
@@ -291,31 +294,29 @@
     </section>
 
     {#if error}
-        <div class="alert error">{error}</div>
+        <div class="adm-alert-error">{error}</div>
     {/if}
 
     {#if editing}
         <form
-            class="edit-form"
+            class="adm-form"
             onsubmit={(event) => {
                 event.preventDefault();
                 submitUpdate();
             }}
         >
-            <div class="field-row">
-                <Select
-                    bind:value={scope}
-                    label="Scope"
-                    placeholder="Select scope"
-                    options={scopeOptions}
-                    disabled={loading}
-                />
-            </div>
+            <Select
+                bind:value={scope}
+                label="Scope"
+                placeholder="Select scope"
+                options={scopeOptions}
+                disabled={loading}
+            />
 
             {#if showTopicSelect}
-                <div class="field-row">
+                <div class="adm-form-group">
                     {#if loadingTopics}
-                        <div class="field-loading">
+                        <div class="adm-field-loading">
                             <Loading size="sm" message="Loading topics..." />
                         </div>
                     {:else}
@@ -329,15 +330,15 @@
                     {/if}
 
                     {#if topicError}
-                        <p class="field-error">{topicError}</p>
+                        <p class="adm-field-error">{topicError}</p>
                     {/if}
                 </div>
             {/if}
 
             {#if showChallengeSelect}
-                <div class="field-row">
+                <div class="adm-form-group">
                     {#if loadingChallenges}
-                        <div class="field-loading">
+                        <div class="adm-field-loading">
                             <Loading
                                 size="sm"
                                 message="Loading challenges..."
@@ -356,13 +357,13 @@
                     {/if}
 
                     {#if challengeError}
-                        <p class="field-error">{challengeError}</p>
+                        <p class="adm-field-error">{challengeError}</p>
                     {/if}
                 </div>
             {/if}
 
-            <div class="field-row">
-                <span class="label">Group name</span>
+            <div class="adm-form-group">
+                <span class="adm-label">Group name</span>
 
                 <Input
                     bind:value={name}
@@ -371,8 +372,8 @@
                 />
             </div>
 
-            <div class="field-row">
-                <span class="label">Avatar URL optional</span>
+            <div class="adm-form-group">
+                <span class="adm-label">Avatar URL optional</span>
 
                 <Input
                     bind:value={avatar}
@@ -381,7 +382,7 @@
                 />
             </div>
 
-            <div class="edit-actions">
+            <div class="adm-actions">
                 <Button
                     type="button"
                     variant="secondary"
@@ -397,78 +398,85 @@
             </div>
         </form>
     {:else}
-        <section class="info-grid">
-            <div class="info-item">
-                <span>Type</span>
-                <strong>{group.type || "GROUP"}</strong>
+        <section class="adm-meta-grid cols-5">
+            <div class="adm-meta-item plain">
+                <span class="adm-meta-label">Type</span>
+                <p class="adm-meta-value">{group.type || "GROUP"}</p>
             </div>
 
-            <div class="info-item">
-                <span>Scope</span>
-                <strong>{getScopeLabel()}</strong>
+            <div class="adm-meta-item plain">
+                <span class="adm-meta-label">Scope</span>
+                <p class="adm-meta-value">{getScopeLabel()}</p>
             </div>
 
-            <div class="info-item">
-                <span>Context</span>
-                <strong>{getContextLabel()}</strong>
+            <div class="adm-meta-item plain">
+                <span class="adm-meta-label">Context</span>
+                <p class="adm-meta-value">{getContextLabel()}</p>
             </div>
 
-            <div class="info-item">
-                <span>Created</span>
-                <strong>{formatDate(group.created_at)}</strong>
+            <div class="adm-meta-item plain">
+                <span class="adm-meta-label">Created</span>
+                <p class="adm-meta-value">{formatDate(group.created_at)}</p>
             </div>
 
-            <div class="info-item">
-                <span>Updated</span>
-                <strong>{formatDate(group.updated_at)}</strong>
+            <div class="adm-meta-item plain">
+                <span class="adm-meta-label">Updated</span>
+                <p class="adm-meta-value">{formatDate(group.updated_at)}</p>
             </div>
         </section>
 
-        <section class="latest">
-            <h4>Latest Message</h4>
+        <section class="adm-detail-section">
+            <h4 class="adm-section-title">Latest Message</h4>
 
-            <p>{group.latestMsg?.content || "No messages yet"}</p>
+            <p class="adm-row-muted">
+                {group.latestMsg?.content || "No messages yet"}
+            </p>
         </section>
     {/if}
 
-    <section class="members">
-        <div class="section-title">
-            <h4>Members</h4>
-            <span>{group.members?.length || group.memberCount || 0}</span>
+    <section class="adm-detail-section">
+        <div class="adm-detail-header">
+            <h4 class="adm-section-title">Members</h4>
+
+            <span class="adm-pill">
+                {group.members?.length || group.memberCount || 0}
+            </span>
         </div>
 
         {#if group.members && group.members.length > 0}
-            <div class="member-list">
+            <div class="adm-list adm-list-scroll">
                 {#each group.members as member (member.id)}
-                    <div class="member-item">
+                    <div class="adm-list-item">
                         <Avatar
                             name={member.fullname || member.username || "User"}
                             src={member.avatar ?? undefined}
                             size="sm"
                         />
 
-                        <div class="member-meta">
-                            <strong>
+                        <div class="adm-list-meta">
+                            <strong class="adm-list-title">
                                 {member.fullname || member.username || "User"}
                             </strong>
 
-                            <span>{member.username || member.id}</span>
+                            <span class="adm-list-subtitle">
+                                {member.username || member.id}
+                            </span>
                         </div>
 
-                        <div class="role-pill">
+                        <Badge color="info" size="sm">
                             {member.role || "MEMBER"}
-                        </div>
+                        </Badge>
                     </div>
                 {/each}
             </div>
         {:else}
-            <div class="empty-members">
-                No member details returned from backend.
+            <div class="adm-empty-state">
+                <span>No member details returned from backend.</span>
             </div>
         {/if}
     </section>
 
-    <div class="actions">
+    <div class="adm-modal-footer">
         <Button variant="secondary" disabled={loading} onclick={onClose}>
             Close
         </Button>
@@ -491,252 +499,3 @@
         </Button>
     </div>
 </div>
-
-<style>
-    .detail {
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-    }
-
-    .header-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        padding-bottom: 14px;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-    }
-
-    .summary {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        min-width: 0;
-    }
-
-    .summary-text {
-        min-width: 0;
-    }
-
-    .summary-text h3 {
-        margin: 0 0 4px;
-        color: #f8fafc;
-        font-size: 18px;
-        font-weight: 700;
-    }
-
-    .summary-text p {
-        margin: 0 0 4px;
-        color: #94a3b8;
-        font-size: 13px;
-        text-transform: capitalize;
-    }
-
-    .summary-text span {
-        display: block;
-        color: #64748b;
-        font-size: 11px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .header-actions {
-        flex-shrink: 0;
-    }
-
-    .alert {
-        padding: 12px 14px;
-        border-radius: 12px;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .alert.error {
-        background: rgba(239, 68, 68, 0.1);
-        color: #fca5a5;
-        border: 1px solid rgba(239, 68, 68, 0.22);
-    }
-
-    .edit-form {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        padding-bottom: 14px;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-    }
-
-    .field-row {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .label {
-        color: #cbd5e1;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .field-loading {
-        min-height: 42px;
-        display: flex;
-        align-items: center;
-    }
-
-    .field-error {
-        margin: 0;
-        color: #fca5a5;
-        font-size: 12px;
-    }
-
-    .edit-actions,
-    .actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 12px;
-    }
-
-    .info-item {
-        padding: 12px 0;
-        min-width: 0;
-    }
-
-    .info-item span {
-        display: block;
-        margin-bottom: 6px;
-        color: #94a3b8;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .info-item strong {
-        display: block;
-        color: #f8fafc;
-        font-size: 13px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        text-transform: capitalize;
-    }
-
-    .latest,
-    .members {
-        padding-top: 14px;
-        border-top: 1px solid rgba(148, 163, 184, 0.14);
-    }
-
-    .latest h4,
-    .section-title h4 {
-        margin: 0;
-        color: #f8fafc;
-        font-size: 14px;
-        font-weight: 700;
-    }
-
-    .latest p {
-        margin: 10px 0 0;
-        color: #94a3b8;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .section-title {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 12px;
-    }
-
-    .section-title span {
-        color: #94a3b8;
-        font-size: 12px;
-    }
-
-    .member-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        max-height: 260px;
-        overflow: auto;
-    }
-
-    .member-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 0;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-    }
-
-    .member-item:last-child {
-        border-bottom: none;
-    }
-
-    .member-meta {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .member-meta strong {
-        color: #f8fafc;
-        font-size: 13px;
-    }
-
-    .member-meta span {
-        color: #94a3b8;
-        font-size: 11px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .role-pill {
-        border-radius: 999px;
-        padding: 4px 8px;
-        background: rgba(99, 102, 241, 0.12);
-        color: #a5b4fc;
-        font-size: 10px;
-        font-weight: 700;
-    }
-
-    .empty-members {
-        color: #94a3b8;
-        font-size: 13px;
-        padding: 14px 0;
-    }
-
-    @media (max-width: 780px) {
-        .header-row {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .info-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .actions,
-        .edit-actions {
-            justify-content: stretch;
-        }
-    }
-
-    @media (max-width: 520px) {
-        .info-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>

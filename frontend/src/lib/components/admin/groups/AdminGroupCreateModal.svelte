@@ -57,30 +57,12 @@
     let challengeError = $state("");
 
     const scopeOptions: SelectOption[] = [
-        {
-            value: "GENERAL",
-            label: "General",
-        },
-        {
-            value: "TOPIC_DISCUSSION",
-            label: "Topic Discussion",
-        },
-        {
-            value: "CHALLENGE_HELP",
-            label: "Challenge Help",
-        },
-        {
-            value: "STUDY_GROUP",
-            label: "Study Group",
-        },
-        {
-            value: "CLASS_GROUP",
-            label: "Class Group",
-        },
-        {
-            value: "AI_TUTOR",
-            label: "AI Tutor",
-        },
+        { value: "GENERAL", label: "General" },
+        { value: "TOPIC_DISCUSSION", label: "Topic Discussion" },
+        { value: "CHALLENGE_HELP", label: "Challenge Help" },
+        { value: "STUDY_GROUP", label: "Study Group" },
+        { value: "CLASS_GROUP", label: "Class Group" },
+        { value: "AI_TUTOR", label: "AI Tutor" },
     ];
 
     let topicOptions = $derived<SelectOption[]>(
@@ -194,26 +176,24 @@
 </script>
 
 <form
-    class="create-form"
+    class="adm-form"
     onsubmit={(event) => {
         event.preventDefault();
         submit();
     }}
 >
-    <div class="field">
-        <Select
-            bind:value={scope}
-            label="Group scope"
-            placeholder="Select group scope"
-            options={scopeOptions}
-            disabled={loading}
-        />
-    </div>
+    <Select
+        bind:value={scope}
+        label="Group scope"
+        placeholder="Select group scope"
+        options={scopeOptions}
+        disabled={loading}
+    />
 
     {#if showTopicSelect}
-        <div class="field">
+        <div class="adm-form-group">
             {#if loadingTopics}
-                <div class="field-loading">
+                <div class="adm-field-loading">
                     <Loading size="sm" message="Loading topics..." />
                 </div>
             {:else}
@@ -227,15 +207,15 @@
             {/if}
 
             {#if topicError}
-                <p class="field-error">{topicError}</p>
+                <p class="adm-field-error">{topicError}</p>
             {/if}
         </div>
     {/if}
 
     {#if showChallengeSelect}
-        <div class="field">
+        <div class="adm-form-group">
             {#if loadingChallenges}
-                <div class="field-loading">
+                <div class="adm-field-loading">
                     <Loading size="sm" message="Loading challenges..." />
                 </div>
             {:else}
@@ -251,13 +231,13 @@
             {/if}
 
             {#if challengeError}
-                <p class="field-error">{challengeError}</p>
+                <p class="adm-field-error">{challengeError}</p>
             {/if}
         </div>
     {/if}
 
-    <div class="field">
-        <span class="label">Group name</span>
+    <div class="adm-form-group">
+        <span class="adm-label">Group name</span>
 
         <Input
             bind:value={name}
@@ -266,8 +246,8 @@
         />
     </div>
 
-    <div class="field">
-        <span class="label">Avatar URL optional</span>
+    <div class="adm-form-group">
+        <span class="adm-label">Avatar URL optional</span>
 
         <Input
             bind:value={avatar}
@@ -276,16 +256,16 @@
         />
     </div>
 
-    <div class="info-box">
+    <div class="adm-alert info">
         This group will be created based on its scope. Topic and challenge
         fields are shown only when the selected scope needs them.
     </div>
 
     {#if error}
-        <div class="alert error">{error}</div>
+        <div class="adm-alert-error">{error}</div>
     {/if}
 
-    <div class="actions">
+    <div class="adm-modal-footer">
         <Button
             type="button"
             variant="secondary"
@@ -300,65 +280,3 @@
         </Button>
     </div>
 </form>
-
-<style>
-    .create-form {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .field {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .label {
-        color: #cbd5e1;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .field-loading {
-        min-height: 42px;
-        display: flex;
-        align-items: center;
-    }
-
-    .field-error {
-        margin: 0;
-        color: #fca5a5;
-        font-size: 12px;
-    }
-
-    .info-box {
-        padding: 12px 14px;
-        border-radius: 12px;
-        background: rgba(99, 102, 241, 0.1);
-        border: 1px solid rgba(99, 102, 241, 0.22);
-        color: #c7d2fe;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .alert {
-        padding: 12px 14px;
-        border-radius: 12px;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .alert.error {
-        background: rgba(239, 68, 68, 0.1);
-        color: #fca5a5;
-        border: 1px solid rgba(239, 68, 68, 0.22);
-    }
-
-    .actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-top: 4px;
-    }
-</style>
