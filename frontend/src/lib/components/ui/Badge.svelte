@@ -42,44 +42,44 @@
     /* Variants */
 
     .default {
-        background: #1f2230;
-        color: #a1a1aa;
-        border-color: #2a2e36;
+        background: var(--ui-surface-soft);
+        color: var(--ui-text-muted);
+        border-color: var(--ui-border);
     }
 
     .success {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-        border-color: rgba(16, 185, 129, 0.3);
+        background: var(--ui-success-soft);
+        color: var(--ui-success);
+        border-color: var(--ui-success-border);
     }
 
     .warning {
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
-        border-color: rgba(245, 158, 11, 0.3);
+        background: var(--ui-warning-soft);
+        color: var(--ui-warning);
+        border-color: var(--ui-warning-border);
     }
 
     .danger {
-        background: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
-        border-color: rgba(239, 68, 68, 0.3);
+        background: var(--ui-danger-soft);
+        color: var(--ui-danger);
+        border-color: var(--ui-danger-border);
     }
 
     .info {
-        background: rgba(99, 102, 241, 0.15);
-        color: #6366f1;
-        border-color: rgba(99, 102, 241, 0.3);
+        background: var(--ui-info-soft);
+        color: var(--ui-info);
+        border-color: var(--ui-info-border);
     }
 
     .outline {
-        background: #14161c;
-        color: #9ca3af;
-        border-color: #2a2e36;
+        background: var(--ui-surface-raised);
+        color: var(--ui-text-muted);
+        border-color: var(--ui-border);
         cursor: pointer;
     }
 
     .outline:hover {
-        background: #1f2230; /* Hiệu ứng hover nhẹ */
-        color: #d1d5db;
+        background: var(--ui-surface-hover);
+        color: var(--ui-text);
     }
 </style>

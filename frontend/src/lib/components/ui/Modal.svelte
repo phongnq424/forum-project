@@ -108,12 +108,10 @@
         flex-direction: column;
         max-width: 500px;
         max-height: 85vh;
-        background: linear-gradient(145deg, #171a22, #13151b);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border-soft);
         border-radius: 20px;
-        box-shadow:
-            0 20px 60px rgba(0, 0, 0, 0.5),
-            0 0 40px rgba(99, 102, 241, 0.15);
+        box-shadow: var(--ui-shadow-panel);
         animation: modalIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
@@ -122,7 +120,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 10px 24px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid var(--ui-border-soft);
         flex-shrink: 0;
     }
 
@@ -130,26 +128,27 @@
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: #fff;
+        color: var(--ui-text-strong);
     }
 
     .close {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border: none;
-        color: #cbd5e1;
+        border-radius: 10px;
+        background: var(--ui-surface-raised);
+        border: 1px solid var(--ui-border-soft);
+        color: var(--ui-text-muted);
         cursor: pointer;
-        transition: 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .close:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
+        background: var(--ui-danger-soft);
+        color: var(--ui-danger-text);
+        transform: rotate(90deg);
     }
 
     .content {
@@ -160,10 +159,9 @@
 
     .footer {
         padding: 16px 24px;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        background: #13151b;
+        border-top: 1px solid var(--ui-border-soft);
+        background: var(--ui-surface-raised);
         border-radius: 0 0 20px 20px;
-        /* Fix cứng footer */
         flex-shrink: 0;
     }
 
@@ -174,30 +172,12 @@
         background: transparent;
     }
     .content::-webkit-scrollbar-thumb {
-        background: #374151;
+        background: var(--ui-border-strong);
         border-radius: 10px;
     }
-    .content::-webkit-scrollbar-thumb:hover {
-        background: #4b5563;
-    }
-    .close {
-        width: 36px; /* Tăng kích thước nút */
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 10px; /* Bo góc mượt hơn */
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05); /* Thêm viền nhẹ */
-        color: #94a3b8;
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
 
-    .close:hover {
-        background: rgba(239, 68, 68, 0.1); /* Hover sang tone đỏ nhẹ */
-        color: #f87171;
-        transform: rotate(90deg); /* Xoay nhẹ khi hover cho "ngầu" */
+    .content::-webkit-scrollbar-thumb:hover {
+        background: var(--ui-text-soft);
     }
 
     .close svg {

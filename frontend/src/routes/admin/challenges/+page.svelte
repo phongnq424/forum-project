@@ -395,13 +395,22 @@
         gap: 16px;
     }
 
+    .page-header h2 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: 24px;
+        line-height: 1.25;
+        font-weight: 650;
+        letter-spacing: -0.025em;
+    }
+
     .eyebrow {
-        margin: 0 0 6px;
+        margin: 0 0 8px;
         color: #a78bfa;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
+        font-size: 11px;
+        font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.08em;
     }
 
     .page-header p:not(.eyebrow) {
@@ -524,8 +533,10 @@
     }
 
     .challenge-title {
-        color: #ffffff;
-        font-weight: 800;
+        color: #f8fafc;
+        font-size: 13.5px;
+        font-weight: 600;
+        line-height: 1.4;
     }
 
     .challenge-desc {

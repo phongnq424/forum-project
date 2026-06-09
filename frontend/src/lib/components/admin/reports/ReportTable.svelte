@@ -301,7 +301,7 @@
         color: #f8fafc;
         font-size: 13px;
         font-weight: 600;
-        line-height: 1.45;
+        line-height: 1.4;
     }
 
     .case-desc,

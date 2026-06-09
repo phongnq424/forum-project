@@ -123,14 +123,15 @@
 </script>
 
 <Modal bind:open title="Edit Topic" maxWidth="620px">
-    <div class="modal-content">
-        <div class="helper-card">
-            <div class="helper-icon">
+    <div class="adm-modal-content">
+        <div class="adm-helper-card">
+            <div class="adm-helper-icon">
                 <Icon name="folder" size={18} />
             </div>
+
             <div>
-                <p class="helper-title">Reorganize topic hierarchy</p>
-                <p class="helper-text">
+                <p class="adm-helper-title">Reorganize topic hierarchy</p>
+                <p class="adm-helper-text">
                     Move this topic between root level and nested branches.
                     Child topics will move together with it.
                 </p>
@@ -138,11 +139,12 @@
         </div>
 
         {#if modalError}
-            <div class="error-message">{modalError}</div>
+            <div class="adm-alert-error">{modalError}</div>
         {/if}
 
-        <div class="form-group">
-            <label for="topic-name">Topic Name *</label>
+        <div class="adm-form-group">
+            <label class="adm-label" for="topic-name"> Topic Name * </label>
+
             <Input
                 id="topic-name"
                 bind:value={topic.name}
@@ -150,10 +152,12 @@
             />
         </div>
 
-        <div class="form-group">
-            <label for="parent-topic">Parent topic</label>
-            <select id="parent-topic" bind:value={parentId}>
+        <div class="adm-form-group">
+            <label class="adm-label" for="parent-topic"> Parent topic </label>
+
+            <select class="adm-select" id="parent-topic" bind:value={parentId}>
                 <option value="">Root topic</option>
+
                 {#each flatTopics as item}
                     {#if item.id !== topic.id && !blockedParentIds.has(item.id)}
                         <option value={item.id}>
@@ -164,9 +168,13 @@
             </select>
         </div>
 
-        <div class="form-group">
-            <label for="topic-description">Description</label>
+        <div class="adm-form-group">
+            <label class="adm-label" for="topic-description">
+                Description
+            </label>
+
             <textarea
+                class="adm-textarea"
                 id="topic-description"
                 bind:value={topic.description}
                 placeholder="Enter topic description"
@@ -176,7 +184,7 @@
     </div>
 
     {#snippet footer()}
-        <div class="modal-footer">
+        <div class="adm-modal-footer">
             <Button
                 variant="secondary"
                 disabled={modalLoading}
@@ -197,63 +205,6 @@
 </Modal>
 
 <style>
-    .modal-content {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .helper-card {
-        display: flex;
-        gap: 12px;
-        padding: 14px;
-        border-radius: 16px;
-        background: linear-gradient(
-            135deg,
-            rgba(99, 102, 241, 0.14),
-            rgba(139, 92, 246, 0.08)
-        );
-        border: 1px solid rgba(139, 92, 246, 0.24);
-    }
-
-    .helper-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 12px;
-        background: rgba(99, 102, 241, 0.16);
-        color: #c4b5fd;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-
-    .helper-title {
-        margin: 0 0 4px;
-        color: #f3f4f6;
-        font-weight: 800;
-        font-size: 14px;
-    }
-
-    .helper-text {
-        margin: 0;
-        color: #9ca3af;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .form-group label {
-        color: #d1d5db;
-        font-size: 14px;
-        font-weight: 800;
-    }
-
     select,
     textarea {
         width: 100%;
@@ -273,21 +224,5 @@
     textarea:focus {
         border-color: #8b5cf6;
         box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
-    }
-
-    .error-message {
-        color: #fca5a5;
-        font-size: 14px;
-        background: rgba(239, 68, 68, 0.12);
-        padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid rgba(239, 68, 68, 0.28);
-    }
-
-    .modal-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        width: 100%;
     }
 </style>

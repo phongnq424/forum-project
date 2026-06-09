@@ -283,10 +283,10 @@
     }
 
     .group-name {
-        color: #ffffff;
-        font-size: 14px;
-        font-weight: 800;
-        line-height: 1.35;
+        color: #f8fafc;
+        font-size: 13.5px;
+        font-weight: 600;
+        line-height: 1.4;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

@@ -46,31 +46,34 @@
 
     .textarea-label {
         font-size: 13px;
-        color: #a1a1aa;
+        color: var(--ui-text-muted);
         font-weight: 500;
     }
 
     .custom-textarea {
         width: 100%;
         padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid #2a2e36;
-        background: #14161c;
-        color: #e5e7eb;
+        border-radius: var(--ui-radius-lg);
+        border: 1px solid var(--ui-border);
+        background: var(--ui-surface-raised);
+        color: var(--ui-text);
         font-size: 14px;
         font-family: inherit;
         outline: none;
-        transition: 0.2s ease;
+        transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            background-color 0.2s ease;
         resize: vertical;
     }
 
     .custom-textarea::placeholder {
-        color: #6b7280;
+        color: var(--ui-text-soft);
     }
 
     .custom-textarea:focus {
-        border-color: #6366f1;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+        border-color: var(--ui-primary);
+        box-shadow: 0 0 0 3px var(--ui-primary-focus);
     }
 
     .custom-textarea:disabled {

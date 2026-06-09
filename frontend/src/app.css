@@ -1,3 +1,5 @@
+@import "$lib/styles/admin-theme.css";
+
 /* RESET */
 * {
     margin: 0;
@@ -7,18 +9,125 @@
 
 html,
 body {
-    height: 100%;
+    min-height: 100%;
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
-    background: #111317;
-    color: #e4e4e7;
+    min-height: 100vh;
+    font-family: "Poppins", sans-serif;
+    background: var(--ui-bg);
+    color: var(--ui-text);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* DEFAULT DARK THEME */
+:root,
+[data-theme="dark"] {
+    --ui-bg: #111317;
+    --ui-bg-soft: #0f1115;
+
+    --ui-surface: #171a21;
+    --ui-surface-soft: #1c1f26;
+    --ui-surface-raised: #14161c;
+    --ui-surface-hover: #23262e;
+
+    --ui-border: #2a2e36;
+    --ui-border-soft: rgba(255, 255, 255, 0.07);
+    --ui-border-strong: #3a3f4a;
+
+    --ui-text: #e5e7eb;
+    --ui-text-strong: #f8fafc;
+    --ui-text-muted: #a1a1aa;
+    --ui-text-soft: #6b7280;
+    --ui-text-inverse: #ffffff;
+
+    --ui-primary: #6366f1;
+    --ui-primary-2: #8b5cf6;
+    --ui-primary-hover: #818cf8;
+    --ui-primary-soft: rgba(99, 102, 241, 0.15);
+    --ui-primary-border: rgba(99, 102, 241, 0.3);
+    --ui-primary-focus: rgba(99, 102, 241, 0.25);
+
+    --ui-danger: #ef4444;
+    --ui-danger-text: #fca5a5;
+    --ui-danger-soft: rgba(239, 68, 68, 0.12);
+    --ui-danger-border: rgba(239, 68, 68, 0.3);
+
+    --ui-success: #10b981;
+    --ui-success-soft: rgba(16, 185, 129, 0.15);
+    --ui-success-border: rgba(16, 185, 129, 0.3);
+
+    --ui-warning: #f59e0b;
+    --ui-warning-soft: rgba(245, 158, 11, 0.15);
+    --ui-warning-border: rgba(245, 158, 11, 0.3);
+
+    --ui-info: #818cf8;
+    --ui-info-soft: rgba(99, 102, 241, 0.15);
+    --ui-info-border: rgba(99, 102, 241, 0.3);
+
+    --ui-radius-sm: 8px;
+    --ui-radius-md: 11px;
+    --ui-radius-lg: 12px;
+    --ui-radius-xl: 18px;
+
+    --ui-shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.35);
+    --ui-shadow-panel: 0 20px 60px rgba(0, 0, 0, 0.45);
+    --ui-shadow-primary: 0 6px 16px rgba(99, 102, 241, 0.22);
+}
+
+/* LIGHT THEME */
+[data-theme="light"] {
+    --ui-bg: #f8fafc;
+    --ui-bg-soft: #f1f5f9;
+
+    --ui-surface: #ffffff;
+    --ui-surface-soft: #f1f5f9;
+    --ui-surface-raised: #ffffff;
+    --ui-surface-hover: #eef2ff;
+
+    --ui-border: #dbe2ea;
+    --ui-border-soft: rgba(15, 23, 42, 0.08);
+    --ui-border-strong: #cbd5e1;
+
+    --ui-text: #334155;
+    --ui-text-strong: #0f172a;
+    --ui-text-muted: #64748b;
+    --ui-text-soft: #94a3b8;
+    --ui-text-inverse: #ffffff;
+
+    --ui-primary: #6366f1;
+    --ui-primary-2: #7c3aed;
+    --ui-primary-hover: #4f46e5;
+    --ui-primary-soft: rgba(99, 102, 241, 0.1);
+    --ui-primary-border: rgba(99, 102, 241, 0.24);
+    --ui-primary-focus: rgba(99, 102, 241, 0.18);
+
+    --ui-danger: #dc2626;
+    --ui-danger-text: #b91c1c;
+    --ui-danger-soft: rgba(220, 38, 38, 0.1);
+    --ui-danger-border: rgba(220, 38, 38, 0.24);
+
+    --ui-success: #059669;
+    --ui-success-soft: rgba(5, 150, 105, 0.1);
+    --ui-success-border: rgba(5, 150, 105, 0.22);
+
+    --ui-warning: #d97706;
+    --ui-warning-soft: rgba(217, 119, 6, 0.1);
+    --ui-warning-border: rgba(217, 119, 6, 0.22);
+
+    --ui-info: #4f46e5;
+    --ui-info-soft: rgba(79, 70, 229, 0.1);
+    --ui-info-border: rgba(79, 70, 229, 0.22);
+
+    --ui-shadow-soft: 0 10px 25px rgba(15, 23, 42, 0.08);
+    --ui-shadow-panel: 0 20px 60px rgba(15, 23, 42, 0.12);
+    --ui-shadow-primary: 0 6px 16px rgba(99, 102, 241, 0.18);
 }
 
 /* CONTAINER */
 .container {
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 24px;
@@ -28,9 +137,46 @@ body {
 a {
     text-decoration: none;
     color: inherit;
-    transition: 0.2s ease;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease;
 }
 
 a:hover {
-    color: #818cf8;
+    color: var(--ui-primary-hover);
+}
+
+/* FORM BASE */
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button {
+    color: inherit;
+}
+
+img,
+svg,
+video,
+canvas {
+    max-width: 100%;
+}
+
+img {
+    display: block;
+}
+
+/* ACCESSIBILITY */
+:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+}
+
+::selection {
+    background: var(--ui-primary-soft);
+    color: var(--ui-text-strong);
 }

@@ -296,21 +296,22 @@
         gap: 16px;
     }
 
-    .eyebrow {
-        margin: 0 0 6px;
-        color: #a78bfa;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-    }
-
     .page-header h2 {
         margin: 0;
-        color: #ffffff;
+        color: #f8fafc;
         font-size: 24px;
-        font-weight: 800;
-        letter-spacing: -0.03em;
+        line-height: 1.25;
+        font-weight: 650;
+        letter-spacing: -0.025em;
+    }
+
+    .eyebrow {
+        margin: 0 0 8px;
+        color: #a78bfa;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
     }
 
     .page-header p:not(.eyebrow) {

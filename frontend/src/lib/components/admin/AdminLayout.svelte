@@ -84,16 +84,17 @@
                 </div>
             </div>
 
-            <nav class="menu">
+            <nav class="menu" aria-label="Admin navigation">
                 {#each menuItems as item (item.href)}
                     <a
                         href={item.href}
                         class="menu-item"
                         class:active={isActive(item.href)}
+                        aria-current={isActive(item.href) ? "page" : undefined}
                         onclick={() => (isOpen = false)}
                     >
-                        <strong>{item.label}</strong>
-                        <span>{item.description}</span>
+                        <span class="menu-label">{item.label}</span>
+                        <span class="menu-description">{item.description}</span>
                     </a>
                 {/each}
             </nav>
@@ -166,41 +167,80 @@
         padding: 14px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
         flex: 1;
     }
 
     .menu-item {
+        position: relative;
         display: flex;
         flex-direction: column;
         gap: 3px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        color: #cbd5e1;
+        padding: 11px 14px 11px 16px;
+        border-radius: 13px;
+        color: #aeb6c2;
         text-decoration: none;
+        background: transparent;
+        border: 1px solid transparent;
+        transition:
+            background-color 0.16s ease,
+            border-color 0.16s ease,
+            color 0.16s ease,
+            transform 0.16s ease;
     }
 
-    .menu-item strong {
-        font-size: 14px;
+    .menu-label {
+        font-size: 13.5px;
+        line-height: 1.35;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        color: inherit;
     }
 
-    .menu-item span {
-        font-size: 12px;
-        color: #9ca3af;
+    .menu-description {
+        font-size: 11.5px;
+        line-height: 1.35;
+        font-weight: 400;
+        color: #747d8c;
     }
 
     .menu-item:hover {
-        background: rgba(139, 92, 246, 0.12);
-        color: #ffffff;
+        background: rgba(255, 255, 255, 0.045);
+        color: #f3f4f6;
+    }
+
+    .menu-item:hover .menu-description {
+        color: #9ca3af;
     }
 
     .menu-item.active {
-        background: rgba(139, 92, 246, 0.22);
+        background: rgba(139, 92, 246, 0.16);
+        border-color: rgba(139, 92, 246, 0.22);
         color: #ffffff;
     }
 
-    .menu-item.active span {
+    .menu-item.active::before {
+        content: "";
+        position: absolute;
+        left: 7px;
+        top: 11px;
+        bottom: 11px;
+        width: 3px;
+        border-radius: 999px;
+        background: #8b5cf6;
+    }
+
+    .menu-item.active .menu-label {
+        font-weight: 700;
+    }
+
+    .menu-item.active .menu-description {
         color: #c4b5fd;
+    }
+
+    .menu-item:focus-visible {
+        outline: 2px solid rgba(139, 92, 246, 0.65);
+        outline-offset: 2px;
     }
 
     .admin-content {

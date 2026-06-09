@@ -7,6 +7,7 @@
     import Button from "$lib/components/ui/Button.svelte";
     import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
+    import Avatar from "$lib/components/ui/Avatar.svelte";
     import VoiceButton from "$lib/components/ui/VoiceButton.svelte";
     import type { ChatConversation } from "$lib/types/chat.type";
     import type {
@@ -17,6 +18,9 @@
 
     type LocalChatMessage = ChatMessage & {
         clientKey: string;
+        senderName: string;
+        senderUsername?: string | null;
+        senderAvatar?: string | null;
     };
 
     let {
@@ -46,6 +50,52 @@
     let loadedConversationId = $state<string | null>(null);
     let voiceError = $state("");
 
+    function getCurrentUserName() {
+        const user = authState.user as any;
+
+        return user?.fullname || user?.username || "You";
+    }
+
+    function getCurrentUserAvatar() {
+        const user = authState.user as any;
+
+        return user?.avatar || null;
+    }
+
+    function getSenderFromMessage(m: ChatMessageApiItem) {
+        return (m as any).Sender || null;
+    }
+
+    function getSenderName(m: ChatMessageApiItem) {
+        const sender = getSenderFromMessage(m);
+
+        return sender?.fullname || sender?.username || "Unknown";
+    }
+
+    function getSenderUsername(m: ChatMessageApiItem) {
+        const sender = getSenderFromMessage(m);
+
+        return sender?.username || null;
+    }
+
+    function getSenderAvatar(m: ChatMessageApiItem) {
+        const sender = getSenderFromMessage(m);
+
+        return sender?.avatar || null;
+    }
+
+    function isMine(msg: LocalChatMessage) {
+        return msg.senderId === authState.user?.id;
+    }
+
+    function shouldShowAvatar(msg: LocalChatMessage) {
+        return !isMine(msg);
+    }
+
+    function shouldShowSenderName(msg: LocalChatMessage) {
+        return activeChat.type === "GROUP" && !isMine(msg);
+    }
+
     function setMessages(next: LocalChatMessage[]) {
         messages = next;
         onMessagesChange?.(next);
@@ -59,6 +109,9 @@
             id: m.id,
             clientKey: clientKey || m.id,
             senderId: m.Sender?.id || m.sender_id || "",
+            senderName: getSenderName(m),
+            senderUsername: getSenderUsername(m),
+            senderAvatar: getSenderAvatar(m),
             text: m.content || "",
             time: new Date(m.sent_at).toLocaleTimeString([], {
                 hour: "2-digit",
@@ -236,8 +289,13 @@
         const unsub = socketService.on("chat:message:new", (data: any) => {
             if (!activeChat) return;
 
-            const incomingConvId = data.conversationId || data.conversation_id;
             const msgData = data.message || data;
+
+            const incomingConvId =
+                data.conversationId ||
+                data.conversation_id ||
+                msgData.conversationId ||
+                msgData.conversation_id;
 
             if (incomingConvId !== activeChat.id) return;
 
@@ -302,6 +360,9 @@
             id: tempId,
             clientKey: tempId,
             senderId: authState.user?.id || "",
+            senderName: getCurrentUserName(),
+            senderUsername: (authState.user as any)?.username || null,
+            senderAvatar: getCurrentUserAvatar(),
             text: text || buildFallbackText(files),
             time: new Date().toLocaleTimeString([], {
                 hour: "2-digit",
@@ -321,6 +382,12 @@
                     id: tempId,
                     content: text || buildFallbackText(files),
                     Attachment: [],
+                    Sender: {
+                        id: authState.user?.id,
+                        username: (authState.user as any)?.username,
+                        fullname: (authState.user as any)?.fullname,
+                        avatar: (authState.user as any)?.avatar,
+                    },
                 },
                 senderId: authState.user?.id,
                 incrementUnread: false,
@@ -410,84 +477,116 @@
                     <Loading message="Loading Messages..." size="md" />
                 {/if}
 
-                {#each messages as msg (msg.id)}
-                    <div
-                        class="msg-wrapper {msg.senderId === authState.user?.id
-                            ? 'me'
-                            : 'them'}"
-                    >
-                        <div class="msg-bubble">
-                            {#if msg.text}
-                                <div class="message-text">{msg.text}</div>
-                            {/if}
-
-                            {#if msg.attachments && msg.attachments.length > 0}
-                                <div class="attachments">
-                                    {#each msg.attachments as attachment (attachment.id)}
-                                        {#if attachment.file_type === "IMAGE" && attachment.url}
-                                            <img
-                                                class="attachment-image"
-                                                src={attachment.url}
-                                                alt={attachment.original_name ||
-                                                    "image"}
-                                            />
-                                        {:else if attachment.file_type === "DOCUMENT"}
-                                            <button
-                                                type="button"
-                                                class="attachment-file"
-                                                onclick={() =>
-                                                    openAttachment(attachment)}
-                                            >
-                                                {#if attachment.preview_url}
-                                                    <img
-                                                        class="attachment-preview"
-                                                        src={attachment.preview_url}
-                                                        alt={attachment.original_name ||
-                                                            "document preview"}
-                                                    />
-                                                {/if}
-
-                                                <span class="attachment-name">
-                                                    {attachment.original_name ||
-                                                        "Document"}
-                                                </span>
-
-                                                <span class="attachment-meta">
-                                                    {attachment.mime_type ||
-                                                        "document"}
-                                                    {#if attachment.size}
-                                                        · {formatSize(
-                                                            attachment.size,
-                                                        )}
-                                                    {/if}
-                                                </span>
-                                            </button>
-                                        {:else}
-                                            <button
-                                                type="button"
-                                                class="attachment-file"
-                                                onclick={() =>
-                                                    openAttachment(attachment)}
-                                            >
-                                                <span class="attachment-name">
-                                                    {attachment.original_name ||
-                                                        "Attachment"}
-                                                </span>
-
-                                                <span class="attachment-meta">
-                                                    {attachment.mime_type ||
-                                                        "file"}
-                                                    {#if attachment.size}
-                                                        · {formatSize(
-                                                            attachment.size,
-                                                        )}
-                                                    {/if}
-                                                </span>
-                                            </button>
-                                        {/if}
-                                    {/each}
+                {#each messages as msg (msg.clientKey)}
+                    <div class="msg-wrapper {isMine(msg) ? 'me' : 'them'}">
+                        <div class="msg-row">
+                            {#if shouldShowAvatar(msg)}
+                                <div class="sender-avatar">
+                                    <Avatar
+                                        name={msg.senderName}
+                                        src={msg.senderAvatar ?? undefined}
+                                        size="sm"
+                                    />
                                 </div>
                             {/if}
+                            <div class="msg-content">
+                                {#if shouldShowSenderName(msg)}
+                                    <div class="sender-name">
+                                        {msg.senderName}
+                                        {#if msg.senderUsername && msg.senderUsername !== msg.senderName}
+                                            <span>@{msg.senderUsername}</span>
+                                        {/if}
+                                    </div>
+                                {/if}
+
+                                <div class="msg-bubble">
+                                    {#if msg.text}
+                                        <div class="message-text">
+                                            {msg.text}
+                                        </div>
+                                    {/if}
+
+                                    {#if msg.attachments && msg.attachments.length > 0}
+                                        <div class="attachments">
+                                            {#each msg.attachments as attachment (attachment.id)}
+                                                {#if attachment.file_type === "IMAGE" && attachment.url}
+                                                    <img
+                                                        class="attachment-image"
+                                                        src={attachment.url}
+                                                        alt={attachment.original_name ||
+                                                            "image"}
+                                                    />
+                                                {:else if attachment.file_type === "DOCUMENT"}
+                                                    <button
+                                                        type="button"
+                                                        class="attachment-file"
+                                                        onclick={() =>
+                                                            openAttachment(
+                                                                attachment,
+                                                            )}
+                                                    >
+                                                        {#if attachment.preview_url}
+                                                            <img
+                                                                class="attachment-preview"
+                                                                src={attachment.preview_url}
+                                                                alt={attachment.original_name ||
+                                                                    "document preview"}
+                                                            />
+                                                        {/if}
+
+                                                        <span
+                                                            class="attachment-name"
+                                                        >
+                                                            {attachment.original_name ||
+                                                                "Document"}
+                                                        </span>
+
+                                                        <span
+                                                            class="attachment-meta"
+                                                        >
+                                                            {attachment.mime_type ||
+                                                                "document"}
+                                                            {#if attachment.size}
+                                                                · {formatSize(
+                                                                    attachment.size,
+                                                                )}
+                                                            {/if}
+                                                        </span>
+                                                    </button>
+                                                {:else}
+                                                    <button
+                                                        type="button"
+                                                        class="attachment-file"
+                                                        onclick={() =>
+                                                            openAttachment(
+                                                                attachment,
+                                                            )}
+                                                    >
+                                                        <span
+                                                            class="attachment-name"
+                                                        >
+                                                            {attachment.original_name ||
+                                                                "Attachment"}
+                                                        </span>
+
+                                                        <span
+                                                            class="attachment-meta"
+                                                        >
+                                                            {attachment.mime_type ||
+                                                                "file"}
+                                                            {#if attachment.size}
+                                                                · {formatSize(
+                                                                    attachment.size,
+                                                                )}
+                                                            {/if}
+                                                        </span>
+                                                    </button>
+                                                {/if}
+                                            {/each}
+                                        </div>
+                                    {/if}
+                                </div>
+                            </div>
                         </div>
 
                         <span class="time">{msg.time}</span>
@@ -619,7 +718,7 @@
     }
 
     .msg-wrapper {
-        max-width: 70%;
+        max-width: 78%;
         display: flex;
         flex-direction: column;
     }
@@ -634,12 +733,62 @@
         align-items: flex-start;
     }
 
+    .msg-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 9px;
+        max-width: 100%;
+    }
+
+    .msg-content {
+        max-width: 100%;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .me .msg-content {
+        align-items: flex-end;
+    }
+
+    .them .msg-content {
+        align-items: flex-start;
+    }
+
+    .sender-avatar {
+        flex-shrink: 0;
+        margin-bottom: 2px;
+    }
+
+    .sender-name {
+        max-width: 260px;
+        margin: 0 0 5px;
+        color: #d1d5db;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.3;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .me .sender-name {
+        text-align: right;
+    }
+
+    .sender-name span {
+        margin-left: 5px;
+        color: #6b7280;
+        font-weight: 500;
+    }
+
     .msg-bubble {
         padding: 12px 18px;
         border-radius: 16px;
         font-size: 14.5px;
         line-height: 1.5;
         word-break: break-word;
+        max-width: 100%;
     }
 
     .me .msg-bubble {
@@ -718,6 +867,10 @@
         font-size: 11px;
         color: #6b7280;
         margin-top: 6px;
+    }
+
+    .them .time {
+        margin-left: 42px;
     }
 
     .chat-input-area {
@@ -808,7 +961,11 @@
         }
 
         .msg-wrapper {
-            max-width: 86%;
+            max-width: 92%;
+        }
+
+        .sender-name {
+            max-width: 210px;
         }
 
         .chat-input-area {
@@ -822,6 +979,10 @@
         .file-button {
             width: 38px;
             min-width: 38px;
+        }
+
+        .them .time {
+            margin-left: 38px;
         }
     }
 </style>

@@ -3,9 +3,17 @@
     import Input from "$lib/components/ui/Input.svelte";
     import Modal from "$lib/components/ui/Modal.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
+    import TextArea from "$lib/components/ui/TextArea.svelte";
+    import Select from "$lib/components/ui/Select.svelte";
     import { adminTopicService } from "$lib/services/topic.service";
     import type { Category } from "$lib/types/category.type";
     import type { Topic } from "$lib/types/topic.type";
+
+    type SelectOption = {
+        value: string;
+        label: string;
+        disabled?: boolean;
+    };
 
     let {
         open = $bindable(false),
@@ -40,9 +48,23 @@
 
     let flatTopics = $derived(flattenTopics(topics ?? []));
 
+    let parentOptions = $derived<SelectOption[]>([
+        {
+            value: "",
+            label: "Root topic",
+        },
+        ...flatTopics.map((topic) => ({
+            value: topic.id,
+            label: `${"— ".repeat(topic.level)}${topic.name}`,
+        })),
+    ]);
+
     $effect(() => {
         if (!open) return;
+
         parentId = defaultParentId ?? "";
+        modalError = "";
+        modalLoading = false;
     });
 
     function resetForm() {
@@ -127,14 +149,18 @@
     title={`Add topics${category?.name ? ` to ${category.name}` : ""}`}
     maxWidth="680px"
 >
-    <div class="modal-content">
-        <div class="helper-card">
-            <div class="helper-icon">
+    <div class="adm-modal-content lg-gap">
+        <div class="adm-helper-card">
+            <div class="adm-helper-icon">
                 <Icon name="folder" size={18} />
             </div>
+
             <div>
-                <p class="helper-title">Create structured learning topics</p>
-                <p class="helper-text">
+                <p class="adm-helper-title">
+                    Create structured learning topics
+                </p>
+
+                <p class="adm-helper-text">
                     Choose a parent topic to create a nested topic tree. Leave
                     parent empty to create root-level topics.
                 </p>
@@ -142,30 +168,26 @@
         </div>
 
         {#if modalError}
-            <div class="error-message">{modalError}</div>
+            <div class="adm-alert-error">{modalError}</div>
         {/if}
 
-        <div class="form-group">
-            <label for="parent-topic">Parent topic</label>
-            <select id="parent-topic" bind:value={parentId}>
-                <option value="">Root topic</option>
-                {#each flatTopics as topic}
-                    <option value={topic.id}>
-                        {"— ".repeat(topic.level)}{topic.name}
-                    </option>
-                {/each}
-            </select>
-        </div>
+        <Select
+            bind:value={parentId}
+            label="Parent topic"
+            placeholder="Root topic"
+            options={parentOptions}
+            disabled={modalLoading}
+        />
 
-        <div class="form-group">
-            <label for="topics">Topics</label>
+        <div class="adm-form-group">
+            <label class="adm-label">Topics</label>
 
             <div class="topic-input-list">
                 {#each topicInputs as item, index}
                     <div class="topic-input-row">
                         <div class="topic-input-main">
                             <Input
-                                id="topics"
+                                id={`topic-name-${index}`}
                                 value={item.name}
                                 placeholder={`Topic ${index + 1}`}
                                 oninput={(e: Event) =>
@@ -176,7 +198,8 @@
                                     )}
                             />
 
-                            <textarea
+                            <TextArea
+                                id={`topic-description-${index}`}
                                 value={item.description}
                                 placeholder="Short description"
                                 rows="2"
@@ -186,12 +209,12 @@
                                         (e.currentTarget as HTMLTextAreaElement)
                                             .value,
                                     )}
-                            ></textarea>
+                            />
                         </div>
 
                         <button
                             type="button"
-                            class="icon-button danger"
+                            class="adm-icon-btn md danger"
                             aria-label="Remove topic row"
                             title="Remove row"
                             disabled={modalLoading}
@@ -205,7 +228,7 @@
 
             <button
                 type="button"
-                class="add-row-button"
+                class="adm-text-btn"
                 disabled={modalLoading}
                 onclick={addTopicInputRow}
             >
@@ -216,7 +239,7 @@
     </div>
 
     {#snippet footer()}
-        <div class="modal-footer">
+        <div class="adm-modal-footer">
             <Button
                 variant="secondary"
                 disabled={modalLoading}
@@ -237,96 +260,6 @@
 </Modal>
 
 <style>
-    .modal-content {
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-    }
-
-    .helper-card {
-        display: flex;
-        gap: 12px;
-        padding: 14px;
-        border-radius: 16px;
-        background: linear-gradient(
-            135deg,
-            rgba(99, 102, 241, 0.14),
-            rgba(139, 92, 246, 0.08)
-        );
-        border: 1px solid rgba(139, 92, 246, 0.24);
-    }
-
-    .helper-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 12px;
-        background: rgba(99, 102, 241, 0.16);
-        color: #c4b5fd;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-
-    .helper-title {
-        margin: 0 0 4px;
-        color: #f3f4f6;
-        font-weight: 800;
-        font-size: 14px;
-    }
-
-    .helper-text {
-        margin: 0;
-        color: #9ca3af;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .error-message {
-        color: #fca5a5;
-        font-size: 14px;
-        background: rgba(239, 68, 68, 0.12);
-        padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid rgba(239, 68, 68, 0.28);
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .form-group label {
-        color: #d1d5db;
-        font-size: 14px;
-        font-weight: 800;
-    }
-
-    select,
-    textarea {
-        width: 100%;
-        box-sizing: border-box;
-        border: 1px solid #2a2e36;
-        border-radius: 12px;
-        padding: 11px 13px;
-        background: #111318;
-        color: #e5e7eb;
-        font-family: inherit;
-        outline: none;
-    }
-
-    select:focus,
-    textarea:focus {
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
-    }
-
-    textarea {
-        resize: vertical;
-        min-height: 66px;
-    }
-
     .topic-input-list {
         display: flex;
         flex-direction: column;
@@ -339,71 +272,14 @@
         gap: 10px;
         align-items: start;
         padding: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        background: #14171f;
-        border-radius: 16px;
+        border: 1px solid var(--adm-border);
+        background: var(--adm-surface-subtle);
+        border-radius: var(--adm-radius-xl);
     }
 
     .topic-input-main {
         display: flex;
         flex-direction: column;
         gap: 8px;
-    }
-
-    .icon-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 38px;
-        height: 38px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: #111318;
-        color: #cbd5e1;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .icon-button:hover:not(:disabled) {
-        background: rgba(139, 92, 246, 0.14);
-        border-color: rgba(139, 92, 246, 0.32);
-        color: #ffffff;
-    }
-
-    .icon-button.danger:hover:not(:disabled) {
-        background: rgba(239, 68, 68, 0.16);
-        border-color: rgba(239, 68, 68, 0.3);
-        color: #fca5a5;
-    }
-
-    .icon-button:disabled,
-    .add-row-button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .add-row-button {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        width: fit-content;
-        border: none;
-        background: transparent;
-        color: #a78bfa;
-        padding: 0;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 800;
-    }
-
-    .add-row-button:hover:not(:disabled) {
-        color: #c4b5fd;
-    }
-
-    .modal-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        width: 100%;
     }
 </style>

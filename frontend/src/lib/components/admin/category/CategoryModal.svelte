@@ -71,15 +71,18 @@
     title={isEdit ? "Edit Category" : "Create Category"}
     maxWidth="560px"
 >
-    <div class="modal-content">
+    <div class="adm-modal-content">
         {#if modalError}
-            <div class="error-message">
+            <div class="adm-alert-error">
                 {modalError}
             </div>
         {/if}
 
-        <div class="form-group">
-            <label for="category-name">Category Name *</label>
+        <div class="adm-form-group">
+            <label class="adm-label" for="category-name">
+                Category Name *
+            </label>
+
             <Input
                 id="category-name"
                 bind:value={category.name}
@@ -87,9 +90,13 @@
             />
         </div>
 
-        <div class="form-group">
-            <label for="category-description">Description</label>
+        <div class="adm-form-group">
+            <label class="adm-label" for="category-description">
+                Description
+            </label>
+
             <textarea
+                class="adm-textarea"
                 id="category-description"
                 bind:value={category.description}
                 placeholder="Enter category description"
@@ -99,7 +106,7 @@
     </div>
 
     {#snippet footer()}
-        <div class="modal-footer">
+        <div class="adm-modal-footer">
             <Button
                 variant="secondary"
                 disabled={modalLoading}
@@ -126,24 +133,6 @@
 </Modal>
 
 <style>
-    .modal-content {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .form-group label {
-        color: #d1d5db;
-        font-size: 14px;
-        font-weight: 700;
-    }
-
     textarea {
         width: 100%;
         min-height: 110px;
@@ -162,21 +151,5 @@
     textarea:focus {
         border-color: #8b5cf6;
         box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
-    }
-
-    .error-message {
-        color: #fca5a5;
-        font-size: 14px;
-        background: rgba(239, 68, 68, 0.12);
-        padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid rgba(239, 68, 68, 0.28);
-    }
-
-    .modal-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        width: 100%;
     }
 </style>
