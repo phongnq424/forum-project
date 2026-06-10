@@ -1,11 +1,11 @@
 <script lang="ts">
     import { fly } from "svelte/transition";
-    import type { Snippet } from "svelte"; // Import type Snippet
+    import type { Snippet } from "svelte";
 
     let {
         show = $bindable(false),
         align = "right",
-        children, // Nhận children snippet thay vì slot
+        children,
     } = $props<{
         show?: boolean;
         align?: "left" | "right";
@@ -26,8 +26,10 @@
 
     $effect(() => {
         if (!show) return;
+
         window.addEventListener("pointerdown", handlePointerDown);
         window.addEventListener("keydown", handleKeyDown);
+
         return () => {
             window.removeEventListener("pointerdown", handlePointerDown);
             window.removeEventListener("keydown", handleKeyDown);
@@ -61,49 +63,52 @@
     .dropdown-wrapper.right {
         right: 0;
     }
+
     .dropdown-wrapper.left {
         left: 0;
     }
 
     .dropdown-content {
-        background: #1f2937;
-        border: 1px solid #374151;
-        border-radius: 12px;
+        background: var(--ui-surface-soft);
+        border: 1px solid var(--ui-border-strong);
+        border-radius: var(--ui-radius-lg);
         padding: 6px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        box-shadow: var(--ui-shadow-soft);
     }
 
-    /* ĐÃ THÊM :global(a) VÀO ĐÂY */
     .dropdown-content :global(button),
     .dropdown-content :global(a) {
         width: 100%;
         background: transparent;
         border: none;
-        color: #d1d5db;
+        color: var(--ui-text);
         padding: 10px 12px;
         text-align: left;
         display: flex;
         align-items: center;
         gap: 10px;
-        border-radius: 8px;
+        border-radius: var(--ui-radius-sm);
         cursor: pointer;
         font-size: 14px;
-        transition: 0.15s;
-        text-decoration: none; /* Xóa gạch chân cho thẻ a */
+        transition:
+            background-color 0.15s ease,
+            color 0.15s ease;
+        text-decoration: none;
         font-family: inherit;
     }
 
     .dropdown-content :global(button:hover),
     .dropdown-content :global(a:hover) {
-        background: #374151;
-        color: #fff;
+        background: var(--ui-surface-hover);
+        color: var(--ui-text-strong);
     }
 
     .dropdown-content :global(.logout-btn) {
-        color: #ef4444;
+        color: var(--ui-danger);
     }
+
     .dropdown-content :global(.logout-btn:hover) {
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
+        background: var(--ui-danger-soft);
+        color: var(--ui-danger);
     }
 </style>

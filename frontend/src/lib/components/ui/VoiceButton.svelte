@@ -129,9 +129,9 @@
         width: 42px;
         min-width: 42px;
         border-radius: 12px;
-        border: 1px solid #2a2e36;
-        background: #20242d;
-        color: #d1d5db;
+        border: 1px solid var(--ui-border);
+        background: var(--ui-surface-soft);
+        color: var(--ui-text);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -144,15 +144,15 @@
     }
 
     .voice-button:hover:not(:disabled) {
-        background: #252a33;
-        border-color: #6366f1;
-        color: #ffffff;
+        background: var(--ui-surface-hover);
+        border-color: var(--ui-primary);
+        color: var(--ui-text-strong);
     }
 
     .voice-button.listening {
-        background: rgba(239, 68, 68, 0.16);
-        border-color: rgba(239, 68, 68, 0.45);
-        color: #fca5a5;
+        background: var(--ui-danger-soft);
+        border-color: var(--ui-danger-border);
+        color: var(--ui-danger-text);
         animation: pulseMic 1.1s infinite;
     }
 

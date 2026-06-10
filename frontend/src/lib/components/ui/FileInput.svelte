@@ -3,20 +3,33 @@
 
     type Props = HTMLInputAttributes & {
         label?: string;
-        // Svelte 5 khuyến khích định nghĩa rõ onchange trong props nếu muốn tường minh
+        inline?: boolean;
         onchange?: (e: Event) => void;
     };
 
-    let { label = "", ...rest }: Props = $props();
+    let {
+        label = "",
+        id = crypto.randomUUID(),
+        inline = false,
+        class: inputClass = "",
+        ...rest
+    }: Props = $props();
+
+    const inputId = $derived(String(id));
 </script>
 
-<div class="wrapper">
+<div class="wrapper" class:inline>
     {#if label}
-        <label class="label">{label}</label>
+        <label class="label" for={inputId}>{label}</label>
     {/if}
 
     <div class="input-container">
-        <input type="file" class="file-input" {...rest} />
+        <input
+            {...rest}
+            id={inputId}
+            type="file"
+            class={`file-input ${inputClass}`}
+        />
     </div>
 </div>
 
@@ -28,33 +41,56 @@
         width: 100%;
     }
 
+    .wrapper.inline {
+        width: auto;
+        min-width: 0;
+    }
+
     .label {
         font-size: 13px;
-        color: #a1a1aa;
+        color: var(--ui-text-muted);
         font-weight: 500;
     }
 
     .input-container {
         width: 100%;
+        min-width: 0;
     }
 
     .file-input {
         width: 100%;
         padding: 8px 12px;
-        background: #14161c;
-        border: 1px dashed #6366f1;
+        background: var(--ui-surface-raised);
+        border: 1px dashed var(--ui-primary);
         border-radius: 10px;
-        color: #9ca3af;
+        color: var(--ui-text-muted);
         cursor: pointer;
         font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .wrapper.inline .file-input {
+        max-width: 320px;
+    }
+
+    .file-input:focus {
+        outline: none;
+        border-color: var(--ui-primary);
+        box-shadow: 0 0 0 2px var(--ui-primary-soft);
     }
 
     .file-input::file-selector-button {
-        background: #2a2e36;
-        color: white;
+        background: var(--ui-border);
+        color: var(--ui-text-inverse);
         border: none;
         padding: 6px 12px;
         border-radius: 6px;
         margin-right: 12px;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .file-input::file-selector-button:hover {
+        background: var(--ui-border-strong);
     }
 </style>

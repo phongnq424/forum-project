@@ -13,51 +13,56 @@
         hover = true,
         class: className = "",
         style = "",
-        ...rest
     }: Props = $props();
+
+    const mergedStyle = $derived(`--card-padding: ${padding}; ${style}`.trim());
 </script>
 
 <div
-    class={`card ${variant} ${hover ? "hover" : ""}`}
-    style={`--padding:${padding}`}
+    class={`card ${variant} ${hover ? "hover" : ""} ${className}`}
+    style={mergedStyle}
 >
     <slot />
 </div>
 
 <style>
     .card {
-        padding: var(--padding);
-        border-radius: 18px;
-        background: linear-gradient(145deg, #171a22, #13151b);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+        padding: var(--card-padding);
+        border-radius: var(--ui-radius-xl);
+        background: linear-gradient(
+            145deg,
+            var(--ui-surface),
+            var(--ui-surface-raised)
+        );
+        border: 1px solid var(--ui-border-soft);
+        transition:
+            transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+            border-color 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+            box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+            background-color 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    /* Default subtle shadow */
     .default {
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        box-shadow: var(--ui-shadow-soft);
     }
 
-    /* Elevated stronger depth */
     .elevated {
         box-shadow:
-            0 20px 60px rgba(0, 0, 0, 0.45),
-            0 0 40px rgba(99, 102, 241, 0.12);
+            var(--ui-shadow-panel),
+            0 0 40px var(--ui-primary-soft);
     }
 
-    /* Outline style */
     .outline {
         background: transparent;
         box-shadow: none;
-        border: 1px solid #2a2e36;
+        border-color: var(--ui-border);
     }
 
-    /* Hover effect */
     .hover:hover {
         transform: translateY(-6px);
-        border-color: rgba(99, 102, 241, 0.4);
+        border-color: var(--ui-primary-border);
         box-shadow:
-            0 20px 60px rgba(0, 0, 0, 0.45),
-            0 0 50px rgba(99, 102, 241, 0.18);
+            var(--ui-shadow-panel),
+            0 0 50px var(--ui-primary-soft);
     }
 </style>

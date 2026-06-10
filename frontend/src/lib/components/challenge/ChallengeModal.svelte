@@ -2,6 +2,12 @@
     import Button from "$lib/components/ui/Button.svelte";
     import Input from "$lib/components/ui/Input.svelte";
     import Modal from "$lib/components/ui/Modal.svelte";
+    import Select, {
+        type SelectOption,
+    } from "$lib/components/ui/Select.svelte";
+    import FileInput from "$lib/components/ui/FileInput.svelte";
+    import ErrorBox from "$lib/components/ui/ErrorMessage.svelte";
+    import Loading from "$lib/components/ui/Loading.svelte";
     import { challengeService } from "$lib/services/challenge.service";
     import { adminTopicService } from "$lib/services/topic.service";
     import type {
@@ -41,9 +47,22 @@
         difficulty: "EASY" as ChallengeDifficulty,
         type: "DSA" as ChallengeType,
     });
+
     let testCaseFile = $state<File | null>(null);
     let topicOptions = $state<{ id: string; name: string }[]>([]);
     let selectedTopicIds = $state<string[]>([]);
+
+    const typeOptions: SelectOption[] = [
+        { value: "DSA", label: "DSA" },
+        { value: "SQL", label: "SQL" },
+        { value: "BACKEND", label: "Backend" },
+    ];
+
+    const difficultyOptions: SelectOption[] = [
+        { value: "EASY", label: "Easy" },
+        { value: "MEDIUM", label: "Medium" },
+        { value: "HARD", label: "Hard" },
+    ];
 
     function handleTestCaseFileChange(event: Event) {
         const input = event.currentTarget as HTMLInputElement;
@@ -65,6 +84,7 @@
         };
 
         selectedTopicIds = data.topics?.map((topic) => topic.id) ?? [];
+        testCaseFile = null;
     }
 
     function closeModal() {
@@ -78,6 +98,7 @@
         if (!open) return;
 
         modalError = "";
+        testCaseFile = null;
         loadTopics();
 
         if (isEdit && challengeId) {
@@ -107,10 +128,22 @@
                 page: 1,
                 limit: 100,
             });
+
             topicOptions = result.data ?? [];
         } catch (e) {
             topicOptions = [];
         }
+    }
+
+    function toggleTopic(topicId: string, checked: boolean) {
+        if (checked) {
+            selectedTopicIds = selectedTopicIds.includes(topicId)
+                ? selectedTopicIds
+                : [...selectedTopicIds, topicId];
+            return;
+        }
+
+        selectedTopicIds = selectedTopicIds.filter((id) => id !== topicId);
     }
 
     function buildPayload(): ChallengePayload {
@@ -142,32 +175,24 @@
         }
 
         if (!payload.constraints) return "Constraints are required";
+
         if (!payload.time_limit || payload.time_limit <= 0) {
             return "Time limit must be greater than 0";
         }
+
         if (!payload.memory_limit || payload.memory_limit <= 0) {
             return "Memory limit must be greater than 0";
         }
+
         if (!payload.point || payload.point <= 0) {
             return "Point must be greater than 0";
         }
+
         if (payload.topicIds && payload.topicIds.length === 0) {
             return "At least one topic is required";
         }
+
         return "";
-    }
-    function buildFormData(payload: ChallengePayload) {
-        const formData = new FormData();
-
-        Object.entries(payload).forEach(([key, value]) => {
-            formData.append(key, String(value ?? ""));
-        });
-
-        if (testCaseFile) {
-            formData.append("testcaseZip", testCaseFile);
-        }
-
-        return formData;
     }
 
     async function handleSave() {
@@ -232,21 +257,17 @@
 >
     <div class="modal-content">
         {#if detailLoading}
-            <div class="loading-box">Loading challenge detail...</div>
+            <Loading message="Loading challenge detail..." size="sm" />
         {:else}
             <p class="helper-text">
                 Manage coding challenge content, scoring, difficulty and
                 execution limits.
             </p>
 
-            {#if modalError}
-                <div class="error-message">{modalError}</div>
-            {/if}
-
             <div class="form-group">
-                <label for="title">Title *</label>
                 <Input
                     id="title"
+                    label="Title *"
                     bind:value={form.title}
                     placeholder="Enter challenge title"
                 />
@@ -254,21 +275,21 @@
 
             <div class="grid-2">
                 <div class="form-group">
-                    <label for="type">Type *</label>
-                    <select id="type" bind:value={form.type}>
-                        <option value="DSA">DSA</option>
-                        <option value="SQL">SQL</option>
-                        <option value="BACKEND">Backend</option>
-                    </select>
+                    <Select
+                        label="Type *"
+                        bind:value={form.type}
+                        options={typeOptions}
+                        placement="auto"
+                    />
                 </div>
 
                 <div class="form-group">
-                    <label for="difficulty">Difficulty *</label>
-                    <select id="difficulty" bind:value={form.difficulty}>
-                        <option value="EASY">Easy</option>
-                        <option value="MEDIUM">Medium</option>
-                        <option value="HARD">Hard</option>
-                    </select>
+                    <Select
+                        label="Difficulty *"
+                        bind:value={form.difficulty}
+                        options={difficultyOptions}
+                        placement="auto"
+                    />
                 </div>
             </div>
 
@@ -282,23 +303,12 @@
                                 type="checkbox"
                                 value={topic.id}
                                 checked={selectedTopicIds.includes(topic.id)}
-                                onchange={(e) => {
-                                    const checked = (
-                                        e.currentTarget as HTMLInputElement
-                                    ).checked;
-
-                                    if (checked) {
-                                        selectedTopicIds = [
-                                            ...selectedTopicIds,
-                                            topic.id,
-                                        ];
-                                    } else {
-                                        selectedTopicIds =
-                                            selectedTopicIds.filter(
-                                                (id) => id !== topic.id,
-                                            );
-                                    }
-                                }}
+                                onchange={(e) =>
+                                    toggleTopic(
+                                        topic.id,
+                                        (e.currentTarget as HTMLInputElement)
+                                            .checked,
+                                    )}
                             />
                             <span>{topic.name}</span>
                         </label>
@@ -318,22 +328,34 @@
 
             <div class="grid-2">
                 <div class="form-group">
-                    <label for="input">Input *</label>
+                    <label for="input">
+                        {form.type === "BACKEND"
+                            ? "API requirements *"
+                            : "Input *"}
+                    </label>
                     <textarea
                         id="input"
                         bind:value={form.input}
                         rows="4"
-                        placeholder="Input format / sample input"
+                        placeholder={form.type === "BACKEND"
+                            ? "Describe API requirements"
+                            : "Input format / sample input"}
                     ></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="output">Output *</label>
+                    <label for="output">
+                        {form.type === "BACKEND"
+                            ? "Expected behavior *"
+                            : "Output *"}
+                    </label>
                     <textarea
                         id="output"
                         bind:value={form.output}
                         rows="4"
-                        placeholder="Output format / sample output"
+                        placeholder={form.type === "BACKEND"
+                            ? "Describe expected API behavior"
+                            : "Output format / sample output"}
                     ></textarea>
                 </div>
             </div>
@@ -347,12 +369,12 @@
                     placeholder="Enter constraints"
                 ></textarea>
             </div>
+
             {#if form.type !== "BACKEND"}
                 <div class="form-group">
-                    <label for="testcase-file">Testcase ZIP</label>
-                    <input
+                    <FileInput
                         id="testcase-file"
-                        type="file"
+                        label="Testcase ZIP"
                         accept=".zip,application/zip,application/x-zip-compressed"
                         onchange={handleTestCaseFileChange}
                     />
@@ -372,11 +394,12 @@
                     testcase manager.
                 </div>
             {/if}
+
             <div class="grid-3">
                 <div class="form-group">
-                    <label for="time-limit">Time limit *</label>
                     <Input
                         id="time-limit"
+                        label="Time limit *"
                         bind:value={form.time_limit}
                         type="number"
                         min="1"
@@ -384,9 +407,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="memory-limit">Memory limit *</label>
                     <Input
                         id="memory-limit"
+                        label="Memory limit *"
                         bind:value={form.memory_limit}
                         type="number"
                         min="1"
@@ -394,15 +417,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="point">Point *</label>
                     <Input
                         id="point"
+                        label="Point *"
                         bind:value={form.point}
                         type="number"
                         min="1"
                     />
                 </div>
             </div>
+            <ErrorBox error={modalError} compact />
         {/if}
     </div>
 
@@ -442,7 +466,7 @@
 
     .helper-text {
         margin: 0;
-        color: #9ca3af;
+        color: var(--ui-text-muted);
         font-size: 14px;
         line-height: 1.5;
     }
@@ -453,34 +477,38 @@
         gap: 8px;
     }
 
-    label {
-        color: #d1d5db;
-        font-size: 14px;
-        font-weight: 700;
+    .form-group > label {
+        color: var(--ui-text-muted);
+        font-size: 13px;
+        font-weight: 500;
     }
 
-    select,
     textarea {
         width: 100%;
         box-sizing: border-box;
-        border: 1px solid #2a2e36;
-        border-radius: 12px;
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius-lg);
         padding: 12px 14px;
-        background: #14161c;
-        color: #e5e7eb;
+        background: var(--ui-surface-raised);
+        color: var(--ui-text);
         font: inherit;
         outline: none;
-    }
-
-    select:focus,
-    textarea:focus {
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
-    }
-
-    textarea {
         resize: vertical;
         min-height: 92px;
+        transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            background-color 0.2s ease,
+            color 0.2s ease;
+    }
+
+    textarea::placeholder {
+        color: var(--ui-text-soft);
+    }
+
+    textarea:focus {
+        border-color: var(--ui-primary);
+        box-shadow: 0 0 0 3px var(--ui-primary-focus);
     }
 
     .grid-2 {
@@ -495,21 +523,13 @@
         gap: 16px;
     }
 
-    .error-message {
-        color: #fca5a5;
-        font-size: 14px;
-        background: rgba(239, 68, 68, 0.12);
-        padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid rgba(239, 68, 68, 0.28);
-    }
-
     .modal-footer {
         display: flex;
         justify-content: flex-end;
         gap: 10px;
         width: 100%;
     }
+
     .topic-grid {
         display: flex;
         flex-wrap: wrap;
@@ -521,16 +541,43 @@
         align-items: center;
         gap: 6px;
         padding: 8px 10px;
-        border: 1px solid #2a2e36;
+        border: 1px solid var(--ui-border);
         border-radius: 999px;
-        background: #14161c;
-        color: #d1d5db;
+        background: var(--ui-surface-raised);
+        color: var(--ui-text);
         font-size: 13px;
         cursor: pointer;
+        transition:
+            border-color 0.2s ease,
+            background-color 0.2s ease,
+            color 0.2s ease;
+    }
+
+    .topic-option:hover {
+        border-color: var(--ui-primary-border);
+        background: var(--ui-surface-hover);
+        color: var(--ui-text-strong);
     }
 
     .topic-option input {
-        accent-color: #6366f1;
+        accent-color: var(--ui-primary);
+    }
+
+    .file-name {
+        margin: 0;
+        color: var(--ui-text);
+        font-size: 13px;
+        word-break: break-word;
+    }
+
+    .backend-testcase-note {
+        padding: 12px 14px;
+        border-radius: var(--ui-radius-lg);
+        background: var(--ui-primary-soft);
+        border: 1px solid var(--ui-primary-border);
+        color: var(--ui-text);
+        font-size: 14px;
+        line-height: 1.5;
     }
 
     @media (max-width: 768px) {

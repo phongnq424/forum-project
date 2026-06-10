@@ -1,5 +1,6 @@
 <script lang="ts">
     import Icon from "./Icon.svelte";
+
     let {
         value = $bindable(),
         label = "",
@@ -15,8 +16,10 @@
     {#if label}
         <label class="label" for={id}>{label}</label>
     {/if}
+
     <div class="input-wrapper">
         <input type="date" {id} bind:value class="custom-date-input" />
+
         <div class="calendar-icon">
             <Icon name="calendar" size={18} />
         </div>
@@ -33,7 +36,7 @@
 
     .label {
         font-size: 13px;
-        color: #a1a1aa;
+        color: var(--ui-text-muted);
         font-weight: 500;
     }
 
@@ -44,30 +47,32 @@
     }
 
     .custom-date-input {
-        background: #14161c;
-        border: 1px solid #2a2e36;
-        border-radius: 12px;
+        background: var(--ui-surface-raised);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius-lg);
         padding: 12px 14px;
-        color: #e5e7eb;
+        color: var(--ui-text);
         width: 100%;
-        font-family: inherit; /* Quan trọng: để không bị font hệ thống đè */
+        font-family: inherit;
         font-size: 14px;
-        transition: all 0.2s;
+        transition:
+            background-color 0.2s ease,
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            color 0.2s ease;
         box-sizing: border-box;
         cursor: text;
     }
 
     .custom-date-input:focus {
         outline: none;
-        border-color: #6366f1;
-        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+        border-color: var(--ui-primary);
+        box-shadow: 0 0 0 2px var(--ui-primary-soft);
     }
 
-    /* Mẹo: Làm cho cái icon lịch mặc định của browser to ra phủ hết ô hoặc ẩn đi */
-    /* Ở đây tui chọn cách ẩn icon cũ nhưng giữ vùng click để hiện bảng lịch */
     .custom-date-input::-webkit-calendar-picker-indicator {
         cursor: pointer;
-        opacity: 0; /* Ẩn icon gốc */
+        opacity: 0;
         position: absolute;
         right: 10px;
         width: 25px;
@@ -77,28 +82,30 @@
     .calendar-icon {
         position: absolute;
         right: 14px;
-        color: #6b7280;
-        pointer-events: none; /* Click xuyên qua để dính vào indicator ẩn bên dưới */
+        color: var(--ui-text-soft);
+        pointer-events: none;
     }
 
-    /* Style cho các ô nhập số (ngày, tháng, năm) cho đẹp */
     .custom-date-input::-webkit-datetime-edit-fields-wrapper {
         padding: 0;
     }
+
     .custom-date-input::-webkit-datetime-edit-text {
-        color: #4b5563;
+        color: var(--ui-text-soft);
         padding: 0 4px;
     }
+
     .custom-date-input::-webkit-datetime-edit-year-field,
     .custom-date-input::-webkit-datetime-edit-month-field,
     .custom-date-input::-webkit-datetime-edit-day-field {
-        color: #e5e7eb;
+        color: var(--ui-text);
         border-radius: 4px;
     }
+
     .custom-date-input::-webkit-datetime-edit-year-field:focus,
     .custom-date-input::-webkit-datetime-edit-month-field:focus,
     .custom-date-input::-webkit-datetime-edit-day-field:focus {
-        background: #6366f1;
-        color: white;
+        background: var(--ui-primary);
+        color: var(--ui-text-inverse);
     }
 </style>

@@ -240,7 +240,11 @@
             </div>
         {:else if comments.length === 0}
             <div class="status-msg empty">
-                <Icon name="message-square" size={40} color="#374151" />
+                <Icon
+                    name="message-square"
+                    size={40}
+                    color="var(--ui-text-soft)"
+                />
                 <p>No comments yet. Be the first to share your thoughts!</p>
             </div>
         {:else}
@@ -252,6 +256,12 @@
 </section>
 
 <style>
+    .comments-section {
+        margin-top: 64px;
+        padding-top: 32px;
+        border-top: 1px solid var(--ui-border);
+    }
+
     .section-header {
         display: flex;
         align-items: center;
@@ -263,7 +273,7 @@
         font-size: 1.25rem;
         font-weight: 700;
         margin: 0;
-        color: #f3f4f6;
+        color: var(--ui-text-strong);
     }
 
     .input-footer {
@@ -271,147 +281,20 @@
         justify-content: flex-end;
         margin-top: 12px;
         padding-top: 12px;
-        border-top: 1px solid #1f2937;
+        border-top: 1px solid var(--ui-border-soft);
     }
 
-    /* Danh sách comment */
+    .comments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        margin-top: 32px;
+    }
+
     .comment-item {
         display: flex;
         gap: 14px;
         margin-bottom: 24px;
-    }
-
-    .comm-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-        background: #374151;
-        flex-shrink: 0;
-    }
-
-    .comm-content {
-        flex: 1;
-    }
-
-    .comm-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 4px;
-    }
-
-    .comm-user {
-        font-weight: 600;
-        color: #f9fafb;
-        font-size: 0.95rem;
-    }
-
-    .comm-time {
-        font-size: 0.8rem;
-        color: #6b7280;
-    }
-
-    .comm-text {
-        color: #d1d5db;
-        line-height: 1.6;
-        margin: 4px 0 10px 0;
-        font-size: 0.95rem;
-    }
-
-    /* Nút action (Like, Reply) */
-    .comm-actions {
-        display: flex;
-        gap: 16px;
-    }
-    /* Khung bao quanh toàn bộ section để tạo khoảng cách với bài viết trên */
-    .comments-section {
-        margin-top: 64px;
-        padding-top: 32px;
-        border-top: 1px solid #2a2e36;
-    }
-
-    /* Container danh sách comment */
-    .comments-list {
-        display: flex;
-        flex-direction: column;
-        gap: 32px; /* Khoảng cách giữa các comment cha */
-        margin-top: 32px;
-    }
-
-    /* Style cho ô Reply lồng bên trong comment */
-    .reply-input-box {
-        margin: 16px 0;
-        padding: 16px;
-        background: #111827; /* Đậm hơn nền chính để tách biệt */
-        border: 1px solid #2a2e36;
-        border-radius: 12px;
-    }
-
-    .reply-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid #1f2937;
-    }
-
-    /* Phân cấp comment con */
-    .child-comments-wrapper {
-        margin-top: 20px;
-        padding-left: 20px;
-        border-left: 2px solid #2a2e36; /* Đường kẻ đứng bên trái */
-        display: flex;
-        flex-direction: column;
-        gap: 20px; /* Khoảng cách giữa các comment con với nhau */
-    }
-
-    /* Trạng thái empty khi chưa có comment */
-    .status-msg.empty {
-        background: #111827;
-        border-radius: 16px;
-        border: 1px dashed #2a2e36;
-        padding: 48px;
-    }
-
-    .action-btn-tiny {
-        background: transparent;
-        border: none;
-        color: #9ca3af;
-        font-size: 0.85rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        cursor: pointer;
-        padding: 4px 0;
-        transition: color 0.2s;
-    }
-
-    .action-btn-tiny:hover {
-        color: #f3f4f6;
-    }
-
-    /* Trạng thái Loading & Empty */
-    .status-msg {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 60px 20px;
-        color: #6b7280;
-        gap: 12px;
-        text-align: center;
-    }
-
-    .spinner {
-        width: 30px;
-        height: 30px;
-        border: 3px solid rgba(99, 102, 241, 0.2);
-        border-top-color: #6366f1;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
     }
 
     .comm-avatar-link {
@@ -425,19 +308,139 @@
         filter: brightness(1.12);
     }
 
+    .comm-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--ui-surface-soft);
+        border: 1px solid var(--ui-border);
+        flex-shrink: 0;
+    }
+
+    .comm-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .comm-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+        min-width: 0;
+    }
+
     .comm-user {
         font-weight: 600;
-        color: #f9fafb;
+        color: var(--ui-text-strong);
         font-size: 0.95rem;
         text-decoration: none;
     }
 
     a.comm-user:hover {
-        color: #ffffff;
+        color: var(--ui-primary-hover);
         text-decoration: underline;
     }
 
-    /* Animation cho loader icon */
+    .comm-time {
+        font-size: 0.8rem;
+        color: var(--ui-text-soft);
+        white-space: nowrap;
+    }
+
+    .comm-text {
+        color: var(--ui-text);
+        line-height: 1.6;
+        margin: 4px 0 10px 0;
+        font-size: 0.95rem;
+        word-break: break-word;
+    }
+
+    .comm-actions {
+        display: flex;
+        gap: 16px;
+    }
+
+    .action-btn-tiny {
+        background: transparent;
+        border: none;
+        color: var(--ui-text-muted);
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        padding: 4px 0;
+        transition: color 0.2s ease;
+        font-family: inherit;
+    }
+
+    .action-btn-tiny:hover {
+        color: var(--ui-text-strong);
+    }
+
+    .reply-input-box {
+        margin: 16px 0;
+        padding: 16px;
+        background: var(--ui-surface-raised);
+        border: 1px solid var(--ui-border);
+        border-radius: var(--ui-radius-lg);
+    }
+
+    .reply-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--ui-border-soft);
+    }
+
+    .child-comments-wrapper {
+        margin-top: 20px;
+        padding-left: 20px;
+        border-left: 2px solid var(--ui-border);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .status-msg {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        color: var(--ui-text-soft);
+        gap: 12px;
+        text-align: center;
+    }
+
+    .status-msg p {
+        margin: 0;
+        color: var(--ui-text-muted);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .status-msg.empty {
+        background: var(--ui-surface-raised);
+        border-radius: 16px;
+        border: 1px dashed var(--ui-border);
+        padding: 48px;
+    }
+
+    .spinner {
+        width: 30px;
+        height: 30px;
+        border: 3px solid var(--ui-primary-soft);
+        border-top-color: var(--ui-primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
     :global(.animate-spin) {
         animation: spin 1s linear infinite;
     }

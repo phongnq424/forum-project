@@ -55,12 +55,16 @@
         width: 100%;
         height: 100%;
         border-radius: 12px;
-        background: linear-gradient(135deg, #6366f1, #a855f7);
+        background: linear-gradient(
+            135deg,
+            var(--ui-primary),
+            var(--ui-primary-2)
+        );
+        color: var(--ui-text-inverse);
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        color: white;
         /* Font size tự nhảy theo size của container */
         font-size: calc(var(--avatar-size) / 2.2);
     }

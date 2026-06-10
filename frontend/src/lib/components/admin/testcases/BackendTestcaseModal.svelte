@@ -3,19 +3,27 @@
     import Input from "$lib/components/ui/Input.svelte";
     import Modal from "$lib/components/ui/Modal.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
+    import Select, {
+        type SelectOption,
+    } from "$lib/components/ui/Select.svelte";
     import { challengeService } from "$lib/services/challenge.service";
     import type {
         ApiTestcasePayload,
         ApiTestcaseStep,
     } from "$lib/types/testcase.type";
     import BackendStepEditor from "./BackendStepEditor.svelte";
-    import type { StepJsonTextMap } from "../../../utils/testcase-form.utils";
+    import type {
+        StepJsonText,
+        StepJsonTextMap,
+    } from "../../../utils/testcase-form.utils";
     import {
         buildApiTestcasePayload,
         createDefaultBackendForm,
         createUserApiExample,
         syncJsonTextFromSteps,
     } from "../../../utils/testcase-form.utils";
+
+    const initialForm = createDefaultBackendForm();
 
     let {
         open = $bindable(false),
@@ -30,32 +38,59 @@
     let modalLoading = $state(false);
     let modalError = $state("");
 
-    let form = $state<ApiTestcasePayload>(createDefaultBackendForm());
-    let jsonTextByStep = $state<StepJsonTextMap>({});
+    let form = $state<ApiTestcasePayload>(initialForm);
+    let jsonTextByStep = $state<StepJsonTextMap>(
+        syncJsonTextFromSteps(initialForm.steps),
+    );
+
+    const visibilityOptions: SelectOption[] = [
+        { value: "HIDDEN", label: "Hidden" },
+        { value: "PUBLIC", label: "Public" },
+    ];
+
+    function createEmptyJsonText(): StepJsonText {
+        return {
+            headers_json: "",
+            body_json: "",
+            expected_json: "",
+            assert_json: "",
+            save_variables: "",
+        };
+    }
 
     $effect(() => {
         if (!open) return;
 
-        form = createDefaultBackendForm();
-        jsonTextByStep = syncJsonTextFromSteps(form.steps);
+        const nextForm = createDefaultBackendForm();
+
+        form = nextForm;
+        jsonTextByStep = syncJsonTextFromSteps(nextForm.steps);
         modalError = "";
         modalLoading = false;
     });
 
-    function addStep() {
-        form.steps = [
-            ...form.steps,
-            {
-                name: `Step ${form.steps.length + 1}`,
-                method: "GET",
-                path: "/",
-                expected_status: 200,
-                score: 1,
-                assert_json: null,
-            },
-        ];
+    function getStepJsonText(index: number): StepJsonText {
+        return jsonTextByStep[index] ?? createEmptyJsonText();
+    }
 
-        jsonTextByStep = syncJsonTextFromSteps(form.steps);
+    function addStep() {
+        const nextIndex = form.steps.length;
+
+        const nextStep: ApiTestcaseStep = {
+            name: `Step ${nextIndex + 1}`,
+            method: "GET",
+            path: "/",
+            expected_status: 200,
+            score: 1,
+            assert_json: null,
+        };
+
+        form.steps = [...form.steps, nextStep];
+
+        jsonTextByStep = {
+            ...jsonTextByStep,
+            [nextIndex]: createEmptyJsonText(),
+        };
     }
 
     function removeStep(index: number) {
@@ -64,8 +99,18 @@
             return;
         }
 
-        form.steps = form.steps.filter((_, i) => i !== index);
-        jsonTextByStep = syncJsonTextFromSteps(form.steps);
+        const nextSteps = form.steps.filter((_, i) => i !== index);
+        const nextJsonTextByStep: StepJsonTextMap = {};
+
+        nextSteps.forEach((_, nextIndex) => {
+            const oldIndex = nextIndex >= index ? nextIndex + 1 : nextIndex;
+
+            nextJsonTextByStep[nextIndex] =
+                jsonTextByStep[oldIndex] ?? createEmptyJsonText();
+        });
+
+        form.steps = nextSteps;
+        jsonTextByStep = nextJsonTextByStep;
     }
 
     function updateStep(index: number, patch: Partial<ApiTestcaseStep>) {
@@ -82,15 +127,18 @@
         jsonTextByStep = {
             ...jsonTextByStep,
             [index]: {
-                ...jsonTextByStep[index],
+                ...(jsonTextByStep[index] ?? createEmptyJsonText()),
                 [key]: value,
             },
         };
     }
 
     function useExample() {
-        form = createUserApiExample();
-        jsonTextByStep = syncJsonTextFromSteps(form.steps);
+        const exampleForm = createUserApiExample();
+
+        form = exampleForm;
+        jsonTextByStep = syncJsonTextFromSteps(exampleForm.steps);
+        modalError = "";
     }
 
     async function createTestcase() {
@@ -113,14 +161,14 @@
 </script>
 
 <Modal bind:open title="Create Backend API Testcase" maxWidth="980px">
-    <div class="modal-content">
+    <div class="adm-modal-content lg-gap">
         {#if modalError}
-            <div class="error-message">{modalError}</div>
+            <div class="adm-alert-error">{modalError}</div>
         {/if}
 
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="name">Testcase name *</label>
+        <div class="adm-backend-modal-grid">
+            <div class="adm-form-group">
+                <label class="adm-label" for="name">Testcase name *</label>
                 <Input
                     id="name"
                     bind:value={form.name}
@@ -128,16 +176,17 @@
                 />
             </div>
 
-            <div class="form-group">
-                <label for="visibility">Visibility</label>
-                <select id="visibility" bind:value={form.visibility}>
-                    <option value="HIDDEN">Hidden</option>
-                    <option value="PUBLIC">Public</option>
-                </select>
+            <div class="adm-form-group">
+                <Select
+                    label="Visibility"
+                    bind:value={form.visibility}
+                    options={visibilityOptions}
+                    placement="auto"
+                />
             </div>
 
-            <div class="form-group">
-                <label for="order">Order</label>
+            <div class="adm-form-group">
+                <label class="adm-label" for="order">Order</label>
                 <Input
                     id="order"
                     type="number"
@@ -147,7 +196,7 @@
             </div>
         </div>
 
-        <div class="actions-row">
+        <div class="adm-backend-modal-actions">
             <Button variant="secondary" size="sm" onclick={useExample}>
                 Use user API example
             </Button>
@@ -158,12 +207,12 @@
             </Button>
         </div>
 
-        <div class="steps-editor">
+        <div class="adm-steps-editor">
             {#each form.steps as step, index}
                 <BackendStepEditor
                     {step}
                     {index}
-                    jsonText={jsonTextByStep[index]}
+                    jsonText={getStepJsonText(index)}
                     onUpdate={updateStep}
                     onJsonUpdate={updateJsonText}
                     onRemove={removeStep}
@@ -173,7 +222,7 @@
     </div>
 
     {#snippet footer()}
-        <div class="modal-footer">
+        <div class="adm-modal-footer">
             <Button
                 variant="secondary"
                 disabled={modalLoading}
@@ -192,80 +241,3 @@
         </div>
     {/snippet}
 </Modal>
-
-<style>
-    .modal-content {
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-    }
-
-    .error-message {
-        color: #fca5a5;
-        font-size: 14px;
-        background: rgba(239, 68, 68, 0.12);
-        padding: 12px 14px;
-        border-radius: 12px;
-        border: 1px solid rgba(239, 68, 68, 0.28);
-    }
-
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 180px 140px;
-        gap: 14px;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    label {
-        color: #d1d5db;
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    select {
-        width: 100%;
-        box-sizing: border-box;
-        border: 1px solid #2a2e36;
-        border-radius: 12px;
-        padding: 12px 14px;
-        background: #14161c;
-        color: #e5e7eb;
-        font: inherit;
-        outline: none;
-    }
-
-    select:focus {
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
-    }
-
-    .actions-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-    }
-
-    .steps-editor {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .modal-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        width: 100%;
-    }
-
-    @media (max-width: 900px) {
-        .form-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>

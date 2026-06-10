@@ -1,6 +1,4 @@
 <script lang="ts">
-    import Icon from "$lib/components/ui/Icon.svelte";
-
     type Props = {
         message?: string;
         size?: "sm" | "md" | "lg";
@@ -12,16 +10,11 @@
         size = "md",
         fullPage = false,
     }: Props = $props();
-
-    const spinnerSizes = {
-        sm: "w-5 h-5 border-2",
-        md: "w-8 h-8 border-3",
-        lg: "w-12 h-12 border-4",
-    };
 </script>
 
 <div class="loading-container" class:full-page={fullPage}>
     <div class={`spinner ${size}`}></div>
+
     {#if message}
         <p class="loading-text">{message}</p>
     {/if}
@@ -35,7 +28,7 @@
         justify-content: center;
         gap: 12px;
         padding: 40px 20px;
-        color: #6b7280;
+        color: var(--ui-text-soft);
     }
 
     .full-page {
@@ -48,22 +41,23 @@
 
     .spinner {
         border-radius: 50%;
-        border: 3px solid rgba(99, 102, 241, 0.1);
-        border-top-color: #6366f1;
+        border: 3px solid var(--ui-primary-soft);
+        border-top-color: var(--ui-primary);
         animation: spin 0.8s linear infinite;
     }
 
-    /* Sizes */
     .sm {
         width: 20px;
         height: 20px;
         border-width: 2px;
     }
+
     .md {
         width: 32px;
         height: 32px;
         border-width: 3px;
     }
+
     .lg {
         width: 48px;
         height: 48px;
@@ -71,8 +65,10 @@
     }
 
     .loading-text {
+        margin: 0;
         font-size: 0.9rem;
         font-weight: 500;
+        color: var(--ui-text-muted);
     }
 
     @keyframes spin {

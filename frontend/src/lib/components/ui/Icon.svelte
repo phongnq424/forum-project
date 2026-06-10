@@ -98,15 +98,15 @@
 
     // Bảng màu mặc định cho các icon đặc biệt
     const defaultColors: Partial<Record<IconName, string>> = {
-        flame: "#ef4444", // Đỏ cam (Trending)
-        folder: "#eab308", // Vàng thư mục (Category)
-        trophy: "#f59e0b", // Vàng gold (Thành tích)
-        cake: "#ec4899", // Hồng (Sinh nhật)
-        "map-pin": "#10b981", // Xanh lá (Địa điểm)
-        "help-circle": "#6366f1", // Tím nhạt (Support/Help)
-        "trending-up": "#6366f1",
-        flag: "#ef4444",
-        trash: "#ef4444",
+        flame: "var(--ui-danger)",
+        folder: "var(--ui-warning)",
+        trophy: "var(--ui-warning)",
+        cake: "var(--ui-info)",
+        "map-pin": "var(--ui-success)",
+        "help-circle": "var(--ui-primary)",
+        "trending-up": "var(--ui-primary)",
+        flag: "var(--ui-danger)",
+        trash: "var(--ui-danger)",
     };
 
     let strokeColor = $derived(

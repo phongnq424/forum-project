@@ -11,14 +11,18 @@
     } = $props();
 </script>
 
-<header class="page-header">
+<header class="adm-testcase-page-header">
     <div>
-        <button class="back-btn" onclick={() => history.back()}>
+        <button
+            type="button"
+            class="adm-testcase-back-btn"
+            onclick={() => history.back()}
+        >
             <Icon name="arrow-left" size={16} />
             Back
         </button>
 
-        <h1>
+        <h1 class="adm-testcase-page-title">
             {#if isBackendChallenge}
                 Backend API Testcases
             {:else}
@@ -26,7 +30,7 @@
             {/if}
         </h1>
 
-        <p>
+        <p class="adm-testcase-page-description">
             {#if isBackendChallenge}
                 Create scenario-based API tests. Each testcase can contain many
                 request steps, and each step has its own score.
@@ -37,53 +41,9 @@
         </p>
 
         {#if challenge}
-            <p class="challenge-title">
+            <p class="adm-testcase-challenge-title">
                 Challenge: <strong>{challenge.title}</strong>
             </p>
         {/if}
     </div>
 </header>
-
-<style>
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        gap: 20px;
-        align-items: flex-start;
-        margin-bottom: 24px;
-    }
-
-    .back-btn {
-        border: none;
-        background: transparent;
-        color: #9ca3af;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        padding: 0;
-        margin-bottom: 12px;
-    }
-
-    h1 {
-        margin: 0;
-        color: #f3f4f6;
-        font-size: 28px;
-    }
-
-    p {
-        color: #9ca3af;
-        margin: 8px 0 0;
-        max-width: 760px;
-        line-height: 1.5;
-    }
-
-    .challenge-title {
-        color: #6b7280;
-        font-size: 14px;
-    }
-
-    .challenge-title strong {
-        color: #d1d5db;
-    }
-</style>

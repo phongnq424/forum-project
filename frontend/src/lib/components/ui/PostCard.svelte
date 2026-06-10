@@ -275,7 +275,7 @@
     }
 
     .author-link:not(.static):hover .author-name {
-        color: #ffffff;
+        color: var(--ui-text-strong);
         text-decoration: underline;
     }
 
@@ -291,7 +291,7 @@
     .author-name {
         font-size: 13px;
         font-weight: 600;
-        color: #d1d5db;
+        color: var(--ui-text);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -300,7 +300,7 @@
     .post-date,
     .dot {
         font-size: 12px;
-        color: #6b7280;
+        color: var(--ui-text-soft);
         white-space: nowrap;
     }
 
@@ -311,7 +311,7 @@
     }
 
     .post-body-link:hover .post-title {
-        color: #ffffff;
+        color: var(--ui-text-strong);
     }
 
     .post-title {
@@ -319,13 +319,13 @@
         font-weight: 700;
         margin: 0 0 8px 0;
         line-height: 1.4;
-        color: #f3f4f6;
+        color: var(--ui-text-strong);
         transition: color 0.16s ease;
     }
 
     .post-excerpt {
         font-size: 14px;
-        color: #9ca3af;
+        color: var(--ui-text-muted);
         line-height: 1.6;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -348,7 +348,7 @@
     .action-btn {
         background: transparent;
         border: none;
-        color: #9ca3af;
+        color: var(--ui-text-muted);
         display: flex;
         align-items: center;
         gap: 6px;
@@ -359,19 +359,19 @@
     }
 
     .action-btn.liked {
-        color: #ef4444;
+        color: var(--ui-danger);
     }
 
     .action-btn:hover {
-        color: #fff;
+        color: var(--ui-text-strong);
     }
 
     .action-btn.saved {
-        color: #6366f1;
+        color: var(--ui-primary);
     }
 
     .action-btn.saved:hover {
-        color: #818cf8;
+        color: var(--ui-primary-hover);
     }
 
     .post-thumbnail {
@@ -385,7 +385,7 @@
         height: 120px;
         object-fit: cover;
         border-radius: 12px;
-        border: 1px solid #2a2e36;
+        border: 1px solid var(--ui-border);
         transition:
             filter 0.16s ease,
             transform 0.16s ease;

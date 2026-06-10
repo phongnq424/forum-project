@@ -2,11 +2,11 @@
     import { tick } from "svelte";
 
     let {
-        children, // Svelte 5
+        children,
         class: className = "",
         scrollToBottom = false,
         watch = [],
-        pushToBottom = false, // <--- mới: bật behaviour "đẩy xuống đáy"
+        pushToBottom = false,
         onScrollTop = () => {},
     } = $props<{
         children: any;
@@ -68,7 +68,7 @@
         height: 100%;
         width: 100%;
         box-sizing: border-box;
-        min-height: 0; /* giữ để flex parent có thể co lại */
+        min-height: 0;
     }
 
     .scroll-content {
@@ -77,10 +77,8 @@
         min-height: 0;
     }
 
-    /* chỉ khi bật pushToBottom mới đẩy nội dung xuống đáy */
     .scroll-content.push-bottom {
         margin-top: auto;
-        /* min-content đảm bảo trình duyệt tính toán đúng khi nội dung ít */
         min-height: min-content;
     }
 
@@ -98,10 +96,10 @@
     }
 
     .scroll-area:hover::-webkit-scrollbar-thumb {
-        background: #2f333b;
+        background: var(--ui-border);
     }
 
     .scroll-area:hover::-webkit-scrollbar-thumb:hover {
-        background: #3b4048;
+        background: var(--ui-border-strong);
     }
 </style>
