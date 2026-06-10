@@ -71,80 +71,41 @@
     ];
 </script>
 
-<section class="report-filters">
-    <div class="filter-row">
-        <div class="filter-select">
-            <Select
-                bind:value={statusFilter}
-                options={statusOptions}
-                placeholder="All Status"
-                disabled={loading}
-            />
-        </div>
+<section class="adm-panel adm-filter-panel">
+    <div class="adm-filter-row report-filter-row">
+        <Select
+            bind:value={statusFilter}
+            options={statusOptions}
+            placeholder="All Status"
+            disabled={loading}
+        />
 
-        <div class="filter-select">
-            <Select
-                bind:value={severityFilter}
-                options={severityOptions}
-                placeholder="All Severity"
-                disabled={loading}
-            />
-        </div>
+        <Select
+            bind:value={severityFilter}
+            options={severityOptions}
+            placeholder="All Severity"
+            disabled={loading}
+        />
 
-        <div class="filter-select">
-            <Select
-                bind:value={targetTypeFilter}
-                options={targetTypeOptions}
-                placeholder="All Targets"
-                disabled={loading}
-            />
-        </div>
+        <Select
+            bind:value={targetTypeFilter}
+            options={targetTypeOptions}
+            placeholder="All Targets"
+            disabled={loading}
+        />
 
-        <div class="filter-select">
-            <Select
-                bind:value={categoryFilter}
-                options={categoryOptions}
-                placeholder="All Categories"
-                disabled={loading}
-            />
-        </div>
+        <Select
+            bind:value={categoryFilter}
+            options={categoryOptions}
+            placeholder="All Categories"
+            disabled={loading}
+        />
 
-        <Button onclick={onSearch} disabled={loading}>Search</Button>
-        <Button variant="secondary" onclick={onReset} disabled={loading}>
-            Reset
-        </Button>
+        <div class="adm-actions">
+            <Button onclick={onSearch} disabled={loading}>Search</Button>
+            <Button variant="secondary" onclick={onReset} disabled={loading}>
+                Reset
+            </Button>
+        </div>
     </div>
 </section>
-
-<style>
-    .report-filters {
-        padding: 14px;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-        border-radius: 16px;
-        background: linear-gradient(180deg, #171a21 0%, #14171d 100%);
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
-    }
-
-    .filter-row {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr)) auto auto;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .filter-select {
-        min-width: 0;
-    }
-
-    @media (max-width: 1100px) {
-        .filter-row {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @media (max-width: 640px) {
-        .filter-row {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>

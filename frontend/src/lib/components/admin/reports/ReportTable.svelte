@@ -81,18 +81,18 @@
     }
 </script>
 
-<section class="report-table-panel">
+<section class="adm-report-table-panel">
     {#if loading}
-        <div class="empty-state">Loading report cases...</div>
+        <div class="adm-empty-state">Loading report cases...</div>
     {:else if cases.length === 0}
-        <div class="empty-state">
-            <div class="empty-icon">Report</div>
+        <div class="adm-empty-state">
+            <div class="adm-empty-pill">Report</div>
             <p>No report cases found</p>
             <span>No case matched the current filters.</span>
         </div>
     {:else}
-        <div class="table-scroll">
-            <table>
+        <div class="adm-report-table-scroll">
+            <table class="adm-report-table">
                 <thead>
                     <tr>
                         <th>Case</th>
@@ -104,7 +104,7 @@
                         <th>Reports</th>
                         <th>Priority</th>
                         <th>Created</th>
-                        <th class="text-right">Action</th>
+                        <th class="adm-text-right">Action</th>
                     </tr>
                 </thead>
 
@@ -114,10 +114,10 @@
 
                         <tr>
                             <td>
-                                <div class="case-title">
+                                <div class="adm-report-case-title">
                                     Case #{reportCase.id.slice(0, 8)}
                                 </div>
-                                <div class="case-desc">
+                                <div class="adm-report-case-desc">
                                     {reportCase.is_auto_hidden
                                         ? "Auto-hidden"
                                         : "Manual review"}
@@ -125,25 +125,25 @@
                             </td>
 
                             <td>
-                                <div class="target-title">
+                                <div class="adm-report-target-row-title">
                                     {getTargetTitle(reportCase)}
                                 </div>
 
                                 {#if targetContent}
-                                    <div class="target-desc">
+                                    <div class="adm-report-target-row-desc">
                                         {targetContent}
                                     </div>
                                 {/if}
                             </td>
 
                             <td>
-                                <span class="type-pill">
+                                <span class="adm-pill primary">
                                     {typeLabel(reportCase.target_type)}
                                 </span>
                             </td>
 
                             <td>
-                                <span class="category">
+                                <span class="adm-report-category">
                                     {reportCase.category_main || "-"}
                                 </span>
                             </td>
@@ -167,13 +167,13 @@
                             </td>
 
                             <td>
-                                <div class="report-count">
+                                <div class="adm-count-pill">
                                     {reportCase.report_count}
                                 </div>
                             </td>
 
                             <td>
-                                <span class="priority-score">
+                                <span class="adm-report-priority-score">
                                     {reportCase.priority_score}
                                 </span>
                             </td>
@@ -181,10 +181,10 @@
                             <td>{formatDate(reportCase.created_at)}</td>
 
                             <td>
-                                <div class="actions">
+                                <div class="adm-row-actions">
                                     <button
                                         type="button"
-                                        class="icon-btn"
+                                        class="adm-icon-btn"
                                         aria-label={`View case ${reportCase.id}`}
                                         title="View case"
                                         onclick={() => onView(reportCase)}
@@ -199,12 +199,12 @@
             </table>
         </div>
 
-        <div class="pagination">
+        <div class="adm-pagination">
             <p>
                 Showing {getShowingStart()}–{getShowingEnd()} of {total} cases
             </p>
 
-            <div class="pagination-actions">
+            <div class="adm-pagination-actions">
                 <Button
                     variant="secondary"
                     disabled={page === 1}
@@ -226,222 +226,3 @@
         </div>
     {/if}
 </section>
-
-<style>
-    .report-table-panel {
-        overflow: hidden;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-        border-radius: 16px;
-        background: linear-gradient(180deg, #171a21 0%, #14171d 100%);
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
-    }
-
-    .table-scroll {
-        overflow-x: auto;
-        scrollbar-color: #2a2e36 #111318;
-        scrollbar-width: thin;
-    }
-
-    .table-scroll::-webkit-scrollbar {
-        height: 10px;
-    }
-
-    .table-scroll::-webkit-scrollbar-track {
-        background: #111318;
-    }
-
-    .table-scroll::-webkit-scrollbar-thumb {
-        background: #2a2e36;
-        border-radius: 999px;
-        border: 2px solid #111318;
-    }
-
-    table {
-        width: 100%;
-        min-width: 1180px;
-        border-collapse: collapse;
-    }
-
-    thead {
-        background: rgba(15, 18, 24, 0.82);
-    }
-
-    th,
-    td {
-        padding: 14px 16px;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-        text-align: left;
-        vertical-align: top;
-        font-size: 13px;
-    }
-
-    th {
-        color: #94a3b8;
-        font-size: 11px;
-        font-weight: 650;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        white-space: nowrap;
-    }
-
-    td {
-        color: #d1d5db;
-    }
-
-    tbody tr {
-        transition: background-color 0.16s ease;
-    }
-
-    tbody tr:hover {
-        background: rgba(139, 92, 246, 0.055);
-    }
-
-    .case-title,
-    .target-title {
-        color: #f8fafc;
-        font-size: 13px;
-        font-weight: 600;
-        line-height: 1.4;
-    }
-
-    .case-desc,
-    .target-desc {
-        max-width: 320px;
-        margin-top: 4px;
-        color: #94a3b8;
-        font-size: 12px;
-        line-height: 1.45;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .report-count {
-        width: fit-content;
-        padding: 3px 8px;
-        border-radius: 999px;
-        background: rgba(245, 158, 11, 0.1);
-        color: #fbbf24;
-        font-size: 11px;
-        font-weight: 600;
-    }
-
-    .type-pill {
-        display: inline-flex;
-        align-items: center;
-        height: 24px;
-        padding: 0 9px;
-        border-radius: 999px;
-        background: rgba(99, 102, 241, 0.11);
-        color: #c4b5fd;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .category,
-    .priority-score {
-        color: #e5e7eb;
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    .actions {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-    }
-
-    .text-right {
-        text-align: right;
-    }
-
-    .icon-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-        background: #111318;
-        color: #cbd5e1;
-        cursor: pointer;
-        transition:
-            background-color 0.16s ease,
-            border-color 0.16s ease,
-            color 0.16s ease;
-    }
-
-    .icon-btn:hover {
-        background: rgba(139, 92, 246, 0.12);
-        border-color: rgba(139, 92, 246, 0.28);
-        color: #ffffff;
-    }
-
-    .pagination {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        padding: 14px 16px;
-        color: #94a3b8;
-        font-size: 13px;
-    }
-
-    .pagination p {
-        margin: 0;
-    }
-
-    .pagination-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .pagination-actions span {
-        color: #cbd5e1;
-        font-size: 13px;
-    }
-
-    .empty-state {
-        padding: 48px 20px;
-        text-align: center;
-        color: #94a3b8;
-    }
-
-    .empty-state p {
-        margin: 10px 0 4px;
-        color: #f8fafc;
-        font-weight: 650;
-    }
-
-    .empty-state span {
-        font-size: 13px;
-    }
-
-    .empty-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        height: 34px;
-        padding: 0 12px;
-        border-radius: 999px;
-        background: rgba(148, 163, 184, 0.08);
-        color: #cbd5e1;
-        font-size: 12px;
-        font-weight: 650;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }
-
-    @media (max-width: 760px) {
-        .pagination {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .pagination-actions {
-            justify-content: space-between;
-        }
-    }
-</style>

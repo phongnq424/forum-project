@@ -63,154 +63,44 @@
     });
 </script>
 
-<section class="target-card">
-    <div class="section-header">
+<section class="adm-report-target-card">
+    <div class="adm-report-section-header">
         <div>
-            <p class="eyebrow">Reported Target</p>
-            <h3>{title}</h3>
+            <p class="adm-eyebrow">Reported Target</p>
+            <h3 class="adm-report-target-title">{title}</h3>
         </div>
 
-        <span class="type-pill">{typeLabel(targetType)}</span>
+        <span class="adm-pill primary">{typeLabel(targetType)}</span>
     </div>
 
-    <div class="meta-grid">
-        <div>
-            <span>Target ID</span>
-            <p>{targetId}</p>
+    <div class="adm-report-target-meta-grid">
+        <div class="adm-report-target-meta-item">
+            <span class="adm-meta-label">Target ID</span>
+            <p class="adm-meta-value">{targetId}</p>
         </div>
 
-        <div>
-            <span>Target Type</span>
-            <p>{typeLabel(targetType)}</p>
+        <div class="adm-report-target-meta-item">
+            <span class="adm-meta-label">Target Type</span>
+            <p class="adm-meta-value">{typeLabel(targetType)}</p>
         </div>
     </div>
 
     {#if owner}
-        <div class="owner-block">
-            <span>Owner</span>
-            <p>
+        <div class="adm-report-target-owner-block">
+            <span class="adm-meta-label">Owner</span>
+            <p class="adm-meta-value">
                 {owner.fullname || owner.username || owner.id}
             </p>
         </div>
     {/if}
 
     {#if content}
-        <div class="content-block">
+        <div class="adm-report-target-content-block">
             {content}
         </div>
     {:else}
-        <div class="empty-content">
+        <div class="adm-report-target-empty-content">
             No target content is available from backend.
         </div>
     {/if}
 </section>
-
-<style>
-    .target-card {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        padding: 16px;
-        border-radius: 14px;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-        background: #111318;
-    }
-
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 12px;
-    }
-
-    .eyebrow {
-        margin: 0 0 6px;
-        color: #a78bfa;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-
-    h3 {
-        margin: 0;
-        color: #f8fafc;
-        font-size: 15px;
-        line-height: 1.45;
-        font-weight: 650;
-        letter-spacing: -0.01em;
-    }
-
-    .type-pill {
-        display: inline-flex;
-        align-items: center;
-        height: 24px;
-        padding: 0 9px;
-        border-radius: 999px;
-        background: rgba(99, 102, 241, 0.11);
-        color: #c4b5fd;
-        font-size: 12px;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    .meta-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-    }
-
-    .meta-grid div,
-    .owner-block {
-        padding: 10px;
-        border-radius: 12px;
-        background: #0f1218;
-        border: 1px solid rgba(148, 163, 184, 0.08);
-        min-width: 0;
-    }
-
-    span {
-        display: block;
-        color: #94a3b8;
-        font-size: 11px;
-        font-weight: 650;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    p {
-        margin: 5px 0 0;
-        color: #e5e7eb;
-        font-size: 13px;
-        line-height: 1.45;
-        word-break: break-word;
-    }
-
-    .content-block,
-    .empty-content {
-        padding: 14px;
-        border-radius: 12px;
-        background: #0f1218;
-        border: 1px solid rgba(148, 163, 184, 0.08);
-        color: #d1d5db;
-        font-size: 13px;
-        line-height: 1.6;
-        white-space: pre-wrap;
-        word-break: break-word;
-        max-height: 220px;
-        overflow: auto;
-    }
-
-    .empty-content {
-        color: #64748b;
-        font-style: italic;
-    }
-
-    @media (max-width: 640px) {
-        .section-header,
-        .meta-grid {
-            grid-template-columns: 1fr;
-            display: grid;
-        }
-    }
-</style>
