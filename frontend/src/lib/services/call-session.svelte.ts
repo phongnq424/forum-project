@@ -391,7 +391,31 @@ class CallSession {
     }
 
     private handleIncomingCall(call: CallApiItem) {
-        if (this.status !== "idle") return;
+        const currentUserId = authState.user?.id;
+
+        if (!currentUserId) return;
+
+        if (call.receiver_id !== currentUserId) {
+            return;
+        }
+
+        if (this.currentCall?.id === call.id) {
+            this.currentCall = call;
+            this.isIncoming = true;
+            this.status = "incoming";
+            this.error = "";
+            return;
+        }
+
+        if (
+            this.status === "outgoing" ||
+            this.status === "connecting" ||
+            this.status === "ongoing"
+        ) {
+            return;
+        }
+
+        this.cleanupMediaOnly();
 
         this.currentCall = call;
         this.activeConversation = null;
@@ -400,7 +424,6 @@ class CallSession {
         this.status = "incoming";
         this.error = "";
     }
-
     private async handleCallAnswered(call: CallApiItem) {
         const normalizedCall = getCallFromPayload(call);
 

@@ -22,6 +22,8 @@
         senderName: string;
         senderUsername?: string | null;
         senderAvatar?: string | null;
+        messageType?: "TEXT" | "SYSTEM" | "CALL";
+        callId?: string | null;
     };
 
     let {
@@ -97,6 +99,70 @@
         return activeChat.type === "GROUP" && !isMine(msg);
     }
 
+    function getMessageType(m: ChatMessageApiItem) {
+        return ((m as any).type || (m as any).message_type || "TEXT") as
+            | "TEXT"
+            | "SYSTEM"
+            | "CALL";
+    }
+
+    function getCallId(m: ChatMessageApiItem) {
+        return (m as any).call_id || (m as any).callId || null;
+    }
+
+    function isCallMessage(msg: LocalChatMessage) {
+        return msg.messageType === "CALL";
+    }
+
+    function getCallCardMeta(msg: LocalChatMessage) {
+        const text = msg.text || "";
+        const lower = text.toLowerCase();
+
+        const isMissed = lower.includes("missed");
+        const isDeclined =
+            lower.includes("declined") || lower.includes("rejected");
+        const isCanceled =
+            lower.includes("canceled") || lower.includes("cancelled");
+        const isFailed = lower.includes("failed");
+        const isEnded = lower.includes("ended");
+
+        const isVideo = lower.includes("video");
+        const isVoice = lower.includes("voice") || lower.includes("audio");
+
+        const durationMatch = text.match(
+            /·\s*([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)/,
+        );
+
+        let title = "Call";
+        let tone: "success" | "danger" | "muted" = "muted";
+
+        if (isMissed) {
+            title = isVideo ? "Missed video call" : "Missed voice call";
+            tone = "danger";
+        } else if (isDeclined) {
+            title = isVideo ? "Video call declined" : "Voice call declined";
+            tone = "danger";
+        } else if (isCanceled) {
+            title = isVideo ? "Video call canceled" : "Voice call canceled";
+            tone = "muted";
+        } else if (isFailed) {
+            title = isVideo ? "Video call failed" : "Voice call failed";
+            tone = "danger";
+        } else if (isEnded) {
+            title = isVideo ? "Video call ended" : "Voice call ended";
+            tone = "success";
+        } else {
+            title = isVideo ? "Video call" : isVoice ? "Voice call" : "Call";
+        }
+
+        return {
+            title,
+            duration: isEnded ? durationMatch?.[1] || "" : "",
+            tone,
+            icon: "video",
+        };
+    }
+
     function setMessages(next: LocalChatMessage[]) {
         messages = next;
         onMessagesChange?.(next);
@@ -119,6 +185,8 @@
                 minute: "2-digit",
             }),
             attachments: m.Attachment || [],
+            messageType: getMessageType(m),
+            callId: getCallId(m),
         };
     }
 
@@ -525,93 +593,115 @@
                                     </div>
                                 {/if}
 
-                                <div class="msg-bubble">
-                                    {#if msg.text}
-                                        <div class="message-text">
-                                            {msg.text}
+                                {#if isCallMessage(msg)}
+                                    {@const callMeta = getCallCardMeta(msg)}
+
+                                    <div
+                                        class="call-message-card {callMeta.tone}"
+                                    >
+                                        <div class="call-card-icon">
+                                            <Icon name={"video"} size={18} />
                                         </div>
-                                    {/if}
 
-                                    {#if msg.attachments && msg.attachments.length > 0}
-                                        <div class="attachments">
-                                            {#each msg.attachments as attachment (attachment.id)}
-                                                {#if attachment.file_type === "IMAGE" && attachment.url}
-                                                    <img
-                                                        class="attachment-image"
-                                                        src={attachment.url}
-                                                        alt={attachment.original_name ||
-                                                            "image"}
-                                                    />
-                                                {:else if attachment.file_type === "DOCUMENT"}
-                                                    <button
-                                                        type="button"
-                                                        class="attachment-file"
-                                                        onclick={() =>
-                                                            openAttachment(
-                                                                attachment,
-                                                            )}
-                                                    >
-                                                        {#if attachment.preview_url}
-                                                            <img
-                                                                class="attachment-preview"
-                                                                src={attachment.preview_url}
-                                                                alt={attachment.original_name ||
-                                                                    "document preview"}
-                                                            />
-                                                        {/if}
+                                        <div class="call-card-body">
+                                            <strong>{callMeta.title}</strong>
 
-                                                        <span
-                                                            class="attachment-name"
-                                                        >
-                                                            {attachment.original_name ||
-                                                                "Document"}
-                                                        </span>
-
-                                                        <span
-                                                            class="attachment-meta"
-                                                        >
-                                                            {attachment.mime_type ||
-                                                                "document"}
-                                                            {#if attachment.size}
-                                                                · {formatSize(
-                                                                    attachment.size,
-                                                                )}
-                                                            {/if}
-                                                        </span>
-                                                    </button>
-                                                {:else}
-                                                    <button
-                                                        type="button"
-                                                        class="attachment-file"
-                                                        onclick={() =>
-                                                            openAttachment(
-                                                                attachment,
-                                                            )}
-                                                    >
-                                                        <span
-                                                            class="attachment-name"
-                                                        >
-                                                            {attachment.original_name ||
-                                                                "Attachment"}
-                                                        </span>
-
-                                                        <span
-                                                            class="attachment-meta"
-                                                        >
-                                                            {attachment.mime_type ||
-                                                                "file"}
-                                                            {#if attachment.size}
-                                                                · {formatSize(
-                                                                    attachment.size,
-                                                                )}
-                                                            {/if}
-                                                        </span>
-                                                    </button>
-                                                {/if}
-                                            {/each}
+                                            {#if callMeta.duration}
+                                                <span>{callMeta.duration}</span>
+                                            {:else}
+                                                <span>{msg.time}</span>
+                                            {/if}
                                         </div>
-                                    {/if}
-                                </div>
+                                    </div>
+                                {:else}
+                                    <div class="msg-bubble">
+                                        {#if msg.text}
+                                            <div class="message-text">
+                                                {msg.text}
+                                            </div>
+                                        {/if}
+
+                                        {#if msg.attachments && msg.attachments.length > 0}
+                                            <div class="attachments">
+                                                {#each msg.attachments as attachment (attachment.id)}
+                                                    {#if attachment.file_type === "IMAGE" && attachment.url}
+                                                        <img
+                                                            class="attachment-image"
+                                                            src={attachment.url}
+                                                            alt={attachment.original_name ||
+                                                                "image"}
+                                                        />
+                                                    {:else if attachment.file_type === "DOCUMENT"}
+                                                        <button
+                                                            type="button"
+                                                            class="attachment-file"
+                                                            onclick={() =>
+                                                                openAttachment(
+                                                                    attachment,
+                                                                )}
+                                                        >
+                                                            {#if attachment.preview_url}
+                                                                <img
+                                                                    class="attachment-preview"
+                                                                    src={attachment.preview_url}
+                                                                    alt={attachment.original_name ||
+                                                                        "document preview"}
+                                                                />
+                                                            {/if}
+
+                                                            <span
+                                                                class="attachment-name"
+                                                            >
+                                                                {attachment.original_name ||
+                                                                    "Document"}
+                                                            </span>
+
+                                                            <span
+                                                                class="attachment-meta"
+                                                            >
+                                                                {attachment.mime_type ||
+                                                                    "document"}
+                                                                {#if attachment.size}
+                                                                    · {formatSize(
+                                                                        attachment.size,
+                                                                    )}
+                                                                {/if}
+                                                            </span>
+                                                        </button>
+                                                    {:else}
+                                                        <button
+                                                            type="button"
+                                                            class="attachment-file"
+                                                            onclick={() =>
+                                                                openAttachment(
+                                                                    attachment,
+                                                                )}
+                                                        >
+                                                            <span
+                                                                class="attachment-name"
+                                                            >
+                                                                {attachment.original_name ||
+                                                                    "Attachment"}
+                                                            </span>
+
+                                                            <span
+                                                                class="attachment-meta"
+                                                            >
+                                                                {attachment.mime_type ||
+                                                                    "file"}
+                                                                {#if attachment.size}
+                                                                    · {formatSize(
+                                                                        attachment.size,
+                                                                    )}
+                                                                {/if}
+                                                            </span>
+                                                        </button>
+                                                    {/if}
+                                                {/each}
+                                            </div>
+                                        {/if}
+                                    </div>
+                                {/if}
                             </div>
                         </div>
 
@@ -980,6 +1070,91 @@
         display: flex;
         align-items: center;
         gap: 8px;
+    }
+    .call-message-card {
+        min-width: 210px;
+        max-width: 280px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 13px;
+        border-radius: 18px;
+        border: 1px solid #2f3540;
+        background: #20242d;
+        color: #e5e7eb;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+    }
+
+    .me .call-message-card {
+        background: #252a36;
+        border-color: rgba(139, 92, 246, 0.34);
+    }
+
+    .them .call-message-card {
+        background: #20242d;
+        border-color: #303642;
+    }
+
+    .call-message-card.success {
+        border-color: rgba(16, 185, 129, 0.28);
+    }
+
+    .call-message-card.danger {
+        border-color: rgba(239, 68, 68, 0.34);
+    }
+
+    .call-message-card.muted {
+        border-color: #303642;
+    }
+
+    .call-card-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: #2a2f3a;
+        color: #d1d5db;
+    }
+
+    .call-message-card.success .call-card-icon {
+        background: rgba(16, 185, 129, 0.13);
+        color: #34d399;
+    }
+
+    .call-message-card.danger .call-card-icon {
+        background: rgba(239, 68, 68, 0.13);
+        color: #f87171;
+    }
+
+    .call-card-body {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .call-card-body strong {
+        color: #f3f4f6;
+        font-size: 13px;
+        font-weight: 650;
+        line-height: 1.25;
+    }
+
+    .call-card-body span {
+        color: #9ca3af;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .me .call-card-body strong {
+        color: #f8fafc;
+    }
+
+    .me .call-card-body span {
+        color: #c4c7d0;
     }
 
     @media (max-width: 640px) {
