@@ -2,6 +2,7 @@
     import { socketService } from "$lib/services/socket.svelte";
     import { authState } from "$lib/states/auth.svelte";
     import { chatService } from "$lib/services/chat.service";
+    import { callSession } from "$lib/services/call-session.svelte";
     import Icon from "$lib/components/ui/Icon.svelte";
     import Input from "$lib/components/ui/Input.svelte";
     import Button from "$lib/components/ui/Button.svelte";
@@ -215,6 +216,18 @@
         onConversationCreated?.(realConversation);
 
         return realConversation;
+    }
+
+    async function startVideoCall() {
+        if (activeChat.type !== "CHAT") return;
+        if (callSession.status !== "idle") return;
+
+        try {
+            const realConversation = await ensureRealConversation();
+            await callSession.startOutgoingVideoCall(realConversation);
+        } catch (error) {
+            console.error("Error starting video call:", error);
+        }
     }
 
     $effect(() => {
@@ -468,6 +481,19 @@
                 </span>
             {/if}
         </div>
+
+        {#if activeChat.type === "CHAT"}
+            <div class="header-actions">
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={callSession.status !== "idle"}
+                    onclick={startVideoCall}
+                >
+                    <Icon name="video" size={18} />
+                </Button>
+            </div>
+        {/if}
     </header>
 
     <div class="messages-container">
@@ -948,6 +974,12 @@
         margin-bottom: 10px;
         color: #fca5a5;
         font-size: 12px;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     @media (max-width: 640px) {

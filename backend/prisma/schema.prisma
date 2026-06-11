@@ -194,6 +194,12 @@ enum ConversationRole {
   MEMBER
 }
 
+enum MESSAGE_TYPE {
+  TEXT
+  SYSTEM
+  CALL
+}
+
 /**
  * * MODELS **
  */
@@ -241,6 +247,9 @@ model User {
   reporterTrust           ReporterTrust?
   moderationActionLogs    ModerationActionLog[]
   reportCases             ReportCase[]
+  CallStarted             Call[]                   @relation("CallCaller")
+  CallReceived            Call[]                   @relation("CallReceiver")
+  CallEnded               Call[]                   @relation("CallEndedBy")
 }
 
 enum MODERATION_STATUS {
@@ -511,18 +520,21 @@ model ConversationUser {
 }
 
 model Message {
-  id              String    @id @default(uuid())
+  id              String       @id @default(uuid())
   conversation_id String
   sender_id       String
   content         String?
-  sent_at         DateTime  @default(now())
-  updated_at      DateTime  @default(now()) @updatedAt
-  is_read         Boolean   @default(false)
-  is_deleted      Boolean   @default(false)
+  type            MESSAGE_TYPE @default(TEXT)
+  call_id         String?
+  sent_at         DateTime     @default(now())
+  updated_at      DateTime     @default(now()) @updatedAt
+  is_read         Boolean      @default(false)
+  is_deleted      Boolean      @default(false)
   deleted_at      DateTime?
 
   Conversation  Conversation    @relation("ConversationMessages", fields: [conversation_id], references: [id], onDelete: Cascade)
   Sender        User            @relation("sender", fields: [sender_id], references: [id], onDelete: Cascade)
+  Call          Call?           @relation("CallMessage", fields: [call_id], references: [id], onDelete: SetNull)
   Attachment    Attachment[]
   ReportMessage ReportMessage[]
 
@@ -533,6 +545,7 @@ model Message {
   @@index([conversation_id, sent_at])
   @@index([conversation_id, is_deleted, sent_at])
   @@index([conversation_id, is_read, is_deleted, sender_id])
+  @@index([call_id])
 }
 
 model Attachment {
@@ -566,14 +579,48 @@ model AlMessage {
   User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
+enum CALL_TYPE {
+  AUDIO
+  VIDEO
+}
+
+enum CALL_STATUS {
+  RINGING
+  ONGOING
+  ENDED
+  MISSED
+  REJECTED
+  CANCELED
+  FAILED
+}
+
 model Call {
-  id              String    @id @default(uuid())
+  id              String  @id @default(uuid())
   conversation_id String
-  started_at      DateTime?
-  ended_at        DateTime?
-  status          String    @default("active")
+  caller_id       String
+  receiver_id     String?
+
+  type   CALL_TYPE
+  status CALL_STATUS @default(RINGING)
+
+  started_at  DateTime  @default(now())
+  answered_at DateTime?
+  ended_at    DateTime?
+  ended_by_id String?
 
   Conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  Caller   User  @relation("CallCaller", fields: [caller_id], references: [id], onDelete: Cascade)
+  Receiver User? @relation("CallReceiver", fields: [receiver_id], references: [id], onDelete: SetNull)
+  EndedBy  User? @relation("CallEndedBy", fields: [ended_by_id], references: [id], onDelete: SetNull)
+
+  Messages Message[] @relation("CallMessage")
+
+  @@index([conversation_id])
+  @@index([caller_id])
+  @@index([receiver_id])
+  @@index([status])
+  @@index([started_at])
 }
 
 model Language {

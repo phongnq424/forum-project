@@ -25,6 +25,7 @@ const ConversationRoutes = require("./conversation.route.js");
 const NotificationRoutes = require("./notification.route.js");
 const ReportRoutes = require("./report.route.js");
 const RecommendationRoutes = require("./recommendation.route.js");
+const CallRoutes = require("./call.route.js");
 
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
@@ -50,5 +51,6 @@ router.use("/conversations", ConversationRoutes);
 router.use("/notifications", NotificationRoutes);
 router.use("/reports", ReportRoutes);
 router.use("/recommendations", RecommendationRoutes);
+router.use("/calls", CallRoutes);
 
 module.exports = router;

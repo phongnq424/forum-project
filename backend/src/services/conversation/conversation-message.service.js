@@ -76,13 +76,29 @@ function buildAttachmentResponse(attachment) {
 }
 
 function buildMessageResponse(message) {
-    if (!message) return message;
+    if (!message) return null;
 
     return {
-        ...message,
-        Attachment: message.Attachment
-            ? message.Attachment.map(buildAttachmentResponse)
-            : []
+        id: message.id,
+        conversation_id: message.conversation_id,
+        sender_id: message.sender_id,
+        content: message.content,
+        type: message.type || "TEXT",
+        call_id: message.call_id || null,
+        sent_at: message.sent_at,
+        updated_at: message.updated_at,
+        is_read: message.is_read,
+        is_deleted: message.is_deleted,
+        deleted_at: message.deleted_at,
+        sender: message.Sender
+            ? {
+                id: message.Sender.id,
+                username: message.Sender.username,
+                fullname: message.Sender.fullname,
+                avatar: message.Sender.avatar
+            }
+            : null,
+        attachments: message.Attachment || []
     };
 }
 

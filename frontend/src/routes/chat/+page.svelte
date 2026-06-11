@@ -11,6 +11,8 @@
 	import Avatar from "$lib/components/ui/Avatar.svelte";
 	import { chatService } from "$lib/services/chat.service";
 	import { authState } from "$lib/states/auth.svelte";
+	import VideoCallModal from "$lib/components/chat/VideoCallModal.svelte";
+	import { callSession } from "$lib/services/call-session.svelte";
 	import type {
 		ChatConversation,
 		ConversationApiItem,
@@ -449,6 +451,7 @@
 	onMount(() => {
 		loadConversations();
 		loadPublicGroups();
+		callSession.init();
 
 		const unsubscribeMessage = socketService.on(
 			"chat:message:new",
@@ -472,6 +475,7 @@
 
 		return () => {
 			unsubscribeMessage?.();
+			callSession.dispose();
 		};
 	});
 
@@ -665,6 +669,8 @@
 		</div>
 	</div>
 </div>
+
+<VideoCallModal />
 
 <style>
 	.chat-page {
