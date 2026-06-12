@@ -29,6 +29,25 @@ async function emitToUserFriends(userId, event, payload) {
     });
 }
 
+async function joinUserConversationRooms(socket, userId) {
+    const memberships = await prisma.conversationUser.findMany({
+        where: {
+            user_id: userId,
+            left_at: null,
+            Conversation: {
+                is_deleted: false
+            }
+        },
+        select: {
+            conversation_id: true
+        }
+    });
+
+    memberships.forEach((item) => {
+        socket.join(`chat:${item.conversation_id}`);
+    });
+}
+
 function initSocket(server) {
     const io = new Server(server, {
         cors: {
@@ -41,11 +60,21 @@ function initSocket(server) {
 
     io.use(auth);
 
-    io.on("connection", (socket) => {
+    io.on("connection", async (socket) => {
         const userId = socket.user.id;
 
-        RedisOnlineService.setOnline(userId, socket.id);
+        await RedisOnlineService.setOnline(userId, socket.id);
+
         socket.join(`user:${userId}`);
+
+        try {
+            await joinUserConversationRooms(socket, userId);
+        } catch (error) {
+            console.error(
+                "[Socket] Failed to join user conversation rooms:",
+                error.message
+            );
+        }
 
         console.log("Emit của:", userId);
 
