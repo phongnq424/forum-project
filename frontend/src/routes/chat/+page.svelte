@@ -53,25 +53,41 @@
 	}
 
 	function buildLastMessage(c: ConversationApiItem | PublicGroupApiItem) {
-		const latest = c.latestMsg;
+		const latest = c.latestMsg as any;
 
 		if (!latest) return "";
+
+		if (latest.type === "CALL" || latest.message_type === "CALL") {
+			return latest.content || "Call";
+		}
 
 		if (latest.content && latest.content.trim() !== "") {
 			return latest.content;
 		}
 
-		const attachments = latest.Attachment || [];
+		const attachments = latest.attachments || latest.Attachment || [];
 
-		if (attachments.some((item) => item.file_type === "IMAGE")) {
+		if (
+			attachments.some(
+				(item: ChatAttachment) => item.file_type === "IMAGE",
+			)
+		) {
 			return "Sent a photo";
 		}
 
-		if (attachments.some((item) => item.file_type === "VIDEO")) {
+		if (
+			attachments.some(
+				(item: ChatAttachment) => item.file_type === "VIDEO",
+			)
+		) {
 			return "Sent a video";
 		}
 
-		if (attachments.some((item) => item.file_type === "DOCUMENT")) {
+		if (
+			attachments.some(
+				(item: ChatAttachment) => item.file_type === "DOCUMENT",
+			)
+		) {
 			return "Sent a document";
 		}
 

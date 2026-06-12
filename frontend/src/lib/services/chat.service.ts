@@ -101,7 +101,7 @@ export const chatService = {
         attachmentId: string,
     ): Promise<AttachmentUrlResponse> {
         return api.get<AttachmentUrlResponse>(
-            `/attachments/${attachmentId}/url`,
+            `/conversations/attachments/${attachmentId}/url`,
         );
     },
 

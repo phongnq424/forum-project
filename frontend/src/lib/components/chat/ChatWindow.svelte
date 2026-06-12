@@ -52,6 +52,8 @@
     let isSending = $state(false);
     let loadedConversationId = $state<string | null>(null);
     let voiceError = $state("");
+    let attachmentUrls = $state<Record<string, string>>({});
+    const loadingAttachmentIds = new Set<string>();
 
     function getCurrentUserName() {
         const user = authState.user as any;
@@ -66,7 +68,19 @@
     }
 
     function getSenderFromMessage(m: ChatMessageApiItem) {
-        return (m as any).Sender || null;
+        return (m as any).sender || (m as any).Sender || null;
+    }
+
+    function getMessageAttachments(m: ChatMessageApiItem): ChatAttachment[] {
+        return ((m as any).attachments ||
+            (m as any).Attachment ||
+            []) as ChatAttachment[];
+    }
+
+    function getMessageSenderId(m: ChatMessageApiItem) {
+        const sender = getSenderFromMessage(m);
+
+        return sender?.id || (m as any).sender_id || (m as any).senderId || "";
     }
 
     function getSenderName(m: ChatMessageApiItem) {
@@ -172,19 +186,21 @@
         m: ChatMessageApiItem,
         clientKey?: string,
     ): LocalChatMessage {
+        const sentAt = (m as any).sent_at || (m as any).sentAt || new Date();
+
         return {
             id: m.id,
             clientKey: clientKey || m.id,
-            senderId: m.Sender?.id || m.sender_id || "",
+            senderId: getMessageSenderId(m),
             senderName: getSenderName(m),
             senderUsername: getSenderUsername(m),
             senderAvatar: getSenderAvatar(m),
             text: m.content || "",
-            time: new Date(m.sent_at).toLocaleTimeString([], {
+            time: new Date(sentAt).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
             }),
-            attachments: m.Attachment || [],
+            attachments: getMessageAttachments(m),
             messageType: getMessageType(m),
             callId: getCallId(m),
         };
@@ -206,6 +222,38 @@
         if (size < 1024) return `${size} B`;
         if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
         return `${(size / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function getAttachmentSrc(attachment: ChatAttachment) {
+        return (
+            attachment.url ||
+            attachment.preview_url ||
+            attachmentUrls[attachment.id] ||
+            ""
+        );
+    }
+
+    async function ensureAttachmentUrl(attachment: ChatAttachment) {
+        if (!attachment.id) return;
+        if (getAttachmentSrc(attachment)) return;
+        if (loadingAttachmentIds.has(attachment.id)) return;
+
+        loadingAttachmentIds.add(attachment.id);
+
+        try {
+            const result = await chatService.getAttachmentUrl(attachment.id);
+
+            if (result?.url) {
+                attachmentUrls = {
+                    ...attachmentUrls,
+                    [attachment.id]: result.url,
+                };
+            }
+        } catch (error) {
+            console.error("Error loading attachment url:", error);
+        } finally {
+            loadingAttachmentIds.delete(attachment.id);
+        }
     }
 
     function handleFiles(event: Event) {
@@ -232,13 +280,27 @@
 
     async function openAttachment(attachment: ChatAttachment) {
         try {
+            const existingUrl = getAttachmentSrc(attachment);
+
+            if (existingUrl) {
+                window.open(existingUrl, "_blank");
+                return;
+            }
+
             const result = await chatService.getAttachmentUrl(attachment.id);
-            window.open(result.url, "_blank");
+
+            if (result?.url) {
+                attachmentUrls = {
+                    ...attachmentUrls,
+                    [attachment.id]: result.url,
+                };
+
+                window.open(result.url, "_blank");
+            }
         } catch (error) {
             console.error("Error opening attachment:", error);
         }
     }
-
     function upsertRealMessage(
         tempId: string,
         realMessage: ChatMessageApiItem,
@@ -364,6 +426,16 @@
         }
 
         fetchHistory();
+    });
+
+    $effect(() => {
+        messages
+            .flatMap((message) => message.attachments || [])
+            .forEach((attachment) => {
+                if (attachment.file_type === "IMAGE") {
+                    void ensureAttachmentUrl(attachment);
+                }
+            });
     });
 
     $effect(() => {
@@ -497,11 +569,13 @@
                     });
                 }
 
-                upsertRealMessage(tempId, result);
+                const realMessage = (result as any).message || result;
+
+                upsertRealMessage(tempId, realMessage);
 
                 onConversationPreviewUpdate?.({
                     conversationId: realConversation.id,
-                    message: result,
+                    message: realMessage,
                     senderId: authState.user?.id,
                     incrementUnread: false,
                 });
@@ -624,13 +698,43 @@
                                         {#if msg.attachments && msg.attachments.length > 0}
                                             <div class="attachments">
                                                 {#each msg.attachments as attachment (attachment.id)}
-                                                    {#if attachment.file_type === "IMAGE" && attachment.url}
-                                                        <img
-                                                            class="attachment-image"
-                                                            src={attachment.url}
-                                                            alt={attachment.original_name ||
-                                                                "image"}
-                                                        />
+                                                    {#if attachment.file_type === "IMAGE"}
+                                                        {@const imageSrc =
+                                                            getAttachmentSrc(
+                                                                attachment,
+                                                            )}
+
+                                                        {#if imageSrc}
+                                                            <img
+                                                                class="attachment-image"
+                                                                src={imageSrc}
+                                                                alt={attachment.original_name ||
+                                                                    "image"}
+                                                            />
+                                                        {:else}
+                                                            <button
+                                                                type="button"
+                                                                class="attachment-file"
+                                                                onclick={() =>
+                                                                    openAttachment(
+                                                                        attachment,
+                                                                    )}
+                                                            >
+                                                                <span
+                                                                    class="attachment-name"
+                                                                >
+                                                                    {attachment.original_name ||
+                                                                        "Image"}
+                                                                </span>
+
+                                                                <span
+                                                                    class="attachment-meta"
+                                                                >
+                                                                    Loading
+                                                                    image...
+                                                                </span>
+                                                            </button>
+                                                        {/if}
                                                     {:else if attachment.file_type === "DOCUMENT"}
                                                         <button
                                                             type="button"

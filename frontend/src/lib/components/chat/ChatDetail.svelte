@@ -17,9 +17,12 @@
         attachments?: ChatAttachment[];
     }>();
 
+    let attachmentUrls = $state<Record<string, string>>({});
+    const loadingAttachmentIds = new Set<string>();
+
     const sharedMedia = $derived(
         attachments.filter((attachment: ChatAttachment) => {
-            if (attachment.file_type === "IMAGE" && attachment.url) {
+            if (attachment.file_type === "IMAGE") {
                 return true;
             }
 
@@ -30,7 +33,6 @@
             return false;
         }),
     );
-
     function handleViewProfile() {
         if (!activeChat?.peerId) return;
 
@@ -38,11 +40,35 @@
     }
 
     function getPreviewSrc(attachment: ChatAttachment) {
-        if (attachment.file_type === "IMAGE") {
-            return attachment.url || "";
-        }
+        return (
+            attachment.url ||
+            attachment.preview_url ||
+            attachmentUrls[attachment.id] ||
+            ""
+        );
+    }
 
-        return attachment.preview_url || "";
+    async function ensureAttachmentUrl(attachment: ChatAttachment) {
+        if (!attachment.id) return;
+        if (getPreviewSrc(attachment)) return;
+        if (loadingAttachmentIds.has(attachment.id)) return;
+
+        loadingAttachmentIds.add(attachment.id);
+
+        try {
+            const result = await chatService.getAttachmentUrl(attachment.id);
+
+            if (result?.url) {
+                attachmentUrls = {
+                    ...attachmentUrls,
+                    [attachment.id]: result.url,
+                };
+            }
+        } catch (error) {
+            console.error("Lỗi load attachment url:", error);
+        } finally {
+            loadingAttachmentIds.delete(attachment.id);
+        }
     }
 
     async function openAttachment(attachment: ChatAttachment) {
@@ -58,6 +84,13 @@
             console.error("Lỗi mở attachment:", error);
         }
     }
+    $effect(() => {
+        attachments.forEach((attachment: ChatAttachment) => {
+            if (attachment.file_type === "IMAGE") {
+                void ensureAttachmentUrl(attachment);
+            }
+        });
+    });
 </script>
 
 <aside class="profile-sidebar">
@@ -135,10 +168,17 @@
                                 title={attachment.original_name || "Attachment"}
                                 onclick={() => openAttachment(attachment)}
                             >
-                                <img
-                                    src={getPreviewSrc(attachment)}
-                                    alt={attachment.original_name || "media"}
-                                />
+                                {#if getPreviewSrc(attachment)}
+                                    <img
+                                        src={getPreviewSrc(attachment)}
+                                        alt={attachment.original_name ||
+                                            "media"}
+                                    />
+                                {:else}
+                                    <span class="media-loading">
+                                        <Icon name="camera" size={16} />
+                                    </span>
+                                {/if}
 
                                 {#if attachment.file_type === "DOCUMENT"}
                                     <span class="document-badge">
@@ -233,6 +273,16 @@
         align-items: center;
         justify-content: space-between;
         gap: 10px;
+    }
+
+    .media-loading {
+        width: 100%;
+        height: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #8b949e;
+        background: #20242d;
     }
 
     .shared-media-header h4 {
